@@ -29,7 +29,7 @@ npx prisma db seed
 npm run dev
 ```
 
-Compte admin par défaut : `admin@lms.local` / `Admin@123`
+Compte admin par défaut : `admin@lms.local` / `rootroot`
 
 ## Docker
 

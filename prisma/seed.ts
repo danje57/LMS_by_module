@@ -14,7 +14,7 @@ async function main() {
   }
 
   // Compte admin par défaut
-  const passwordHash = await bcrypt.hash("Admin@123", 12);
+  const passwordHash = await bcrypt.hash("rootroot", 12);
   const admin = await prisma.user.upsert({
     where: { email: "admin@lms.local" },
     update: {},
@@ -49,7 +49,7 @@ async function main() {
     });
   }
 
-  console.log("Seed terminé — admin@lms.local / Admin@123");
+  console.log("Seed terminé — admin@lms.local / rootroot");
 }
 
 main()
