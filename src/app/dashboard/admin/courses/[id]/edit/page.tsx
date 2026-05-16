@@ -59,7 +59,7 @@ export default function EditCoursePage() {
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/admin/courses"
+        <Link href="/dashboard/courses"
           className="p-2 rounded-xl border border-[#D2D2D7] text-[#6E6E73] hover:bg-[#F5F5F7] transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </Link>

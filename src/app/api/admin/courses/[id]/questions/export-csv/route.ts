@@ -12,13 +12,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const course = await prisma.course.findUnique({ where: { id } });
   const questions = await prisma.quizQuestion.findMany({ where: { courseId: id }, orderBy: { order: "asc" } });
 
-  const header = "question;type;choiceA;choiceB;choiceC;choiceD;correctAnswer;explanation";
+  const header = "question;type;choiceA;choiceB;choiceC;choiceD;choiceE;choiceF;choiceG;choiceH;choiceI;choiceJ;correctAnswer;explanation";
   const rows = questions.map((q) =>
-    [q.question, q.type, q.choiceA ?? "", q.choiceB ?? "", q.choiceC ?? "", q.choiceD ?? "", q.correctAnswer, q.explanation ?? ""]
+    [q.question, q.type, q.choiceA ?? "", q.choiceB ?? "", q.choiceC ?? "", q.choiceD ?? "", q.choiceE ?? "", q.choiceF ?? "", q.choiceG ?? "", q.choiceH ?? "", q.choiceI ?? "", q.choiceJ ?? "", q.correctAnswer, q.explanation ?? ""]
       .map((v) => `"${String(v).replace(/"/g, '""')}"`)
       .join(";")
   );
-  // correctAnswer may contain comma-separated values (e.g. "A,C") for multi-answer QCM
 
   const csv = [header, ...rows].join("\n");
   const filename = `quiz_${(course?.title ?? id).replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40)}.csv`;

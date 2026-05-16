@@ -10,11 +10,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const { qid } = await params;
   const body = await req.json();
-  const { type, question, choiceA, choiceB, choiceC, choiceD, correctAnswer, allowMultiple, explanation, order } = body;
+  const { type, question, choiceA, choiceB, choiceC, choiceD, choiceE, choiceF, choiceG, choiceH, choiceI, choiceJ, correctAnswer, allowMultiple, explanation, order } = body;
 
   const updated = await prisma.quizQuestion.update({
     where: { id: qid },
-    data: { type, question: question?.trim(), choiceA, choiceB, choiceC, choiceD, correctAnswer, allowMultiple: allowMultiple !== undefined ? !!allowMultiple : undefined, explanation, ...(order !== undefined ? { order } : {}) },
+    data: { type, question: question?.trim(), choiceA, choiceB, choiceC, choiceD, choiceE, choiceF, choiceG, choiceH, choiceI, choiceJ, correctAnswer, allowMultiple: allowMultiple !== undefined ? !!allowMultiple : undefined, explanation, ...(order !== undefined ? { order } : {}) },
   });
   return NextResponse.json(updated);
 }

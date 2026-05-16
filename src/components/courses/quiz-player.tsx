@@ -4,15 +4,16 @@ import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, ChevronRight, RotateCcw, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const LETTERS = ["A","B","C","D","E","F","G","H","I","J"] as const;
+
 interface Question {
   id: string;
   order: number;
   type: "qcm" | "vrai_faux";
   question: string;
-  choiceA: string | null;
-  choiceB: string | null;
-  choiceC: string | null;
-  choiceD: string | null;
+  choiceA: string | null; choiceB: string | null; choiceC: string | null; choiceD: string | null;
+  choiceE: string | null; choiceF: string | null; choiceG: string | null; choiceH: string | null;
+  choiceI: string | null; choiceJ: string | null;
   correctAnswer: string;
   allowMultiple: boolean;
   explanation: string | null;
@@ -124,12 +125,9 @@ export function QuizPlayer({ courseId, passingScore, onClose }: Props) {
   }
 
   if (phase === "playing") {
-    const choices: { letter: string; value: string | null }[] = [
-      { letter: "A", value: q.choiceA },
-      { letter: "B", value: q.choiceB },
-      { letter: "C", value: q.choiceC },
-      { letter: "D", value: q.choiceD },
-    ].filter((c) => c.value);
+    const choices = LETTERS
+      .map((l) => ({ letter: l, value: q[`choice${l}` as keyof Question] as string | null }))
+      .filter((c) => c.value);
 
     const canAdvance = selectedAnswer.length > 0;
 

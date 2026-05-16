@@ -91,6 +91,12 @@ model QuizQuestion {
   choiceB       String?
   choiceC       String?
   choiceD       String?
+  choiceE       String?
+  choiceF       String?
+  choiceG       String?
+  choiceH       String?
+  choiceI       String?
+  choiceJ       String?
   correctAnswer  String
   allowMultiple  Boolean      @default(false)
   explanation    String?

@@ -16,7 +16,7 @@ export async function GET(
   const { id } = await params;
   const course = await prisma.course.findUnique({ where: { id } });
   if (!course) return NextResponse.json({ error: "Cours introuvable" }, { status: 404 });
-  return NextResponse.json(course);
+  return NextResponse.json({ ...course, fileSize: course.fileSize.toString() });
 }
 
 export async function PATCH(

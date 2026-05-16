@@ -22,7 +22,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const { id } = await params;
   const body = await req.json();
-  const { type, question, choiceA, choiceB, choiceC, choiceD, correctAnswer, allowMultiple, explanation } = body;
+  const { type, question, choiceA, choiceB, choiceC, choiceD, choiceE, choiceF, choiceG, choiceH, choiceI, choiceJ, correctAnswer, allowMultiple, explanation } = body;
 
   if (!question?.trim()) return NextResponse.json({ error: "Question requise" }, { status: 400 });
   if (!correctAnswer) return NextResponse.json({ error: "Bonne réponse requise" }, { status: 400 });
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const order = (last?.order ?? 0) + 1;
 
   const created = await prisma.quizQuestion.create({
-    data: { courseId: id, order, type: type ?? "qcm", question: question.trim(), choiceA, choiceB, choiceC, choiceD, correctAnswer, allowMultiple: !!allowMultiple, explanation },
+    data: { courseId: id, order, type: type ?? "qcm", question: question.trim(), choiceA, choiceB, choiceC, choiceD, choiceE, choiceF, choiceG, choiceH, choiceI, choiceJ, correctAnswer, allowMultiple: !!allowMultiple, explanation },
   });
 
   // Activer le flag hasQuiz sur le cours

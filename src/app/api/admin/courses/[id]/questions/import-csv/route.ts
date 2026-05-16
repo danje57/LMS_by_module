@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   for (const line of dataLines) {
     // Gestion des guillemets CSV simples
     const cols = line.split(";").map((c) => c.replace(/^"|"$/g, "").trim());
-    const [question, type, choiceA, choiceB, choiceC, choiceD, correctAnswer, explanation] = cols;
+    const [question, type, choiceA, choiceB, choiceC, choiceD, choiceE, choiceF, choiceG, choiceH, choiceI, choiceJ, correctAnswer, explanation] = cols;
 
     if (!question || !correctAnswer) { errors.push(`Ligne ignorée (manque question ou réponse) : ${line.slice(0, 60)}`); continue; }
 
@@ -40,15 +40,16 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (qtype === "vrai_faux") {
       validAnswer = ["vrai", "faux"].includes(correctAnswer.toLowerCase()) ? correctAnswer.toLowerCase() : null;
     } else {
+      const validLetters = ["A","B","C","D","E","F","G","H","I","J"];
       const letters = correctAnswer.toUpperCase().split(",").map((s) => s.trim());
-      const allValid = letters.every((l) => ["A", "B", "C", "D"].includes(l));
+      const allValid = letters.every((l) => validLetters.includes(l));
       if (allValid) { validAnswer = letters.join(","); allowMultiple = letters.length > 1; }
     }
 
     if (!validAnswer) { errors.push(`Réponse invalide "${correctAnswer}" ligne : ${question.slice(0, 40)}`); continue; }
 
     await prisma.quizQuestion.create({
-      data: { courseId: id, order: order++, type: qtype as "qcm" | "vrai_faux", question, choiceA: choiceA || null, choiceB: choiceB || null, choiceC: choiceC || null, choiceD: choiceD || null, correctAnswer: validAnswer, allowMultiple, explanation: explanation || null },
+      data: { courseId: id, order: order++, type: qtype as "qcm" | "vrai_faux", question, choiceA: choiceA || null, choiceB: choiceB || null, choiceC: choiceC || null, choiceD: choiceD || null, choiceE: choiceE || null, choiceF: choiceF || null, choiceG: choiceG || null, choiceH: choiceH || null, choiceI: choiceI || null, choiceJ: choiceJ || null, correctAnswer: validAnswer, allowMultiple, explanation: explanation || null },
     });
     created.push(order);
   }
