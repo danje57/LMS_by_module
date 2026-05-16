@@ -37,13 +37,13 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">Identifiant</Label>
         <Input
           id="email"
           name="email"
-          type="email"
-          placeholder="admin@lms.local"
-          autoComplete="email"
+          type="text"
+          placeholder="admin"
+          autoComplete="username"
           required
         />
       </div>

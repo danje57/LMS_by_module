@@ -52,7 +52,7 @@ export default async function LoginPage() {
               {branding?.appName ?? "LMS"}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Connectez-vous à votre espace
+              Identifiant et mot de passe
             </p>
           </div>
 
