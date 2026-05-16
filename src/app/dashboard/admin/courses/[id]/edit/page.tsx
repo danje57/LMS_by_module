@@ -106,6 +106,16 @@ export default function EditCoursePage() {
         <div className="p-6 space-y-4">
           <h2 className="text-[13px] font-semibold text-[#1D1D1F]">Questions du quiz</h2>
           <QuizEditor courseId={id} />
+          <div className="flex justify-end pt-2 border-t border-[#F5F5F7] mt-4">
+            <button onClick={handleSave} disabled={saving}
+              className={cn(
+                "flex items-center gap-1.5 px-5 h-9 text-[13px] font-medium rounded-xl transition-colors disabled:opacity-60",
+                saved ? "bg-green-500 text-white" : "bg-[#0071E3] hover:bg-[#0077ED] text-white"
+              )}>
+              <Save className="w-3.5 h-3.5" />
+              {saving ? "Enregistrement…" : saved ? "Enregistré !" : "Enregistrer"}
+            </button>
+          </div>
         </div>
 
       </div>
