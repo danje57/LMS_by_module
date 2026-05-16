@@ -1,9 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { CourseList } from "@/components/courses/course-list";
-import { Button } from "@/components/ui/button";
+import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { auth } from "@/lib/auth";
 
 async function getCourses() {
   return prisma.course.findMany({
@@ -18,19 +17,22 @@ export default async function CoursesPage() {
   const isAdmin = session?.user.roles.includes("admin");
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Cours</h1>
-          <p className="text-muted-foreground mt-1">{courses.length} cours disponible{courses.length > 1 ? "s" : ""}</p>
+          <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">Cours</h1>
+          <p className="text-[15px] text-[#6E6E73] mt-0.5">
+            {courses.length} cours disponible{courses.length !== 1 ? "s" : ""}
+          </p>
         </div>
         {isAdmin && (
-          <Button asChild>
-            <Link href="/dashboard/courses/upload">
-              <Plus className="h-4 w-4" />
-              Ajouter un cours
-            </Link>
-          </Button>
+          <Link
+            href="/dashboard/courses/upload"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium rounded-xl transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Ajouter
+          </Link>
         )}
       </div>
       <CourseList courses={courses} />

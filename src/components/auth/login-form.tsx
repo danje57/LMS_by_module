@@ -3,9 +3,6 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
   const router = useRouter();
@@ -25,7 +22,7 @@ export function LoginForm() {
     });
 
     if (result?.error) {
-      setError("Email ou mot de passe incorrect.");
+      setError("Identifiant ou mot de passe incorrect.");
       setLoading(false);
       return;
     }
@@ -36,38 +33,49 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Identifiant</Label>
-        <Input
+      <div className="space-y-1.5">
+        <label htmlFor="email" className="block text-[13px] font-medium text-[#1D1D1F]">
+          Identifiant
+        </label>
+        <input
           id="email"
           name="email"
           type="text"
           placeholder="admin"
           autoComplete="username"
           required
+          className="w-full h-11 px-3.5 rounded-xl border border-[#D2D2D7] bg-white text-[15px] text-[#1D1D1F] placeholder:text-[#ADADB8] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20"
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="password">Mot de passe</Label>
-        <Input
+      <div className="space-y-1.5">
+        <label htmlFor="password" className="block text-[13px] font-medium text-[#1D1D1F]">
+          Mot de passe
+        </label>
+        <input
           id="password"
           name="password"
           type="password"
           autoComplete="current-password"
           required
+          className="w-full h-11 px-3.5 rounded-xl border border-[#D2D2D7] bg-white text-[15px] text-[#1D1D1F] placeholder:text-[#ADADB8] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20"
         />
       </div>
 
       {error && (
-        <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
-          {error}
-        </p>
+        <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+          <p className="text-[13px] text-red-600">{error}</p>
+        </div>
       )}
 
-      <Button type="submit" className="w-full" disabled={loading}>
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full h-11 rounded-xl bg-[#0071E3] hover:bg-[#0077ED] active:bg-[#006EDB] text-white text-[15px] font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+      >
         {loading ? "Connexion…" : "Se connecter"}
-      </Button>
+      </button>
     </form>
   );
 }
