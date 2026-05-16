@@ -18,6 +18,7 @@ type Tab = "course" | "quiz";
 export function PlayPageClient({ courseId, filePath, hasQuiz, passingScore }: Props) {
   const [tab, setTab] = useState<Tab>("course");
   const [courseCompleted, setCourseCompleted] = useState(false);
+  const [slideWarning, setSlideWarning] = useState<string | null>(null);
 
   // Vérifier si le cours a déjà été complété (session précédente)
   useEffect(() => {
@@ -33,7 +34,12 @@ export function PlayPageClient({ courseId, filePath, hasQuiz, passingScore }: Pr
     function handleMessage(e: MessageEvent) {
       if (e.data?.type === "h5p-completed") {
         setCourseCompleted(true);
+        setSlideWarning(null);
         fetch(`/api/courses/${courseId}/progress`, { method: "POST" });
+      }
+      if (e.data?.type === "h5p-incomplete") {
+        const { visited, total } = e.data;
+        setSlideWarning(`Vous avez vu ${visited} slide(s) sur ${total}. Parcourez toutes les slides pour accéder au quiz.`);
       }
     }
     window.addEventListener("message", handleMessage);
@@ -84,6 +90,11 @@ export function PlayPageClient({ courseId, filePath, hasQuiz, passingScore }: Pr
       {tab === "course" && (
         <>
           <H5PPlayer courseId={courseId} filePath={filePath} />
+          {slideWarning && !courseCompleted && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[13px] text-amber-700">
+              ⚠️ {slideWarning}
+            </div>
+          )}
           {courseCompleted && (
             <div className="flex items-center justify-between bg-green-50 border border-green-100 rounded-xl px-4 py-3">
               <p className="text-[13px] text-green-700 font-medium">Cours terminé — le quiz est maintenant disponible.</p>

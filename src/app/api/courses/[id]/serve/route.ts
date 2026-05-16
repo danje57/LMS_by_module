@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { extractH5P } from "@/lib/h5p";
+import { readFile } from "fs/promises";
+import path from "path";
 
 export async function GET(
   req: NextRequest,
@@ -18,9 +20,9 @@ export async function GET(
     return new NextResponse("Cours introuvable", { status: 404 });
   }
 
-  // Extraire le .h5p si pas encore fait
+  let extractDir: string;
   try {
-    await extractH5P(course.filePath);
+    extractDir = await extractH5P(course.filePath);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Impossible d'extraire le cours H5P";
     return new NextResponse(
@@ -33,6 +35,15 @@ export async function GET(
     );
   }
 
+  // Lire le nombre de slides depuis content.json (CoursePresentation)
+  let totalSlides = 0;
+  try {
+    const raw = await readFile(path.join(extractDir, "content", "content.json"), "utf-8");
+    const content = JSON.parse(raw);
+    const slides = content?.presentation?.slides;
+    if (Array.isArray(slides)) totalSlides = slides.length;
+  } catch { /* contenu non-CoursePresentation ou structure différente */ }
+
   const contentBase = `/api/courses/${id}/content`;
 
   const html = `<!DOCTYPE html>
@@ -44,14 +55,7 @@ export async function GET(
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; background: #1a1a2e; }
-    #h5p-container {
-      width: 100%;
-      min-height: 100vh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 0;
-    }
+    #h5p-container { width: 100%; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 0; }
     #h5p-container > div { width: 100%; }
     .h5p-iframe-wrapper { width: 100% !important; }
   </style>
@@ -59,10 +63,22 @@ export async function GET(
 </head>
 <body>
   <div id="h5p-container"></div>
-
   <script src="/h5p-standalone/main.bundle.js"></script>
   <script>
     (function() {
+      var totalSlides = ${totalSlides};
+      var visitedSlides = new Set();
+
+      function notifyCompleted() {
+        window.parent.postMessage({ type: 'h5p-completed' }, '*');
+      }
+
+      function checkAllSlidesVisited() {
+        // Si on ne sait pas combien de slides il y a, on fait confiance au 'completed'
+        if (totalSlides <= 0) return true;
+        return visitedSlides.size >= totalSlides;
+      }
+
       const options = {
         id: ${JSON.stringify(id)},
         frameJs: '/h5p-standalone/frame.bundle.js',
@@ -76,7 +92,6 @@ export async function GET(
 
       new H5PStandalone.H5P(container, options)
         .then(function() {
-          // Écouter les événements xAPI pour détecter la complétion
           var attempts = 0;
           var interval = setInterval(function() {
             attempts++;
@@ -86,8 +101,32 @@ export async function GET(
               window.H5P.externalDispatcher.on('xAPI', function(event) {
                 try {
                   var verb = event.getVerb ? event.getVerb() : '';
+                  var statement = event.data && event.data.statement;
+
+                  // Tracker chaque slide visitée via l'événement 'progressed'
+                  // L'extension 'ending-point' contient l'index de la slide (0-based)
+                  if (verb === 'progressed' && statement) {
+                    var ext = (statement.object &&
+                               statement.object.definition &&
+                               statement.object.definition.extensions) || {};
+                    var slideIdx = ext['http://id.tincanapi.com/extension/ending-point'];
+                    if (slideIdx !== undefined && slideIdx !== null) {
+                      visitedSlides.add(Number(slideIdx));
+                    }
+                  }
+
+                  // 'completed' ou 'passed' : valider seulement si toutes les slides ont été vues
                   if (verb === 'completed' || verb === 'passed') {
-                    window.parent.postMessage({ type: 'h5p-completed' }, '*');
+                    if (checkAllSlidesVisited()) {
+                      notifyCompleted();
+                    } else {
+                      // Informer l'utilisateur qu'il doit voir toutes les slides
+                      window.parent.postMessage({
+                        type: 'h5p-incomplete',
+                        visited: visitedSlides.size,
+                        total: totalSlides
+                      }, '*');
+                    }
                   }
                 } catch(e) {}
               });
