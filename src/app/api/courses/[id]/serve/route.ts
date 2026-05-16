@@ -112,6 +112,13 @@ export async function GET(
                     var slideIdx = ext['http://id.tincanapi.com/extension/ending-point'];
                     if (slideIdx !== undefined && slideIdx !== null) {
                       visitedSlides.add(Number(slideIdx));
+                      // Notifier le parent de la progression
+                      window.parent.postMessage({
+                        type: 'h5p-slide-update',
+                        current: Number(slideIdx),
+                        visited: Array.from(visitedSlides),
+                        total: totalSlides
+                      }, '*');
                     }
                   }
 

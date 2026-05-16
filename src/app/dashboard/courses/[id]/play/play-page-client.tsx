@@ -19,6 +19,7 @@ export function PlayPageClient({ courseId, filePath, hasQuiz, passingScore }: Pr
   const [tab, setTab] = useState<Tab>("course");
   const [courseCompleted, setCourseCompleted] = useState(false);
   const [slideWarning, setSlideWarning] = useState<string | null>(null);
+  const [slideInfo, setSlideInfo] = useState<{ current: number; visited: number[]; total: number } | null>(null);
 
   // Vérifier si le cours a déjà été complété (session précédente)
   useEffect(() => {
@@ -36,6 +37,9 @@ export function PlayPageClient({ courseId, filePath, hasQuiz, passingScore }: Pr
         setCourseCompleted(true);
         setSlideWarning(null);
         fetch(`/api/courses/${courseId}/progress`, { method: "POST" });
+      }
+      if (e.data?.type === "h5p-slide-update") {
+        setSlideInfo({ current: e.data.current, visited: e.data.visited, total: e.data.total });
       }
       if (e.data?.type === "h5p-incomplete") {
         const { visited, total } = e.data;
@@ -90,6 +94,39 @@ export function PlayPageClient({ courseId, filePath, hasQuiz, passingScore }: Pr
       {tab === "course" && (
         <>
           <H5PPlayer courseId={courseId} filePath={filePath} />
+
+          {/* Barre de progression des slides */}
+          {slideInfo && slideInfo.total > 0 && (
+            <div className="bg-white border border-[#E5E5EA] rounded-2xl px-4 py-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[12px] font-medium text-[#6E6E73]">Progression des slides</p>
+                <p className="text-[12px] text-[#ADADB8]">
+                  {slideInfo.visited.length} / {slideInfo.total} vues
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {Array.from({ length: slideInfo.total }, (_, i) => {
+                  const visited = slideInfo.visited.includes(i);
+                  const current = slideInfo.current === i;
+                  return (
+                    <div
+                      key={i}
+                      title={`Slide ${i + 1}${visited ? " — vue" : " — non vue"}`}
+                      className={cn(
+                        "w-7 h-7 rounded-lg text-[11px] font-bold flex items-center justify-center transition-all",
+                        current  ? "bg-[#0071E3] text-white scale-110 shadow-sm" :
+                        visited  ? "bg-green-500 text-white" :
+                                   "bg-[#E5E5EA] text-[#ADADB8]"
+                      )}
+                    >
+                      {i + 1}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {slideWarning && !courseCompleted && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[13px] text-amber-700">
               ⚠️ {slideWarning}
