@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createWriteStream, mkdirSync } from "fs";
-import { mkdir } from "fs/promises";
 import path from "path";
 import { createHash } from "crypto";
 import { Readable } from "stream";
@@ -10,9 +9,6 @@ import Busboy from "busboy";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
 const MAX_H5P_SIZE = 600 * 1024 * 1024; // 600 Mo
-
-// Indispensable : désactive le body parser interne de Next.js
-export const config = { api: { bodyParser: false } };
 
 function parseMultipart(req: NextRequest): Promise<{
   fields: Record<string, string>;
@@ -27,20 +23,31 @@ function parseMultipart(req: NextRequest): Promise<{
 
     const fields: Record<string, string> = {};
     let fileResult: { path: string; originalName: string; size: number } | null = null;
-    let fileTooLarge = false;
+
+    // On attend deux signaux avant de résoudre :
+    // 1. busboy a fini de parser le multipart
+    // 2. le writeStream a fini d'écrire sur disque
+    let busboyDone = false;
+    let writeDone = false;
+    let hasFile = false;
+
+    function tryResolve() {
+      if (busboyDone && (writeDone || !hasFile)) {
+        resolve({ fields, file: fileResult });
+      }
+    }
 
     bb.on("field", (name, value) => {
       fields[name] = value;
     });
 
-    bb.on("file", async (fieldname, stream, info) => {
-      const { filename, mimeType } = info;
+    bb.on("file", (_, stream, info) => {
+      hasFile = true;
+      const { filename } = info;
 
-      // Validation : extension .h5p côté serveur
       if (!filename.toLowerCase().endsWith(".h5p")) {
-        stream.resume(); // vider le stream
-        reject(new Error("Seuls les fichiers .h5p sont acceptés"));
-        return;
+        stream.resume();
+        return reject(new Error("Seuls les fichiers .h5p sont acceptés"));
       }
 
       const hash = createHash("sha1")
@@ -58,35 +65,30 @@ function parseMultipart(req: NextRequest): Promise<{
       let size = 0;
       const writeStream = createWriteStream(filePath);
 
-      stream.on("data", (chunk: Buffer) => {
-        size += chunk.length;
-      });
-
-      stream.on("limit", () => {
-        fileTooLarge = true;
-        writeStream.destroy();
-        reject(new Error("Fichier trop volumineux (max 600 Mo)"));
-      });
+      stream.on("data", (chunk: Buffer) => { size += chunk.length; });
+      stream.on("limit", () => reject(new Error("Fichier trop volumineux (max 600 Mo)")));
 
       stream.pipe(writeStream);
 
       writeStream.on("finish", () => {
-        if (!fileTooLarge) {
-          fileResult = { path: relativePath, originalName: filename, size };
-        }
+        fileResult = { path: relativePath, originalName: filename, size };
+        writeDone = true;
+        tryResolve();
       });
 
       writeStream.on("error", reject);
     });
 
     bb.on("finish", () => {
-      if (!fileTooLarge) resolve({ fields, file: fileResult });
+      busboyDone = true;
+      tryResolve();
     });
 
     bb.on("error", reject);
 
-    // Convertir le Web ReadableStream en Node.js Readable et le piper dans busboy
+    // Pipe le ReadableStream Web vers busboy
     const nodeStream = Readable.fromWeb(req.body as import("stream/web").ReadableStream);
+    nodeStream.on("error", reject);
     nodeStream.pipe(bb);
   });
 }
@@ -109,9 +111,10 @@ export async function POST(req: NextRequest) {
   const title = fields.title?.trim();
   const duration = parseInt(fields.duration ?? "", 10);
   const hasQuiz = fields.hasQuiz === "on";
-  const passingScore = hasQuiz && fields.passingScore
-    ? Math.max(0, Math.min(100, parseInt(fields.passingScore, 10)))
-    : null;
+  const passingScore =
+    hasQuiz && fields.passingScore
+      ? Math.max(0, Math.min(100, parseInt(fields.passingScore, 10)))
+      : null;
 
   if (!title) return NextResponse.json({ error: "Le titre est requis" }, { status: 400 });
   if (isNaN(duration) || duration < 1) return NextResponse.json({ error: "Durée invalide" }, { status: 400 });
