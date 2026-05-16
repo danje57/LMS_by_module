@@ -37,7 +37,7 @@ export async function PATCH(
       ...(passingScore !== undefined ? { passingScore: Number(passingScore) } : {}),
     },
   });
-  return NextResponse.json(updated);
+  return NextResponse.json({ ...updated, fileSize: updated.fileSize.toString() });
 }
 
 export async function DELETE(
@@ -59,12 +59,15 @@ export async function DELETE(
   // Supprimer en base
   await prisma.course.delete({ where: { id } });
 
-  // Supprimer le dossier du cours sur disque (best-effort)
-  try {
-    const courseDir = path.join(UPLOAD_DIR, path.dirname(course.filePath));
-    await rm(courseDir, { recursive: true, force: true });
-  } catch {
-    // On ne bloque pas si le fichier a déjà disparu
+  // Supprimer les fichiers sur disque uniquement si aucun autre cours ne partage le même chemin
+  const siblings = await prisma.course.count({ where: { filePath: course.filePath } });
+  if (siblings === 0) {
+    try {
+      const courseDir = path.join(UPLOAD_DIR, path.dirname(course.filePath));
+      await rm(courseDir, { recursive: true, force: true });
+    } catch {
+      // On ne bloque pas si le fichier a déjà disparu
+    }
   }
 
   return NextResponse.json({ ok: true });
