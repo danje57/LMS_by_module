@@ -89,10 +89,12 @@ function QuestionForm({
   initial,
   onSave,
   onCancel,
+  mode = "add",
 }: {
   initial: FormData;
   onSave: (q: Omit<Question, "id" | "order">) => Promise<void>;
   onCancel: () => void;
+  mode?: "add" | "edit";
 }) {
   const [form, setForm] = useState<FormData>(initial);
   const [saving, setSaving] = useState(false);
@@ -256,7 +258,8 @@ function QuestionForm({
       <div className="flex gap-2 pt-1">
         <button type="submit" disabled={saving}
           className="flex items-center gap-1.5 px-5 h-9 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors disabled:opacity-60">
-          <Check className="w-3.5 h-3.5" /> {saving ? "Enregistrement…" : "Enregistrer"}
+          <Check className="w-3.5 h-3.5" />
+          {saving ? "Enregistrement…" : mode === "add" ? "Ajouter la question" : "Enregistrer"}
         </button>
         <button type="button" onClick={onCancel}
           className="flex items-center gap-1.5 px-4 h-9 border border-[#D2D2D7] text-[#6E6E73] text-[13px] font-medium rounded-xl hover:bg-[#F5F5F7] transition-colors">
@@ -406,6 +409,7 @@ export function QuizEditor({ courseId }: { courseId: string }) {
                       initial={questionToForm(q)}
                       onSave={(data) => handleEdit(q.id, data)}
                       onCancel={() => setEditingId(null)}
+                      mode="edit"
                     />
                   </div>
                 ) : (
