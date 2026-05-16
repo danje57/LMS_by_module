@@ -2,28 +2,154 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, FileCheck } from "lucide-react";
+import { Upload, FileCheck, Presentation } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function UploadForm() {
-  const router = useRouter();
+const fieldClass =
+  "w-full h-11 px-3.5 rounded-xl border border-[#D2D2D7] bg-white text-[15px] text-[#1D1D1F] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20";
+const labelClass = "block text-[13px] font-medium text-[#1D1D1F] mb-1.5";
+
+interface SharedFields {
+  title: string;
+  duration: string;
+  hasQuiz: boolean;
+  passingScore: string;
+}
+
+function QuizToggle({
+  hasQuiz,
+  setHasQuiz,
+  passingScore,
+  setPassingScore,
+}: {
+  hasQuiz: boolean;
+  setHasQuiz: (v: boolean) => void;
+  passingScore: string;
+  setPassingScore: (v: string) => void;
+}) {
+  return (
+    <>
+      <div className="flex items-center justify-between bg-[#F5F5F7] rounded-xl px-4 py-3">
+        <div>
+          <p className="text-[14px] font-medium text-[#1D1D1F]">Ce cours contient un quiz</p>
+          <p className="text-[12px] text-[#6E6E73]">Un score de passage sera requis</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setHasQuiz(!hasQuiz)}
+          className={`relative w-11 h-6 rounded-full transition-colors ${hasQuiz ? "bg-[#0071E3]" : "bg-[#D2D2D7]"}`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${hasQuiz ? "translate-x-5" : ""}`}
+          />
+        </button>
+      </div>
+      {hasQuiz && (
+        <div>
+          <label className={labelClass}>Score de passage (%)</label>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            value={passingScore}
+            onChange={(e) => setPassingScore(e.target.value)}
+            className={fieldClass}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+function FileDropZone({
+  accept,
+  label,
+  hint,
+  selectedFile,
+  onFileChange,
+}: {
+  accept: string;
+  label: string;
+  hint: string;
+  selectedFile: File | null;
+  onFileChange: (f: File | null) => void;
+}) {
+  return (
+    <label
+      htmlFor="file"
+      className={cn(
+        "flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-2xl p-8 cursor-pointer transition-colors",
+        selectedFile
+          ? "border-[#0071E3]/40 bg-blue-50/40"
+          : "border-[#D2D2D7] hover:border-[#0071E3]/40 hover:bg-[#F5F5F7]"
+      )}
+    >
+      {selectedFile ? (
+        <>
+          <FileCheck className="w-8 h-8 text-[#0071E3]" />
+          <div className="text-center">
+            <p className="text-[14px] font-medium text-[#1D1D1F]">{selectedFile.name}</p>
+            <p className="text-[12px] text-[#6E6E73]">{(selectedFile.size / 1024 / 1024).toFixed(1)} Mo</p>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="w-12 h-12 rounded-2xl bg-[#F5F5F7] flex items-center justify-center">
+            <Upload className="w-5 h-5 text-[#8E8E93]" />
+          </div>
+          <div className="text-center">
+            <p className="text-[14px] font-medium text-[#1D1D1F]">Cliquez pour sélectionner</p>
+            <p className="text-[12px] text-[#6E6E73] mt-0.5">{hint}</p>
+          </div>
+        </>
+      )}
+      <input
+        id="file"
+        name="file"
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+        required
+      />
+    </label>
+  );
+}
+
+function ProgressBar({ progress, label }: { progress: number; label: string }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between text-[13px] text-[#6E6E73]">
+        <span>{label}</span>
+        <span className="font-medium text-[#0071E3]">{progress}%</span>
+      </div>
+      <div className="h-1.5 bg-[#F5F5F7] rounded-full overflow-hidden">
+        <div
+          className="h-full bg-[#0071E3] rounded-full transition-all duration-300"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── Formulaire H5P ──────────────────────────────────────────────────────────
+function H5PForm({ onSuccess }: { onSuccess: () => void }) {
   const [hasQuiz, setHasQuiz] = useState(false);
+  const [passingScore, setPassingScore] = useState("70");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
-    if (file) {
-      if (!file.name.endsWith(".h5p")) {
-        setError("Seuls les fichiers .h5p sont acceptés.");
-        e.target.value = "";
-        setSelectedFile(null);
-        return;
-      }
-      setError(null);
-      setSelectedFile(file);
+  function handleFileChange(f: File | null) {
+    if (f && !f.name.endsWith(".h5p")) {
+      setError("Seuls les fichiers .h5p sont acceptés.");
+      setSelectedFile(null);
+      return;
     }
+    setError(null);
+    setSelectedFile(f);
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -34,6 +160,8 @@ export function UploadForm() {
     setProgress(0);
 
     const form = new FormData(e.currentTarget);
+    form.set("hasQuiz", hasQuiz ? "on" : "");
+    form.set("passingScore", passingScore);
 
     await new Promise<void>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -50,137 +178,212 @@ export function UploadForm() {
       xhr.addEventListener("error", () => reject(new Error("Erreur réseau")));
       xhr.open("POST", "/api/admin/courses/upload");
       xhr.send(form);
-    }).catch((err: Error) => { setError(err.message); setLoading(false); });
+    }).catch((err: Error) => { setError(err.message); setLoading(false); return; });
 
-    if (!error) { router.push("/dashboard/courses"); router.refresh(); }
+    if (!error) onSuccess();
   }
 
-  const fieldClass = "w-full h-11 px-3.5 rounded-xl border border-[#D2D2D7] bg-white text-[15px] text-[#1D1D1F] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20";
-  const labelClass = "block text-[13px] font-medium text-[#1D1D1F] mb-1.5";
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div>
+        <label className={labelClass}>Titre du cours</label>
+        <input name="title" required maxLength={255} placeholder="Ex : Introduction à la sécurité" className={fieldClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Durée (minutes)</label>
+        <input name="duration" type="number" min="1" required placeholder="30" className={fieldClass} />
+      </div>
+      <QuizToggle hasQuiz={hasQuiz} setHasQuiz={setHasQuiz} passingScore={passingScore} setPassingScore={setPassingScore} />
+      <div>
+        <label className={labelClass}>Fichier H5P</label>
+        <FileDropZone accept=".h5p" label="Fichier .h5p" hint="Fichier .h5p · max 600 Mo" selectedFile={selectedFile} onFileChange={handleFileChange} />
+        <input type="hidden" name="hasQuiz" value={hasQuiz ? "on" : ""} />
+        <input type="hidden" name="passingScore" value={passingScore} />
+      </div>
+      {loading && <ProgressBar progress={progress} label="Upload en cours…" />}
+      {error && <ErrorBox message={error} />}
+      <FormButtons loading={loading} label="Uploader le cours" onCancel={() => history.back()} />
+    </form>
+  );
+}
+
+// ─── Formulaire PPTX ─────────────────────────────────────────────────────────
+function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
+  const [hasQuiz, setHasQuiz] = useState(false);
+  const [passingScore, setPassingScore] = useState("70");
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [title, setTitle] = useState("");
+
+  function handleFileChange(f: File | null) {
+    if (f && !f.name.toLowerCase().endsWith(".pptx")) {
+      setError("Seuls les fichiers .pptx sont acceptés.");
+      setSelectedFile(null);
+      return;
+    }
+    setError(null);
+    setSelectedFile(f);
+    if (f && !title) setTitle(f.name.replace(/\.pptx$/i, "").replace(/[_-]/g, " "));
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!selectedFile) { setError("Veuillez sélectionner un fichier .pptx."); return; }
+    setLoading(true);
+    setError(null);
+    setProgress(0);
+    setStatus("Upload…");
+
+    const form = new FormData();
+    form.append("file", selectedFile);
+    form.append("title", title);
+    form.append("duration", (e.currentTarget.querySelector("[name=duration]") as HTMLInputElement)?.value ?? "30");
+    form.append("hasQuiz", hasQuiz ? "on" : "");
+    form.append("passingScore", passingScore);
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", (ev) => {
+          if (ev.lengthComputable) {
+            const p = Math.round((ev.loaded / ev.total) * 80);
+            setProgress(p);
+            if (p >= 80) setStatus("Conversion des slides en cours…");
+          }
+        });
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            setProgress(100);
+            resolve();
+          } else {
+            try { reject(new Error(JSON.parse(xhr.responseText).error ?? "Erreur serveur")); }
+            catch { reject(new Error("Erreur serveur")); }
+          }
+        });
+        xhr.addEventListener("error", () => reject(new Error("Erreur réseau")));
+        xhr.open("POST", "/api/admin/courses/convert-pptx");
+        xhr.send(form);
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur inconnue");
+      setLoading(false);
+    }
+  }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E5E5EA] p-7">
-      <h2 className="text-[17px] font-semibold text-[#1D1D1F] mb-1">Nouveau cours H5P</h2>
-      <p className="text-[13px] text-[#6E6E73] mb-6">Renseignez les informations et uploadez votre fichier.</p>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+        <p className="text-[13px] text-blue-700 font-medium">Conversion automatique</p>
+        <p className="text-[12px] text-blue-600 mt-0.5">
+          Chaque slide devient une page interactive. Durée de conversion&nbsp;: ~30s/slide.
+        </p>
+      </div>
+      <div>
+        <label className={labelClass}>Titre du cours</label>
+        <input
+          name="title"
+          required
+          maxLength={255}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Ex : Formation sécurité réseau"
+          className={fieldClass}
+        />
+      </div>
+      <div>
+        <label className={labelClass}>Durée estimée (minutes)</label>
+        <input name="duration" type="number" min="1" required placeholder="30" className={fieldClass} />
+      </div>
+      <QuizToggle hasQuiz={hasQuiz} setHasQuiz={setHasQuiz} passingScore={passingScore} setPassingScore={setPassingScore} />
+      <div>
+        <label className={labelClass}>Fichier PowerPoint</label>
+        <FileDropZone accept=".pptx" label="Fichier .pptx" hint="Fichier .pptx · max 200 Mo" selectedFile={selectedFile} onFileChange={handleFileChange} />
+      </div>
+      {loading && <ProgressBar progress={progress} label={status} />}
+      {error && <ErrorBox message={error} />}
+      <FormButtons loading={loading} label={loading ? "Conversion en cours…" : "Convertir et publier"} onCancel={() => history.back()} />
+    </form>
+  );
+}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label htmlFor="title" className={labelClass}>Titre du cours</label>
-          <input id="title" name="title" required maxLength={255}
-            placeholder="Ex : Introduction à la sécurité"
-            className={fieldClass} />
-        </div>
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function ErrorBox({ message }: { message: string }) {
+  return (
+    <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+      <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+      <p className="text-[13px] text-red-600">{message}</p>
+    </div>
+  );
+}
 
-        <div>
-          <label htmlFor="duration" className={labelClass}>Durée (minutes)</label>
-          <input id="duration" name="duration" type="number" min="1" required
-            placeholder="30"
-            className={fieldClass} />
-        </div>
+function FormButtons({ loading, label, onCancel }: { loading: boolean; label: string; onCancel: () => void }) {
+  return (
+    <div className="flex gap-3 pt-1">
+      <button
+        type="submit"
+        disabled={loading}
+        className="flex-1 h-11 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[15px] font-medium rounded-xl transition-colors disabled:opacity-60"
+      >
+        {label}
+      </button>
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={loading}
+        className="px-5 h-11 border border-[#D2D2D7] text-[#1D1D1F] text-[15px] font-medium rounded-xl hover:bg-[#F5F5F7] transition-colors disabled:opacity-60"
+      >
+        Annuler
+      </button>
+    </div>
+  );
+}
 
-        {/* Quiz toggle */}
-        <div className="flex items-center justify-between bg-[#F5F5F7] rounded-xl px-4 py-3">
-          <div>
-            <p className="text-[14px] font-medium text-[#1D1D1F]">Ce cours contient un quiz</p>
-            <p className="text-[12px] text-[#6E6E73]">Un score de passage sera requis</p>
-          </div>
+// ─── Composant principal ──────────────────────────────────────────────────────
+export function UploadForm() {
+  const router = useRouter();
+  const [tab, setTab] = useState<"h5p" | "pptx">("h5p");
+
+  function onSuccess() {
+    router.push("/dashboard/courses");
+    router.refresh();
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden">
+      {/* Tabs */}
+      <div className="flex border-b border-[#E5E5EA]">
+        {(["h5p", "pptx"] as const).map((t) => (
           <button
-            type="button"
-            onClick={() => setHasQuiz(!hasQuiz)}
-            className={`relative w-11 h-6 rounded-full transition-colors ${hasQuiz ? "bg-[#0071E3]" : "bg-[#D2D2D7]"}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${hasQuiz ? "translate-x-5" : ""}`} />
-          </button>
-          <input type="hidden" name="hasQuiz" value={hasQuiz ? "on" : ""} />
-        </div>
-
-        {hasQuiz && (
-          <div>
-            <label htmlFor="passingScore" className={labelClass}>Score de passage (%)</label>
-            <input id="passingScore" name="passingScore" type="number" min="0" max="100" defaultValue="70"
-              className={fieldClass} />
-          </div>
-        )}
-
-        {/* File drop */}
-        <div>
-          <label className={labelClass}>Fichier H5P</label>
-          <label
-            htmlFor="file"
-            className={`flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-2xl p-8 cursor-pointer transition-colors ${
-              selectedFile
-                ? "border-[#0071E3]/40 bg-blue-50/40"
-                : "border-[#D2D2D7] hover:border-[#0071E3]/40 hover:bg-[#F5F5F7]"
-            }`}
-          >
-            {selectedFile ? (
-              <>
-                <FileCheck className="w-8 h-8 text-[#0071E3]" />
-                <div className="text-center">
-                  <p className="text-[14px] font-medium text-[#1D1D1F]">{selectedFile.name}</p>
-                  <p className="text-[12px] text-[#6E6E73]">
-                    {(selectedFile.size / 1024 / 1024).toFixed(1)} Mo
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="w-12 h-12 rounded-2xl bg-[#F5F5F7] flex items-center justify-center">
-                  <Upload className="w-5 h-5 text-[#8E8E93]" />
-                </div>
-                <div className="text-center">
-                  <p className="text-[14px] font-medium text-[#1D1D1F]">
-                    Cliquez pour sélectionner
-                  </p>
-                  <p className="text-[12px] text-[#6E6E73] mt-0.5">Fichier .h5p · max 600 Mo</p>
-                </div>
-              </>
+            key={t}
+            onClick={() => setTab(t)}
+            className={cn(
+              "flex items-center gap-2 px-6 py-4 text-[14px] font-medium transition-all border-b-2",
+              tab === t
+                ? "border-[#0071E3] text-[#0071E3]"
+                : "border-transparent text-[#6E6E73] hover:text-[#1D1D1F]"
             )}
-            <input id="file" name="file" type="file" accept=".h5p" className="hidden" onChange={handleFileChange} required />
-          </label>
-        </div>
-
-        {/* Progress */}
-        {loading && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-[13px] text-[#6E6E73]">
-              <span>Upload en cours…</span>
-              <span className="font-medium text-[#0071E3]">{progress}%</span>
-            </div>
-            <div className="h-1.5 bg-[#F5F5F7] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#0071E3] rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-            <p className="text-[13px] text-red-600">{error}</p>
-          </div>
-        )}
-
-        <div className="flex gap-3 pt-1">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 h-11 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[15px] font-medium rounded-xl transition-colors disabled:opacity-60"
           >
-            {loading ? "Upload en cours…" : "Uploader le cours"}
+            {t === "h5p" ? (
+              <><Upload className="w-4 h-4" /> Fichier H5P</>
+            ) : (
+              <><Presentation className="w-4 h-4" /> Importer un PPTX</>
+            )}
           </button>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            disabled={loading}
-            className="px-5 h-11 border border-[#D2D2D7] text-[#1D1D1F] text-[15px] font-medium rounded-xl hover:bg-[#F5F5F7] transition-colors disabled:opacity-60"
-          >
-            Annuler
-          </button>
-        </div>
-      </form>
+        ))}
+      </div>
+
+      <div className="p-7">
+        <p className="text-[13px] text-[#6E6E73] mb-6">
+          {tab === "h5p"
+            ? "Uploadez un fichier .h5p existant."
+            : "Convertissez un PowerPoint (.pptx) en cours interactif automatiquement."}
+        </p>
+        {tab === "h5p" ? <H5PForm onSuccess={onSuccess} /> : <PPTXForm onSuccess={onSuccess} />}
+      </div>
     </div>
   );
 }

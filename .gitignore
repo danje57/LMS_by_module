@@ -1,33 +1,29 @@
+
+backups/
+build/
+# Build
 # Dependencies
+dist/
+.DS_Store
+.env
+# Environment
+.env.*.local
+.env.local
+h5p-libraries/
+# Misc
+.next/
+next-env.d.ts
 node_modules/
+npm-debug.log*
+out/
+*.pem
 .pnp
 .pnp.js
-
-# Build
-.next/
-out/
-dist/
-build/
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Uploads & backups (données persistantes — ne pas versionner)
-uploads/
-backups/
-
 # Prisma
 prisma/migrations/
-
-# Misc
-.DS_Store
-*.pem
-npm-debug.log*
+*.tsbuildinfo
+# TypeScript
+uploads/
+# Uploads & backups (données persistantes — ne pas versionner)
 yarn-debug.log*
 yarn-error.log*
-
-# TypeScript
-*.tsbuildinfo
-next-env.d.ts
