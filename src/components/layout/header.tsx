@@ -31,7 +31,10 @@ export function Header({ session }: HeaderProps) {
       <div className="w-px h-4 bg-[#E5E5EA]" />
 
       <button
-        onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
+        onClick={async () => {
+          await signOut({ redirect: false });
+          window.location.href = "/login";
+        }}
         className="flex items-center gap-1.5 text-[13px] text-[#8E8E93] hover:text-[#1D1D1F] transition-colors"
       >
         <LogOut className="w-3.5 h-3.5" />
