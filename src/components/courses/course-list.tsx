@@ -6,12 +6,14 @@ import { formatDuration, formatFileSize } from "@/lib/utils";
 import { Search, Clock, CircleCheck, Play } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { DeleteCourseButton } from "@/components/courses/delete-course-button";
 
 interface CourseListProps {
   courses: Course[];
+  isAdmin?: boolean;
 }
 
-export function CourseList({ courses }: CourseListProps) {
+export function CourseList({ courses, isAdmin = false }: CourseListProps) {
   const [search, setSearch] = useState("");
   const [filterQuiz, setFilterQuiz] = useState<"all" | "yes" | "no">("all");
 
@@ -99,13 +101,18 @@ export function CourseList({ courses }: CourseListProps) {
 
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-[#ADADB8]">{formatFileSize(course.fileSize)}</span>
-                <Link
-                  href={`/dashboard/courses/${course.id}/play`}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                  Lancer
-                </Link>
+                <div className="flex items-center gap-1.5">
+                  {isAdmin && (
+                    <DeleteCourseButton courseId={course.id} courseTitle={course.title} />
+                  )}
+                  <Link
+                    href={`/dashboard/courses/${course.id}/play`}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    Lancer
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

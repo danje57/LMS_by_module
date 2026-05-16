@@ -35,7 +35,7 @@ export default async function CoursesPage() {
           </Link>
         )}
       </div>
-      <CourseList courses={courses} />
+      <CourseList courses={courses} isAdmin={isAdmin} />
     </div>
   );
 }
