@@ -56,11 +56,15 @@ export async function DELETE(
     return NextResponse.json({ error: "Cours introuvable" }, { status: 404 });
   }
 
+  // Vérifier AVANT suppression si un autre cours partage le même dossier (même fileHash)
+  const siblings = course.fileHash
+    ? await prisma.course.count({ where: { fileHash: course.fileHash, id: { not: id } } })
+    : 0;
+
   // Supprimer en base
   await prisma.course.delete({ where: { id } });
 
-  // Supprimer les fichiers sur disque uniquement si aucun autre cours ne partage le même chemin
-  const siblings = await prisma.course.count({ where: { filePath: course.filePath } });
+  // Supprimer les fichiers sur disque uniquement si aucun autre cours ne partage le même contenu
   if (siblings === 0) {
     try {
       const courseDir = path.join(UPLOAD_DIR, path.dirname(course.filePath));
