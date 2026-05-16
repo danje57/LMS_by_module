@@ -27,6 +27,8 @@ export default function EditCoursePage() {
   const [passingScore, setPassingScore] = useState(80);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savingQuiz, setSavingQuiz] = useState(false);
+  const [savedQuiz, setSavedQuiz] = useState(false);
 
   useEffect(() => {
     fetch(`/api/admin/courses/${id}`)
@@ -49,6 +51,18 @@ export default function EditCoursePage() {
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  }
+
+  async function handleSaveQuiz() {
+    setSavingQuiz(true);
+    await fetch(`/api/admin/courses/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passingScore }),
+    });
+    setSavingQuiz(false);
+    setSavedQuiz(true);
+    setTimeout(() => setSavedQuiz(false), 2000);
   }
 
   if (!course) {
@@ -139,7 +153,30 @@ export default function EditCoursePage() {
 
       {/* Tab: Quiz */}
       {tab === "quiz" && (
-        <div className="bg-white rounded-2xl border border-[#E5E5EA] p-6">
+        <div className="bg-white rounded-2xl border border-[#E5E5EA] p-6 space-y-5">
+          {/* Score de passage + Enregistrer */}
+          <div className="flex items-end gap-4 pb-5 border-b border-[#F5F5F7]">
+            <div className="flex-1 max-w-[180px]">
+              <label className="block text-[12px] font-medium text-[#6E6E73] mb-1">Score de passage (%)</label>
+              <input
+                type="number" min={0} max={100}
+                value={passingScore}
+                onChange={(e) => setPassingScore(Number(e.target.value))}
+                className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[14px] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all"
+              />
+            </div>
+            <button
+              onClick={handleSaveQuiz}
+              disabled={savingQuiz}
+              className={cn(
+                "flex items-center gap-1.5 px-5 h-10 text-[13px] font-medium rounded-xl transition-colors disabled:opacity-60",
+                savedQuiz ? "bg-green-500 text-white" : "bg-[#0071E3] hover:bg-[#0077ED] text-white"
+              )}
+            >
+              <Save className="w-3.5 h-3.5" />
+              {savingQuiz ? "Enregistrement…" : savedQuiz ? "Enregistré !" : "Enregistrer"}
+            </button>
+          </div>
           <QuizEditor courseId={id} />
         </div>
       )}
