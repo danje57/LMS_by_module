@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { BrandingSetting } from "@prisma/client";
 import { CheckCircle, AlertCircle } from "lucide-react";
 
@@ -9,6 +10,7 @@ interface BrandingFormProps {
 }
 
 export function BrandingForm({ branding }: BrandingFormProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -21,7 +23,9 @@ export function BrandingForm({ branding }: BrandingFormProps) {
     const res = await fetch("/api/admin/branding", { method: "POST", body: form });
 
     if (res.ok) {
-      setMessage({ type: "success", text: "Branding mis à jour avec succès." });
+      setMessage({ type: "success", text: "Branding mis à jour." });
+      // Rafraîchit les server components (sidebar, login) sans recharger la page entière
+      router.refresh();
     } else {
       const data = await res.json().catch(() => ({}));
       setMessage({ type: "error", text: data.error ?? "Une erreur est survenue." });
