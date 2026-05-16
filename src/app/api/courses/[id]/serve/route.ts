@@ -1,66 +1,85 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { readFile } from "fs/promises";
-import path from "path";
-
-const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
+import { extractH5P } from "@/lib/h5p";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  if (!session) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
 
   const { id } = await params;
   const course = await prisma.course.findUnique({ where: { id, isActive: true } });
-  if (!course) return NextResponse.json({ error: "Cours introuvable" }, { status: 404 });
+  if (!course) {
+    return new NextResponse("Cours introuvable", { status: 404 });
+  }
 
-  const filePath = path.join(UPLOAD_DIR, course.filePath);
-
+  // Extraire le .h5p si pas encore fait
   try {
-    const buffer = await readFile(filePath);
+    await extractH5P(course.filePath);
+  } catch {
+    return new NextResponse("Impossible d'extraire le cours H5P", { status: 500 });
+  }
 
-    // Renvoie une page HTML qui intègre le player H5P standalone
-    const html = `<!DOCTYPE html>
+  const contentBase = `/api/courses/${id}/content`;
+
+  const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${course.title}</title>
+  <title>${course.title.replace(/</g, "&lt;")}</title>
   <style>
-    body { margin: 0; padding: 0; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
-    .player-wrap { width: 100%; max-width: 900px; }
-    .info { color: #ccc; text-align: center; padding: 2rem; font-family: sans-serif; }
-    .file-size { color: #888; font-size: 0.9em; margin-top: 0.5rem; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #1a1a2e; }
+    #h5p-container {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 0;
+    }
+    #h5p-container > div { width: 100%; }
+    .h5p-iframe-wrapper { width: 100% !important; }
   </style>
+  <link rel="stylesheet" href="/h5p-standalone/styles/h5p.css">
 </head>
 <body>
-  <div class="player-wrap">
-    <div class="info">
-      <h2 style="color: white;">${course.title}</h2>
-      <p>Fichier H5P chargé (${(Number(course.fileSize) / 1024 / 1024).toFixed(1)} Mo)</p>
-      <p style="color: #f59e0b; margin-top: 1rem;">
-        Le player H5P standalone sera intégré ici.<br>
-        Pour l'activer, décompressez le .h5p et servez le contenu via h5p-standalone.
-      </p>
-    </div>
-  </div>
+  <div id="h5p-container"></div>
+
+  <script src="/h5p-standalone/main.bundle.js"></script>
   <script>
-    // Ici sera intégré h5p-standalone une fois la librairie ajoutée
-    console.log('H5P course ready:', '${course.id}');
+    (function() {
+      const options = {
+        id: ${JSON.stringify(id)},
+        frameJs: '/h5p-standalone/frame.bundle.js',
+        frameCss: '/h5p-standalone/styles/h5p.css',
+        h5pJsonPath: ${JSON.stringify(contentBase)},
+        librariesPath: ${JSON.stringify(contentBase)},
+        contentJsonPath: ${JSON.stringify(contentBase + '/content')},
+      };
+
+      const container = document.getElementById('h5p-container');
+
+      new H5PStandalone.H5P(container, options)
+        .catch(function(err) {
+          container.innerHTML =
+            '<div style="color:#fff;padding:2rem;font-family:sans-serif;">' +
+            '<h2 style="margin-bottom:1rem;">Erreur de chargement H5P</h2>' +
+            '<pre style="background:#333;padding:1rem;border-radius:8px;overflow:auto;">' +
+            err.toString() + '</pre></div>';
+        });
+    })();
   </script>
 </body>
 </html>`;
 
-    // Vérifie juste que le fichier existe et est lisible
-    if (buffer.length === 0) throw new Error("Fichier vide");
-
-    return new NextResponse(html, {
-      headers: { "Content-Type": "text/html; charset=utf-8" },
-    });
-  } catch {
-    return NextResponse.json({ error: "Impossible de charger le cours" }, { status: 500 });
-  }
+  return new NextResponse(html, {
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
 }

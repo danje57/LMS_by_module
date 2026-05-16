@@ -1,6 +1,3 @@
-// LMS_by_module — Prisma Schema
-// Conçu pour évoluer : auth locale + Entra ID, rôles, progression, backup
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,57 +7,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── AUTHENTIFICATION ────────────────────────────────────────────────────────
-
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  passwordHash  String?   // null si auth externe uniquement
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  roles         UserRole[]
-  authAccounts  AuthAccount[]
+  id             String               @id @default(cuid())
+  email          String               @unique
+  name           String?
+  passwordHash   String?
+  isActive       Boolean              @default(true)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  authAccounts   AuthAccount[]
+  assignments    CourseAssignment[]
   courseProgress UserCourseProgress[]
-  quizResults   UserQuizResult[]
-  assignments   CourseAssignment[]
+  quizResults    UserQuizResult[]
+  roles          UserRole[]
 
   @@map("users")
 }
 
-// Lie une identité locale ou externe (Entra ID, etc.) à un User
 model AuthAccount {
-  id                String  @id @default(cuid())
+  id                String    @id @default(cuid())
   userId            String
-  provider          String  // "local" | "entra" | "google" …
-  providerAccountId String  // email local ou OID Entra
+  provider          String
+  providerAccountId String
   accessToken       String?
   refreshToken      String?
   expiresAt         DateTime?
-  createdAt         DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime  @default(now())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("auth_accounts")
 }
 
-// ─── RÔLES ───────────────────────────────────────────────────────────────────
-
-enum RoleType {
-  admin
-  creator
-  employee
-}
-
 model Role {
-  id          String   @id @default(cuid())
-  name        RoleType @unique
+  id          String     @id @default(cuid())
+  name        RoleType   @unique
   description String?
-
-  users UserRole[]
+  users       UserRole[]
 
   @@map("roles")
 }
@@ -69,51 +52,43 @@ model UserRole {
   userId    String
   roleId    String
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
   @@map("user_roles")
 }
 
-// ─── COURS H5P ───────────────────────────────────────────────────────────────
-
 model Course {
-  id           String   @id @default(cuid())
-  title        String
-  duration     Int      // en minutes
-  hasQuiz      Boolean  @default(false)
-  passingScore Int?     // 0–100, null si pas de quiz
-  filePath     String   // chemin vers le dossier extrait du .h5p
+  id               String               @id @default(cuid())
+  title            String
+  duration         Int
+  hasQuiz          Boolean              @default(false)
+  passingScore     Int?
+  filePath         String
   originalFileName String
-  fileSize     BigInt   // octets
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  assets      CourseAsset[]
-  assignments CourseAssignment[]
-  progress    UserCourseProgress[]
-  quizResults UserQuizResult[]
+  fileSize         BigInt
+  isActive         Boolean              @default(true)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  assets           CourseAsset[]
+  assignments      CourseAssignment[]
+  progress         UserCourseProgress[]
+  quizResults      UserQuizResult[]
 
   @@map("courses")
 }
 
-// Fichiers associés à un cours (contenu extrait du .h5p)
 model CourseAsset {
   id        String   @id @default(cuid())
   courseId  String
   filePath  String
-  fileType  String   // "h5p-content" | "thumbnail" | …
+  fileType  String
   createdAt DateTime @default(now())
-
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@map("course_assets")
 }
-
-// ─── ASSIGNATIONS ────────────────────────────────────────────────────────────
 
 model CourseAssignment {
   id         String    @id @default(cuid())
@@ -121,74 +96,69 @@ model CourseAssignment {
   courseId   String
   assignedAt DateTime  @default(now())
   dueDate    DateTime?
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
   @@map("course_assignments")
 }
 
-// ─── PROGRESSION APPRENANT ───────────────────────────────────────────────────
-
 model UserCourseProgress {
   id           String    @id @default(cuid())
   userId       String
   courseId     String
-  progress     Int       @default(0)  // 0–100 %
+  progress     Int       @default(0)
   startedAt    DateTime  @default(now())
   lastAccessAt DateTime  @default(now())
   completedAt  DateTime?
-  xapiState    Json?     // état xAPI/SCORM brut pour reprise
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  xapiState    Json?
+  course       Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
   @@map("user_course_progress")
 }
-
-// ─── QUIZ ────────────────────────────────────────────────────────────────────
 
 model UserQuizResult {
   id           String   @id @default(cuid())
   userId       String
   courseId     String
   attempt      Int      @default(1)
-  score        Int      // 0–100
+  score        Int
   passingScore Int
   passed       Boolean
-  answersData  Json?    // détail des réponses
+  answersData  Json?
   completedAt  DateTime @default(now())
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_quiz_results")
 }
 
-// ─── BRANDING ────────────────────────────────────────────────────────────────
-
 model BrandingSetting {
-  id          String   @id @default(cuid())
-  appName     String   @default("LMS")
-  logoPath    String?  // chemin vers le fichier logo uploadé
-  bannerPath  String?  // chemin vers la bannière de login
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  appName    String   @default("LMS")
+  logoPath   String?
+  bannerPath String?
+  updatedAt  DateTime @updatedAt
 
   @@map("branding_settings")
 }
 
-// ─── BACKUP ──────────────────────────────────────────────────────────────────
-
 model BackupRecord {
-  id          String   @id @default(cuid())
-  filename    String
-  filePath    String
-  sizeBytes   BigInt?
-  createdAt   DateTime @default(now())
-  createdBy   String?  // userId de l'admin qui a lancé le backup
-  notes       String?
+  id        String   @id @default(cuid())
+  filename  String
+  filePath  String
+  sizeBytes BigInt?
+  createdAt DateTime @default(now())
+  createdBy String?
+  notes     String?
 
   @@map("backup_records")
+}
+
+enum RoleType {
+  admin
+  creator
+  employee
 }
