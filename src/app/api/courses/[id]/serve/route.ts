@@ -75,6 +75,25 @@ export async function GET(
       const container = document.getElementById('h5p-container');
 
       new H5PStandalone.H5P(container, options)
+        .then(function() {
+          // Écouter les événements xAPI pour détecter la complétion
+          var attempts = 0;
+          var interval = setInterval(function() {
+            attempts++;
+            if (attempts > 120) { clearInterval(interval); return; }
+            if (window.H5P && window.H5P.externalDispatcher) {
+              clearInterval(interval);
+              window.H5P.externalDispatcher.on('xAPI', function(event) {
+                try {
+                  var verb = event.getVerb ? event.getVerb() : '';
+                  if (verb === 'completed' || verb === 'passed') {
+                    window.parent.postMessage({ type: 'h5p-completed' }, '*');
+                  }
+                } catch(e) {}
+              });
+            }
+          }, 500);
+        })
         .catch(function(err) {
           container.innerHTML =
             '<div style="color:#fff;padding:2rem;font-family:sans-serif;">' +
