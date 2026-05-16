@@ -95,9 +95,23 @@ export async function POST(req: NextRequest) {
     const duration = parseInt(fields.duration ?? "30", 10) || 30;
     const hasQuiz = fields.hasQuiz === "on";
     const passingScore = hasQuiz ? (parseInt(fields.passingScore ?? "70", 10) || 70) : null;
+    const force = fields.force === "true";
+
+    // Hash du PPTX source pour détection de doublons
+    const pptxBuffer = await readFile(pptxPath);
+    const fileHash = createHash("sha1").update(pptxBuffer).digest("hex");
+
+    if (!force) {
+      const existing = await prisma.course.findFirst({ where: { fileHash, isActive: true } });
+      if (existing) {
+        await rm(pptxPath, { force: true });
+        pptxPath = null;
+        return NextResponse.json({ duplicate: true, existingTitle: existing.title, existingId: existing.id });
+      }
+    }
 
     // Dossier temporaire pour la conversion
-    const hash = createHash("md5").update(file.path).digest("hex").slice(0, 12);
+    const hash = fileHash.slice(0, 12);
     contentDir = path.join(UPLOAD_DIR, "tmp", `converted_${hash}`);
     mkdirSync(contentDir, { recursive: true });
 
@@ -117,7 +131,7 @@ export async function POST(req: NextRequest) {
     if ("error" in meta) throw new Error(meta.error);
 
     // Créer le .h5p (ZIP) avec contenu + librairies
-    const courseHash = createHash("md5").update(Date.now().toString() + title).digest("hex").slice(0, 12);
+    const courseHash = hash;
     const courseDir = path.join(UPLOAD_DIR, "courses", courseHash);
     mkdirSync(courseDir, { recursive: true });
 
@@ -145,6 +159,7 @@ export async function POST(req: NextRequest) {
         filePath: relPath,
         originalFileName: file.originalName,
         fileSize: BigInt(fileSize),
+        fileHash,
         duration,
         hasQuiz,
         passingScore,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, FileCheck, Presentation } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -133,6 +133,8 @@ function ProgressBar({ progress, label }: { progress: number; label: string }) {
   );
 }
 
+type DuplicateInfo = { existingTitle: string; existingId: string };
+
 // ─── Formulaire H5P ──────────────────────────────────────────────────────────
 function H5PForm({ onSuccess }: { onSuccess: () => void }) {
   const [hasQuiz, setHasQuiz] = useState(false);
@@ -141,6 +143,8 @@ function H5PForm({ onSuccess }: { onSuccess: () => void }) {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
+  const formRef = React.useRef<HTMLFormElement>(null);
 
   function handleFileChange(f: File | null) {
     if (f && !f.name.endsWith(".h5p")) {
@@ -149,42 +153,61 @@ function H5PForm({ onSuccess }: { onSuccess: () => void }) {
       return;
     }
     setError(null);
+    setDuplicate(null);
     setSelectedFile(f);
+  }
+
+  async function submit(force = false) {
+    if (!selectedFile || !formRef.current) return;
+    setLoading(true);
+    setError(null);
+    setDuplicate(null);
+    setProgress(0);
+
+    const form = new FormData(formRef.current);
+    form.set("hasQuiz", hasQuiz ? "on" : "");
+    form.set("passingScore", passingScore);
+    if (force) form.set("force", "true");
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", (ev) => {
+          if (ev.lengthComputable) setProgress(Math.round((ev.loaded / ev.total) * 100));
+        });
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const data = JSON.parse(xhr.responseText);
+            if (data.duplicate) {
+              setDuplicate({ existingTitle: data.existingTitle, existingId: data.existingId });
+              setLoading(false);
+              reject(null);
+            } else {
+              resolve();
+            }
+          } else {
+            try { reject(new Error(JSON.parse(xhr.responseText).error ?? "Erreur serveur")); }
+            catch { reject(new Error("Erreur serveur")); }
+          }
+        });
+        xhr.addEventListener("error", () => reject(new Error("Erreur réseau")));
+        xhr.open("POST", "/api/admin/courses/upload");
+        xhr.send(form);
+      });
+      onSuccess();
+    } catch (err) {
+      if (err !== null) { setError(err instanceof Error ? err.message : "Erreur inconnue"); setLoading(false); }
+    }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!selectedFile) { setError("Veuillez sélectionner un fichier .h5p."); return; }
-    setLoading(true);
-    setError(null);
-    setProgress(0);
-
-    const form = new FormData(e.currentTarget);
-    form.set("hasQuiz", hasQuiz ? "on" : "");
-    form.set("passingScore", passingScore);
-
-    await new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener("progress", (ev) => {
-        if (ev.lengthComputable) setProgress(Math.round((ev.loaded / ev.total) * 100));
-      });
-      xhr.addEventListener("load", () => {
-        if (xhr.status >= 200 && xhr.status < 300) resolve();
-        else {
-          try { reject(new Error(JSON.parse(xhr.responseText).error ?? "Erreur serveur")); }
-          catch { reject(new Error("Erreur serveur")); }
-        }
-      });
-      xhr.addEventListener("error", () => reject(new Error("Erreur réseau")));
-      xhr.open("POST", "/api/admin/courses/upload");
-      xhr.send(form);
-    }).catch((err: Error) => { setError(err.message); setLoading(false); return; });
-
-    if (!error) onSuccess();
+    await submit(false);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
       <div>
         <label className={labelClass}>Titre du cours</label>
         <input name="title" required maxLength={255} placeholder="Ex : Introduction à la sécurité" className={fieldClass} />
@@ -197,10 +220,9 @@ function H5PForm({ onSuccess }: { onSuccess: () => void }) {
       <div>
         <label className={labelClass}>Fichier H5P</label>
         <FileDropZone accept=".h5p" label="Fichier .h5p" hint="Fichier .h5p · max 600 Mo" selectedFile={selectedFile} onFileChange={handleFileChange} />
-        <input type="hidden" name="hasQuiz" value={hasQuiz ? "on" : ""} />
-        <input type="hidden" name="passingScore" value={passingScore} />
       </div>
       {loading && <ProgressBar progress={progress} label="Upload en cours…" />}
+      {duplicate && <DuplicateWarning info={duplicate} onConfirm={() => submit(true)} onCancel={() => setDuplicate(null)} />}
       {error && <ErrorBox message={error} />}
       <FormButtons loading={loading} label="Uploader le cours" onCancel={() => history.back()} />
     </form>
@@ -217,6 +239,8 @@ function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
+  const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
+  const durationRef = React.useRef<HTMLInputElement>(null);
 
   function handleFileChange(f: File | null) {
     if (f && !f.name.toLowerCase().endsWith(".pptx")) {
@@ -225,24 +249,26 @@ function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
       return;
     }
     setError(null);
+    setDuplicate(null);
     setSelectedFile(f);
     if (f && !title) setTitle(f.name.replace(/\.pptx$/i, "").replace(/[_-]/g, " "));
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!selectedFile) { setError("Veuillez sélectionner un fichier .pptx."); return; }
+  async function submit(force = false) {
+    if (!selectedFile) return;
     setLoading(true);
     setError(null);
+    setDuplicate(null);
     setProgress(0);
     setStatus("Upload…");
 
     const form = new FormData();
     form.append("file", selectedFile);
     form.append("title", title);
-    form.append("duration", (e.currentTarget.querySelector("[name=duration]") as HTMLInputElement)?.value ?? "30");
+    form.append("duration", durationRef.current?.value ?? "30");
     form.append("hasQuiz", hasQuiz ? "on" : "");
     form.append("passingScore", passingScore);
+    if (force) form.append("force", "true");
 
     try {
       await new Promise<void>((resolve, reject) => {
@@ -256,8 +282,15 @@ function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
         });
         xhr.addEventListener("load", () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            setProgress(100);
-            resolve();
+            const data = JSON.parse(xhr.responseText);
+            if (data.duplicate) {
+              setDuplicate({ existingTitle: data.existingTitle, existingId: data.existingId });
+              setLoading(false);
+              reject(null);
+            } else {
+              setProgress(100);
+              resolve();
+            }
           } else {
             try { reject(new Error(JSON.parse(xhr.responseText).error ?? "Erreur serveur")); }
             catch { reject(new Error("Erreur serveur")); }
@@ -269,9 +302,14 @@ function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
       });
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur inconnue");
-      setLoading(false);
+      if (err !== null) { setError(err instanceof Error ? err.message : "Erreur inconnue"); setLoading(false); }
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!selectedFile) { setError("Veuillez sélectionner un fichier .pptx."); return; }
+    await submit(false);
   }
 
   return (
@@ -296,7 +334,7 @@ function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
       </div>
       <div>
         <label className={labelClass}>Durée estimée (minutes)</label>
-        <input name="duration" type="number" min="1" required placeholder="30" className={fieldClass} />
+        <input ref={durationRef} name="duration" type="number" min="1" required placeholder="30" className={fieldClass} />
       </div>
       <QuizToggle hasQuiz={hasQuiz} setHasQuiz={setHasQuiz} passingScore={passingScore} setPassingScore={setPassingScore} />
       <div>
@@ -304,6 +342,7 @@ function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
         <FileDropZone accept=".pptx" label="Fichier .pptx" hint="Fichier .pptx · max 200 Mo" selectedFile={selectedFile} onFileChange={handleFileChange} />
       </div>
       {loading && <ProgressBar progress={progress} label={status} />}
+      {duplicate && <DuplicateWarning info={duplicate} onConfirm={() => submit(true)} onCancel={() => setDuplicate(null)} />}
       {error && <ErrorBox message={error} />}
       <FormButtons loading={loading} label={loading ? "Conversion en cours…" : "Convertir et publier"} onCancel={() => history.back()} />
     </form>
@@ -311,6 +350,38 @@ function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+function DuplicateWarning({ info, onConfirm, onCancel }: { info: DuplicateInfo; onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-3">
+      <div className="flex items-start gap-2">
+        <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+        <div>
+          <p className="text-[13px] font-medium text-amber-800">Ce fichier a déjà été uploadé</p>
+          <p className="text-[12px] text-amber-700 mt-0.5">
+            Il existe déjà sous le nom : <span className="font-semibold">« {info.existingTitle} »</span>
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="flex-1 h-9 bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-medium rounded-lg transition-colors"
+        >
+          Publier quand même
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 h-9 border border-amber-300 text-amber-800 text-[13px] font-medium rounded-lg hover:bg-amber-100 transition-colors"
+        >
+          Annuler
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ErrorBox({ message }: { message: string }) {
   return (
     <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
