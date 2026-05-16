@@ -21,8 +21,16 @@ export async function GET(
   // Extraire le .h5p si pas encore fait
   try {
     await extractH5P(course.filePath);
-  } catch {
-    return new NextResponse("Impossible d'extraire le cours H5P", { status: 500 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Impossible d'extraire le cours H5P";
+    return new NextResponse(
+      `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:2rem;background:#fff3cd;color:#856404">
+        <h2>⚠️ Fichier de cours manquant</h2>
+        <p>${msg}</p>
+        <p>Supprimez ce cours et re-uploadez le fichier H5P.</p>
+      </body></html>`,
+      { status: 500, headers: { "Content-Type": "text/html; charset=utf-8" } }
+    );
   }
 
   const contentBase = `/api/courses/${id}/content`;
