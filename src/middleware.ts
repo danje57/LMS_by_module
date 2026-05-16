@@ -5,8 +5,12 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const isLoggedIn = !!req.auth;
 
-  // Routes publiques
-  if (pathname.startsWith("/login") || pathname.startsWith("/api/auth")) {
+  // Routes publiques sans authentification
+  if (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/public/")   // assets publics (branding)
+  ) {
     if (isLoggedIn && pathname === "/login") {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }

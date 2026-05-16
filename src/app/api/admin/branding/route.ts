@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
+import { revalidatePath } from "next/cache";
 import path from "path";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
@@ -61,6 +62,10 @@ export async function POST(req: NextRequest) {
   } else {
     await prisma.brandingSetting.create({ data: updateData });
   }
+
+  // Invalider le cache des pages qui affichent le branding
+  revalidatePath("/login");
+  revalidatePath("/dashboard", "layout");
 
   return NextResponse.json({ ok: true });
 }

@@ -26,7 +26,7 @@ export function Sidebar({ appName, logoPath }: SidebarProps) {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-[#E5E5EA]">
         {logoPath ? (
-          <Image src={`/api/assets/${logoPath}`} alt={appName} width={100} height={32} className="object-contain" />
+          <Image src={logoPath} alt={appName} width={100} height={32} className="object-contain" unoptimized />
         ) : (
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#0071E3] flex items-center justify-center shrink-0">
