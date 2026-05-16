@@ -23,6 +23,7 @@ export default function EditCoursePage() {
   const [course, setCourse] = useState<CourseData | null>(null);
   const [title, setTitle] = useState("");
   const [duration, setDuration] = useState(0);
+  const [hasQuiz, setHasQuiz] = useState(false);
   const [passingScore, setPassingScore] = useState(80);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -34,6 +35,7 @@ export default function EditCoursePage() {
         setCourse(data);
         setTitle(data.title);
         setDuration(data.duration);
+        setHasQuiz(data.hasQuiz);
         setPassingScore(data.passingScore ?? 80);
       });
   }, [id]);
@@ -43,7 +45,7 @@ export default function EditCoursePage() {
     await fetch(`/api/admin/courses/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, duration, passingScore }),
+      body: JSON.stringify({ title, duration, hasQuiz, passingScore: hasQuiz ? passingScore : null }),
     });
     setSaving(false);
     setSaved(true);
@@ -78,18 +80,25 @@ export default function EditCoursePage() {
             <label className={labelCls}>Titre</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Durée (minutes)</label>
-              <input type="number" min={1} value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))} className={inputCls} />
-            </div>
-            <div>
+          <div>
+            <label className={labelCls}>Durée (minutes)</label>
+            <input type="number" min={1} value={duration}
+              onChange={(e) => setDuration(Number(e.target.value))} className={inputCls} />
+          </div>
+
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input type="checkbox" checked={hasQuiz} onChange={(e) => setHasQuiz(e.target.checked)}
+              className="w-4 h-4 rounded accent-[#0071E3]" />
+            <span className="text-[14px] text-[#1D1D1F] font-medium">Ce cours contient un quiz</span>
+          </label>
+
+          {hasQuiz && (
+            <div className="max-w-[180px]">
               <label className={labelCls}>Score de passage (%)</label>
               <input type="number" min={0} max={100} value={passingScore}
                 onChange={(e) => setPassingScore(Number(e.target.value))} className={inputCls} />
             </div>
-          </div>
+          )}
           <div className="flex justify-end pt-1">
             <button onClick={handleSave} disabled={saving}
               className={cn(

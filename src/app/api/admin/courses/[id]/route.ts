@@ -27,14 +27,15 @@ export async function PATCH(
   if (!session?.user.roles.includes("admin")) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
 
   const { id } = await params;
-  const { title, duration, passingScore } = await req.json();
+  const { title, duration, hasQuiz, passingScore } = await req.json();
 
   const updated = await prisma.course.update({
     where: { id },
     data: {
       ...(title !== undefined ? { title: title.trim() } : {}),
       ...(duration !== undefined ? { duration: Number(duration) } : {}),
-      ...(passingScore !== undefined ? { passingScore: Number(passingScore) } : {}),
+      ...(hasQuiz !== undefined ? { hasQuiz: !!hasQuiz } : {}),
+      ...(passingScore !== undefined ? { passingScore: passingScore !== null ? Number(passingScore) : null } : {}),
     },
   });
   return NextResponse.json({ ...updated, fileSize: updated.fileSize.toString() });
