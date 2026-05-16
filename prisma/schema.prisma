@@ -76,8 +76,28 @@ model Course {
   assignments      CourseAssignment[]
   progress         UserCourseProgress[]
   quizResults      UserQuizResult[]
+  questions        QuizQuestion[]
 
   @@map("courses")
+}
+
+model QuizQuestion {
+  id            String       @id @default(cuid())
+  courseId      String
+  order         Int
+  type          QuestionType @default(qcm)
+  question      String
+  choiceA       String?
+  choiceB       String?
+  choiceC       String?
+  choiceD       String?
+  correctAnswer  String
+  allowMultiple  Boolean      @default(false)
+  explanation    String?
+  createdAt      DateTime     @default(now())
+  course        Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_questions")
 }
 
 model CourseAsset {
@@ -162,4 +182,9 @@ enum RoleType {
   admin
   creator
   employee
+}
+
+enum QuestionType {
+  qcm
+  vrai_faux
 }

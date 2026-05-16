@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Course } from "@prisma/client";
 import { formatDuration, formatFileSize } from "@/lib/utils";
-import { Search, Clock, CircleCheck, Play } from "lucide-react";
+import { Search, Clock, CircleCheck, Play, Pencil } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { DeleteCourseButton } from "@/components/courses/delete-course-button";
@@ -103,7 +103,16 @@ export function CourseList({ courses, isAdmin = false }: CourseListProps) {
                 <span className="text-[11px] text-[#ADADB8]">{formatFileSize(course.fileSize)}</span>
                 <div className="flex items-center gap-1.5">
                   {isAdmin && (
-                    <DeleteCourseButton courseId={course.id} courseTitle={course.title} />
+                    <>
+                      <Link
+                        href={`/dashboard/admin/courses/${course.id}/edit`}
+                        className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
+                        title="Éditer"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Link>
+                      <DeleteCourseButton courseId={course.id} courseTitle={course.title} />
+                    </>
                   )}
                   <Link
                     href={`/dashboard/courses/${course.id}/play`}

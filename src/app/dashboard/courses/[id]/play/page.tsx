@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { H5PPlayer } from "@/components/courses/h5p-player";
+import { PlayPageClient } from "./play-page-client";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -10,14 +11,10 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-async function getCourse(id: string) {
-  return prisma.course.findUnique({ where: { id, isActive: true } });
-}
-
 export default async function PlayCoursePage({ params }: Props) {
   await auth();
   const { id } = await params;
-  const course = await getCourse(id);
+  const course = await prisma.course.findUnique({ where: { id, isActive: true } });
   if (!course) notFound();
 
   return (
@@ -31,7 +28,12 @@ export default async function PlayCoursePage({ params }: Props) {
         </Button>
         <h1 className="text-2xl font-bold">{course.title}</h1>
       </div>
-      <H5PPlayer courseId={course.id} filePath={course.filePath} />
+      <PlayPageClient
+        courseId={course.id}
+        filePath={course.filePath}
+        hasQuiz={course.hasQuiz}
+        passingScore={course.passingScore ?? 80}
+      />
     </div>
   );
 }

@@ -6,6 +6,40 @@ import path from "path";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+
+  const { id } = await params;
+  const course = await prisma.course.findUnique({ where: { id } });
+  if (!course) return NextResponse.json({ error: "Cours introuvable" }, { status: 404 });
+  return NextResponse.json(course);
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user.roles.includes("admin")) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+
+  const { id } = await params;
+  const { title, duration, passingScore } = await req.json();
+
+  const updated = await prisma.course.update({
+    where: { id },
+    data: {
+      ...(title !== undefined ? { title: title.trim() } : {}),
+      ...(duration !== undefined ? { duration: Number(duration) } : {}),
+      ...(passingScore !== undefined ? { passingScore: Number(passingScore) } : {}),
+    },
+  });
+  return NextResponse.json(updated);
+}
+
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
