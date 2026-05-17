@@ -1,14 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { signOut } from "next-auth/react";
 import type { Session } from "next-auth";
-import { LogOut } from "lucide-react";
+import { LogOut, ShieldCheck, ShieldOff, X, TriangleAlert, ShieldAlert } from "lucide-react";
+import { setSessionMode } from "@/lib/actions/session";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   session: Session;
 }
 
 export function Header({ session }: HeaderProps) {
+  const [pendingMode, setPendingMode] = useState<"admin" | "user" | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const isAdminMode = session.user.sessionMode === "admin";
+  const hasAdminRole = session.user.roles.includes("admin");
+
   const initials = (session.user.name ?? session.user.email ?? "?")
     .split(" ")
     .map((w) => w[0])
@@ -16,30 +25,129 @@ export function Header({ session }: HeaderProps) {
     .toUpperCase()
     .slice(0, 2);
 
+  async function applyMode(mode: "admin" | "user") {
+    setLoading(true);
+    setPendingMode(null);
+    await setSessionMode(mode);
+    window.location.href = "/dashboard";
+  }
+
   return (
-    <header className="h-14 bg-white border-b border-[#E5E5EA] flex items-center justify-end px-6 gap-3 shrink-0">
-      <div className="flex items-center gap-2.5">
-        {/* Avatar */}
-        <div className="w-7 h-7 rounded-full bg-[#0071E3] flex items-center justify-center">
-          <span className="text-[11px] font-semibold text-white">{initials}</span>
+    <>
+      <header className="h-14 bg-white border-b border-[#E5E5EA] flex items-center justify-end px-6 gap-3 shrink-0">
+
+        {hasAdminRole && (
+          <button
+            onClick={() => setPendingMode(isAdminMode ? "user" : "admin")}
+            disabled={loading}
+            className={cn(
+              "inline-flex items-center gap-2 h-8 px-3 rounded-xl text-[13px] font-medium border transition-all disabled:opacity-50",
+              isAdminMode
+                ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+                : "bg-[#F5F5F7] border-[#E5E5EA] text-[#6E6E73] hover:text-[#1D1D1F] hover:border-[#D2D2D7]"
+            )}
+          >
+            {isAdminMode
+              ? <><ShieldCheck className="w-3.5 h-3.5" />Mode admin</>
+              : <><ShieldOff className="w-3.5 h-3.5" />Mode admin</>
+            }
+          </button>
+        )}
+
+        <div className="w-px h-4 bg-[#E5E5EA]" />
+
+        <div className="flex items-center gap-2.5">
+          <div className={cn(
+            "w-7 h-7 rounded-full flex items-center justify-center",
+            isAdminMode ? "bg-red-500" : "bg-[#0071E3]"
+          )}>
+            <span className="text-[11px] font-semibold text-white">{initials}</span>
+          </div>
+          <span className="text-[13px] text-[#3C3C43] font-medium">
+            {session.user.name ?? session.user.email}
+          </span>
         </div>
-        <span className="text-[13px] text-[#3C3C43] font-medium">
-          {session.user.name ?? session.user.email}
-        </span>
-      </div>
 
-      <div className="w-px h-4 bg-[#E5E5EA]" />
+        <div className="w-px h-4 bg-[#E5E5EA]" />
 
-      <button
-        onClick={async () => {
-          await signOut({ redirect: false });
-          window.location.href = "/login";
-        }}
-        className="flex items-center gap-1.5 text-[13px] text-[#8E8E93] hover:text-[#1D1D1F] transition-colors"
-      >
-        <LogOut className="w-3.5 h-3.5" />
-        Déconnexion
-      </button>
-    </header>
+        <button
+          onClick={async () => {
+            await signOut({ redirect: false });
+            window.location.href = "/login";
+          }}
+          className="flex items-center gap-1.5 text-[13px] text-[#8E8E93] hover:text-[#1D1D1F] transition-colors"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          Déconnexion
+        </button>
+      </header>
+
+      {/* Popup confirmation activation mode admin */}
+      {pendingMode === "admin" && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                  <TriangleAlert className="w-5 h-5 text-red-500" />
+                </div>
+                <p className="text-[15px] font-semibold text-[#1D1D1F]">Activer le mode admin</p>
+              </div>
+              <button onClick={() => setPendingMode(null)} className="p-1.5 rounded-lg hover:bg-[#F5F5F7] transition-colors">
+                <X className="w-4 h-4 text-[#6E6E73]" />
+              </button>
+            </div>
+            <p className="text-[13px] text-[#6E6E73] leading-relaxed">
+              Vous allez passer en <strong className="text-[#1D1D1F]">mode administration</strong>.
+              Vous aurez accès à toutes les fonctions de gestion de l&apos;application.
+              Toute action effectuée en mode admin est tracée.
+            </p>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setPendingMode(null)}
+                className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors">
+                Annuler
+              </button>
+              <button onClick={() => applyMode("admin")} disabled={loading}
+                className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium disabled:opacity-50 transition-colors">
+                Activer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup confirmation désactivation mode admin */}
+      {pendingMode === "user" && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#F5F5F7] flex items-center justify-center shrink-0">
+                  <ShieldAlert className="w-5 h-5 text-[#6E6E73]" />
+                </div>
+                <p className="text-[15px] font-semibold text-[#1D1D1F]">Quitter le mode admin</p>
+              </div>
+              <button onClick={() => setPendingMode(null)} className="p-1.5 rounded-lg hover:bg-[#F5F5F7] transition-colors">
+                <X className="w-4 h-4 text-[#6E6E73]" />
+              </button>
+            </div>
+            <p className="text-[13px] text-[#6E6E73] leading-relaxed">
+              Vous allez repasser en <strong className="text-[#1D1D1F]">mode utilisateur</strong>.
+              Vous n&apos;aurez plus accès aux fonctions d&apos;administration et serez redirigé vers votre tableau de bord.
+            </p>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setPendingMode(null)}
+                className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors">
+                Annuler
+              </button>
+              <button onClick={() => applyMode("user")} disabled={loading}
+                className="flex-1 h-10 rounded-xl bg-[#1D1D1F] hover:bg-[#3C3C43] text-white text-[14px] font-medium disabled:opacity-50 transition-colors">
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

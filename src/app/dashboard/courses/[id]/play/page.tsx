@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { H5PPlayer } from "@/components/courses/h5p-player";
 import { PlayPageClient } from "./play-page-client";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -12,10 +11,17 @@ interface Props {
 }
 
 export default async function PlayCoursePage({ params }: Props) {
-  await auth();
+  const session = await auth();
   const { id } = await params;
-  const course = await prisma.course.findUnique({ where: { id, isActive: true } });
+
+  const [course, branding] = await Promise.all([
+    prisma.course.findUnique({ where: { id, isActive: true } }),
+    prisma.brandingSetting.findFirst({ select: { logoPath: true } }),
+  ]);
   if (!course) notFound();
+
+  const userName = session?.user?.name ?? session?.user?.email ?? "Apprenant";
+  const logoPath = branding?.logoPath ? `/api/assets/${branding.logoPath}` : null;
 
   return (
     <div className="space-y-4">
@@ -30,9 +36,12 @@ export default async function PlayCoursePage({ params }: Props) {
       </div>
       <PlayPageClient
         courseId={course.id}
+        courseTitle={course.title}
         filePath={course.filePath}
         hasQuiz={course.hasQuiz}
         passingScore={course.passingScore ?? 80}
+        userName={userName}
+        logoPath={logoPath}
       />
     </div>
   );

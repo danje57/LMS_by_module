@@ -4,27 +4,32 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, BookOpen, Settings, GraduationCap } from "lucide-react";
+import { LayoutDashboard, BookOpen, Settings, GraduationCap, Users, UsersRound, Award, BadgeCheck } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { href: "/dashboard/courses", label: "Cours", icon: BookOpen },
-  { href: "/dashboard/settings", label: "Paramètres", icon: Settings },
+  { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, adminOnly: false, userOnly: false },
+  { href: "/dashboard/courses", label: "Cours", icon: BookOpen, adminOnly: false, userOnly: false },
+  { href: "/dashboard/certificates", label: "Certificats", icon: Award, adminOnly: false, userOnly: true },
+  { href: "/dashboard/admin/users", label: "Utilisateurs", icon: Users, adminOnly: true, userOnly: false },
+  { href: "/dashboard/admin/teams", label: "Équipes", icon: UsersRound, adminOnly: true, userOnly: false },
+  { href: "/dashboard/admin/certificates", label: "Vérifier un certificat", icon: BadgeCheck, adminOnly: true, userOnly: false },
+  { href: "/dashboard/settings", label: "Paramètres", icon: Settings, adminOnly: true, userOnly: false },
 ];
 
 interface SidebarProps {
   appName: string;
   logoPath: string | null;
+  isAdmin?: boolean;
 }
 
-export function Sidebar({ appName, logoPath }: SidebarProps) {
+export function Sidebar({ appName, logoPath, isAdmin = false }: SidebarProps) {
   const pathname = usePathname();
 
   return (
     <aside className="w-60 bg-white border-r border-[#E5E5EA] flex flex-col shrink-0">
 
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-[#E5E5EA]">
+      <Link href="/dashboard" className="px-5 py-5 border-b border-[#E5E5EA] block hover:bg-[#F5F5F7] transition-colors">
         {logoPath ? (
           <Image src={logoPath} alt={appName} width={100} height={32} className="object-contain" unoptimized />
         ) : (
@@ -35,11 +40,11 @@ export function Sidebar({ appName, logoPath }: SidebarProps) {
             <span className="text-[15px] font-semibold text-[#1D1D1F] tracking-tight">{appName}</span>
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {navItems.map((item) => {
+        {navItems.filter((item) => (!item.adminOnly || isAdmin) && (!item.userOnly || !isAdmin)).map((item) => {
           const Icon = item.icon;
           const active =
             item.href === "/dashboard"

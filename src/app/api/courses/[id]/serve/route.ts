@@ -44,6 +44,12 @@ export async function GET(
     if (Array.isArray(slides)) totalSlides = slides.length;
   } catch { /* contenu non-CoursePresentation ou structure différente */ }
 
+  // Restaurer les slides déjà visitées (sauvegardées en session précédente)
+  const visitedParam = req.nextUrl.searchParams.get("visited");
+  const savedVisited: number[] = visitedParam
+    ? visitedParam.split(",").map(Number).filter((n) => Number.isFinite(n) && n >= 0)
+    : [];
+
   const contentBase = `/api/courses/${id}/content`;
 
   const html = `<!DOCTYPE html>
@@ -67,16 +73,14 @@ export async function GET(
   <script>
     (function() {
       var totalSlides = ${totalSlides};
-      var visitedSlides = new Set();
+      var visitedSlides = new Set(${JSON.stringify(savedVisited)});
 
       function notifyCompleted() {
-        window.parent.postMessage({ type: 'h5p-completed' }, '*');
-      }
-
-      function checkAllSlidesVisited() {
-        // Si on ne sait pas combien de slides il y a, on fait confiance au 'completed'
-        if (totalSlides <= 0) return true;
-        return visitedSlides.size >= totalSlides;
+        window.parent.postMessage({
+          type: 'h5p-completed',
+          visited: Array.from(visitedSlides),
+          total: totalSlides
+        }, '*');
       }
 
       const options = {
@@ -98,6 +102,16 @@ export async function GET(
             if (attempts > 120) { clearInterval(interval); return; }
             if (window.H5P && window.H5P.externalDispatcher) {
               clearInterval(interval);
+              // La slide 1 (index 0) est toujours la slide de départ — la marquer immédiatement
+              if (totalSlides > 0) {
+                visitedSlides.add(0);
+                window.parent.postMessage({
+                  type: 'h5p-slide-update',
+                  current: 0,
+                  visited: Array.from(visitedSlides),
+                  total: totalSlides
+                }, '*');
+              }
               window.H5P.externalDispatcher.on('xAPI', function(event) {
                 try {
                   var verb = event.getVerb ? event.getVerb() : '';
@@ -109,31 +123,30 @@ export async function GET(
                     var ext = (statement.object &&
                                statement.object.definition &&
                                statement.object.definition.extensions) || {};
-                    var slideIdx = ext['http://id.tincanapi.com/extension/ending-point'];
-                    if (slideIdx !== undefined && slideIdx !== null) {
-                      visitedSlides.add(Number(slideIdx));
-                      // Notifier le parent de la progression
-                      window.parent.postMessage({
-                        type: 'h5p-slide-update',
-                        current: Number(slideIdx),
-                        visited: Array.from(visitedSlides),
-                        total: totalSlides
-                      }, '*');
+                    var rawIdx = ext['http://id.tincanapi.com/extension/ending-point'];
+                    if (rawIdx !== undefined && rawIdx !== null) {
+                      // ending-point est 1-indexé (numéro de la diapo de destination)
+                      var slideIdx = Number(rawIdx) - 1;
+                      if (slideIdx >= 0) {
+                        visitedSlides.add(slideIdx);
+                        window.parent.postMessage({
+                          type: 'h5p-slide-update',
+                          current: slideIdx,
+                          visited: Array.from(visitedSlides),
+                          total: totalSlides
+                        }, '*');
+                        // Toutes les slides visitées → cours terminé
+                        if (totalSlides > 0 && visitedSlides.size >= totalSlides) {
+                          notifyCompleted();
+                        }
+                      }
                     }
                   }
 
-                  // 'completed' ou 'passed' : valider seulement si toutes les slides ont été vues
+                  // Fallback : si H5P fire quand même 'completed' ou 'passed'
                   if (verb === 'completed' || verb === 'passed') {
-                    if (checkAllSlidesVisited()) {
-                      notifyCompleted();
-                    } else {
-                      // Informer l'utilisateur qu'il doit voir toutes les slides
-                      window.parent.postMessage({
-                        type: 'h5p-incomplete',
-                        visited: visitedSlides.size,
-                        total: totalSlides
-                      }, '*');
-                    }
+                    for (var i = 0; i < totalSlides; i++) visitedSlides.add(i);
+                    notifyCompleted();
                   }
                 } catch(e) {}
               });

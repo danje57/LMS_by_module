@@ -70,15 +70,19 @@ export function BrandingForm({ branding }: BrandingFormProps) {
         </div>
 
         <div>
-          <label htmlFor="banner" className={labelClass}>Bannière de login</label>
-          <p className="text-[12px] text-[#6E6E73] mb-2">PNG ou JPG · max 5 Mo</p>
-          <input id="banner" name="banner" type="file" accept="image/*"
-            className="w-full text-[13px] text-[#6E6E73] file:mr-3 file:px-4 file:py-2 file:rounded-xl file:border-0 file:text-[13px] file:font-medium file:bg-[#F5F5F7] file:text-[#1D1D1F] hover:file:bg-[#E5E5EA] cursor-pointer" />
-          {branding?.bannerPath && (
-            <p className="text-[12px] text-[#ADADB8] mt-1.5">
-              Actuel : {branding.bannerPath.split("/").pop()}
-            </p>
-          )}
+          <label htmlFor="loginNotice" className={labelClass}>Notice informative (page de connexion)</label>
+          <p className="text-[12px] text-[#6E6E73] mb-2">
+            Texte affiché avant le formulaire de connexion. Laisser vide pour ne rien afficher.
+          </p>
+          <textarea
+            id="loginNotice"
+            name="loginNotice"
+            rows={4}
+            maxLength={1000}
+            defaultValue={branding?.loginNotice ?? ""}
+            placeholder="Ex : Cette application est la propriété de Noelse. Tout utilisateur n'appartenant pas au groupe n'est pas autorisé d'accès."
+            className="w-full px-3.5 py-2.5 rounded-xl border border-[#D2D2D7] bg-white text-[14px] text-[#1D1D1F] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 resize-none placeholder:text-[#ADADB8]"
+          />
         </div>
 
         {message && (

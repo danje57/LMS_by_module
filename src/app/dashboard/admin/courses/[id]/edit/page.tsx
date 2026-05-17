@@ -27,6 +27,7 @@ export default function EditCoursePage() {
   const [passingScore, setPassingScore] = useState(80);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [questionCount, setQuestionCount] = useState(0);
 
   useEffect(() => {
     fetch(`/api/admin/courses/${id}`)
@@ -51,6 +52,11 @@ export default function EditCoursePage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
+
+  const effectiveScore = questionCount > 0
+    ? Math.round((Math.ceil((questionCount * passingScore) / 100) / questionCount) * 100)
+    : null;
+  const quizRatioOk = !hasQuiz || questionCount === 0 || effectiveScore === passingScore;
 
   if (!course) {
     return <div className="py-20 text-center text-[13px] text-[#6E6E73]">Chargement…</div>;
@@ -99,31 +105,47 @@ export default function EditCoursePage() {
                 onChange={(e) => setPassingScore(Number(e.target.value))} className={inputCls} />
             </div>
           )}
-          <div className="flex justify-end pt-1">
-            <button onClick={handleSave} disabled={saving}
-              className={cn(
-                "flex items-center gap-1.5 px-5 h-9 text-[13px] font-medium rounded-xl transition-colors disabled:opacity-60",
-                saved ? "bg-green-500 text-white" : "bg-[#0071E3] hover:bg-[#0077ED] text-white"
-              )}>
-              <Save className="w-3.5 h-3.5" />
-              {saving ? "Enregistrement…" : saved ? "Enregistré !" : "Enregistrer"}
-            </button>
+          <div className="flex items-center justify-between pt-1">
+            {!quizRatioOk && (
+              <p className="text-[12px] text-amber-700">
+                Corrigez le ratio questions / seuil avant d&apos;enregistrer.
+              </p>
+            )}
+            <div className="ml-auto">
+              <button onClick={handleSave} disabled={saving || !quizRatioOk}
+                title={!quizRatioOk ? `Seuil effectif ${effectiveScore}% ≠ seuil configuré ${passingScore}%` : undefined}
+                className={cn(
+                  "flex items-center gap-1.5 px-5 h-9 text-[13px] font-medium rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
+                  saved ? "bg-green-500 text-white" : "bg-[#0071E3] hover:bg-[#0077ED] text-white"
+                )}>
+                <Save className="w-3.5 h-3.5" />
+                {saving ? "Enregistrement…" : saved ? "Enregistré !" : "Enregistrer"}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Bloc quiz */}
         <div className="p-6 space-y-4">
           <h2 className="text-[13px] font-semibold text-[#1D1D1F]">Questions du quiz</h2>
-          <QuizEditor courseId={id} />
-          <div className="flex justify-end pt-2 border-t border-[#F5F5F7] mt-4">
-            <button onClick={handleSave} disabled={saving}
-              className={cn(
-                "flex items-center gap-1.5 px-5 h-9 text-[13px] font-medium rounded-xl transition-colors disabled:opacity-60",
-                saved ? "bg-green-500 text-white" : "bg-[#0071E3] hover:bg-[#0077ED] text-white"
-              )}>
-              <Save className="w-3.5 h-3.5" />
-              {saving ? "Enregistrement…" : saved ? "Enregistré !" : "Enregistrer"}
-            </button>
+          <QuizEditor courseId={id} passingScore={passingScore} onCountChange={setQuestionCount} />
+          <div className="flex items-center justify-between pt-2 border-t border-[#F5F5F7] mt-4">
+            {!quizRatioOk && (
+              <p className="text-[12px] text-amber-700">
+                Corrigez le ratio questions / seuil avant d&apos;enregistrer.
+              </p>
+            )}
+            <div className="ml-auto">
+              <button onClick={handleSave} disabled={saving || !quizRatioOk}
+                title={!quizRatioOk ? `Seuil effectif ${effectiveScore}% ≠ seuil configuré ${passingScore}%` : undefined}
+                className={cn(
+                  "flex items-center gap-1.5 px-5 h-9 text-[13px] font-medium rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
+                  saved ? "bg-green-500 text-white" : "bg-[#0071E3] hover:bg-[#0077ED] text-white"
+                )}>
+                <Save className="w-3.5 h-3.5" />
+                {saving ? "Enregistrement…" : saved ? "Enregistré !" : "Enregistrer"}
+              </button>
+            </div>
           </div>
         </div>
 

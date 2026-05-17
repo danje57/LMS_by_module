@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { RoleType } from "@prisma/client";
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+export const { handlers, signIn, signOut, auth, unstable_update: updateSession } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   // Accepte n'importe quel host : localhost, IP locale, domaine HTTPS
@@ -50,10 +50,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === "update" && (session as { sessionMode?: unknown })?.sessionMode !== undefined) {
+        token.sessionMode = (session as { sessionMode: "admin" | "user" | null }).sessionMode;
+      }
       if (user) {
         token.id = user.id;
         token.roles = (user as { roles?: RoleType[] }).roles ?? [];
+        token.sessionMode = "user";
       }
       return token;
     },
@@ -61,6 +65,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token) {
         session.user.id = token.id as string;
         session.user.roles = token.roles as RoleType[];
+        session.user.sessionMode = (token.sessionMode as "admin" | "user" | null) ?? null;
       }
       return session;
     },

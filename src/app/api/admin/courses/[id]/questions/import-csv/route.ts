@@ -9,7 +9,7 @@ type Params = { params: Promise<{ id: string }> };
 // correctAnswer QCM : A|B|C|D   vrai_faux : vrai|faux
 export async function POST(req: NextRequest, { params }: Params) {
   const session = await auth();
-  if (!session?.user.roles.includes("admin")) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  if (session?.user.sessionMode !== "admin") return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
 
   const { id } = await params;
   const text = await req.text();

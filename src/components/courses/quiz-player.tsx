@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle, XCircle, ChevronRight, RotateCcw, Trophy } from "lucide-react";
+import { CheckCircle, XCircle, ChevronRight, RotateCcw, Trophy, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CertificateView } from "@/components/courses/certificate-view";
+import Link from "next/link";
 
 const LETTERS = ["A","B","C","D","E","F","G","H","I","J"] as const;
 
@@ -21,7 +23,10 @@ interface Question {
 
 interface Props {
   courseId: string;
+  courseTitle?: string;
   passingScore: number;
+  userName?: string;
+  logoPath?: string | null;
   onClose?: () => void;
 }
 
@@ -35,12 +40,13 @@ function isCorrect(question: Question, answer: string): boolean {
   return normalize(question.correctAnswer) === normalize(answer);
 }
 
-export function QuizPlayer({ courseId, passingScore, onClose }: Props) {
+export function QuizPlayer({ courseId, courseTitle, passingScore, userName, logoPath, onClose }: Props) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [phase, setPhase] = useState<Phase>("loading");
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [certResult, setCertResult] = useState<{ id: string; completedAt: Date } | null>(null);
 
   useEffect(() => {
     fetch(`/api/admin/courses/${courseId}/questions`)
@@ -86,11 +92,15 @@ export function QuizPlayer({ courseId, passingScore, onClose }: Props) {
     const score = Math.round((correct / total) * 100);
     const passed = score >= passingScore;
 
-    await fetch(`/api/courses/${courseId}/quiz`, {
+    const res = await fetch(`/api/courses/${courseId}/quiz`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ answers, score, passed }),
     });
+    const data = await res.json();
+    if (passed && data.certificateId) {
+      setCertResult({ id: data.certificateId, completedAt: new Date(data.certificateCompletedAt) });
+    }
 
     setPhase("result");
   }
@@ -201,25 +211,20 @@ export function QuizPlayer({ courseId, passingScore, onClose }: Props) {
     return (
       <div className="max-w-2xl mx-auto space-y-4 py-4">
         <h2 className="text-[18px] font-semibold text-[#1D1D1F]">Récapitulatif</h2>
-        <p className="text-[13px] text-[#6E6E73]">Vérifiez vos réponses avant de valider.</p>
+        <p className="text-[13px] text-[#6E6E73]">Vérifiez vos réponses avant de valider. Le corrigé s'affichera après validation.</p>
         <div className="space-y-2">
           {questions.map((q, i) => {
             const given = answers[q.id] ?? "";
-            const correct = isCorrect(q, given);
             return (
-              <div key={q.id} className={cn("flex items-start gap-3 p-4 rounded-2xl border",
-                correct ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100")}>
-                {correct ? <CheckCircle className="w-5 h-5 text-green-500 shrink-0 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />}
+              <div key={q.id} className="flex items-start gap-3 p-4 rounded-2xl border border-[#E5E5EA] bg-[#F5F5F7]">
+                <span className="w-6 h-6 rounded-lg bg-[#E5E5EA] text-[#6E6E73] text-[12px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                  {i + 1}
+                </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-[#1D1D1F]">#{i + 1} {q.question}</p>
+                  <p className="text-[13px] font-medium text-[#1D1D1F]">{q.question}</p>
                   <p className="text-[12px] mt-0.5">
                     <span className="text-[#6E6E73]">Votre réponse : </span>
-                    <span className={correct ? "text-green-700 font-medium" : "text-red-600 font-medium"}>
-                      {given || "(sans réponse)"}
-                    </span>
-                    {!correct && (
-                      <> · <span className="text-green-700">Bonne : {q.correctAnswer}</span></>
-                    )}
+                    <span className="text-[#1D1D1F] font-medium">{given || "(sans réponse)"}</span>
                   </p>
                 </div>
               </div>
@@ -229,7 +234,7 @@ export function QuizPlayer({ courseId, passingScore, onClose }: Props) {
         <div className="flex gap-3 pt-2">
           <button onClick={() => { setCurrent(0); setPhase("playing"); }}
             className="flex items-center gap-1.5 px-4 py-2.5 border border-[#D2D2D7] rounded-xl text-[13px] font-medium text-[#6E6E73] hover:bg-[#F5F5F7] transition-colors">
-            <RotateCcw className="w-3.5 h-3.5" /> Revoir
+            <RotateCcw className="w-3.5 h-3.5" /> Modifier
           </button>
           <button onClick={handleSubmit} disabled={submitted}
             className="flex-1 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white font-medium rounded-xl transition-colors disabled:opacity-60">
@@ -247,60 +252,101 @@ export function QuizPlayer({ courseId, passingScore, onClose }: Props) {
   const passed = score >= passingScore;
 
   return (
-    <div className="max-w-2xl mx-auto py-8 space-y-6 text-center">
-      <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center mx-auto",
-        passed ? "bg-green-50" : "bg-red-50")}>
-        {passed
-          ? <Trophy className="w-10 h-10 text-green-500" />
-          : <XCircle className="w-10 h-10 text-red-500" />}
-      </div>
-      <div>
-        <p className="text-[40px] font-bold text-[#1D1D1F]">{score}%</p>
-        <p className={cn("text-[16px] font-semibold mt-1", passed ? "text-green-600" : "text-red-600")}>
-          {passed ? "Félicitations, quiz réussi !" : "Quiz non validé"}
-        </p>
-        <p className="text-[13px] text-[#6E6E73] mt-1">
-          {correct} / {total} bonnes réponses · Seuil : {passingScore}%
-        </p>
-      </div>
+    <div className="space-y-6">
+      {/* Score summary */}
+      <div className="max-w-2xl mx-auto py-6 space-y-4 text-center">
+        <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center mx-auto",
+          passed ? "bg-green-50" : "bg-red-50")}>
+          {passed
+            ? <Trophy className="w-10 h-10 text-green-500" />
+            : <XCircle className="w-10 h-10 text-red-500" />}
+        </div>
+        <div>
+          <p className="text-[40px] font-bold text-[#1D1D1F]">{score}%</p>
+          <p className={cn("text-[16px] font-semibold mt-1", passed ? "text-green-600" : "text-red-600")}>
+            {passed ? "Félicitations, quiz réussi !" : "Quiz non validé"}
+          </p>
+          <p className="text-[13px] text-[#6E6E73] mt-1">
+            {correct} / {total} bonnes réponses · Seuil : {passingScore}%
+          </p>
+        </div>
 
-      {/* Per-question review */}
-      <div className="text-left space-y-3">
-        {questions.map((q, i) => {
-          const given = answers[q.id] ?? "";
-          const ok = isCorrect(q, given);
-          return (
-            <div key={q.id} className={cn("p-4 rounded-2xl border",
-              ok ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100")}>
-              <div className="flex items-start gap-2">
-                {ok ? <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /> : <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />}
-                <div className="flex-1">
-                  <p className="text-[13px] font-medium text-[#1D1D1F]">#{i + 1} {q.question}</p>
-                  {!ok && (
-                    <p className="text-[12px] mt-0.5 text-red-600">
-                      Votre réponse : {given || "—"} · <span className="text-green-700">Bonne : {q.correctAnswer}</span>
-                    </p>
-                  )}
-                  {q.explanation && <p className="text-[12px] mt-1 text-[#6E6E73] italic">{q.explanation}</p>}
+        {/* Corrigé détaillé uniquement si réussite */}
+        {passed && (
+          <div className="text-left space-y-3">
+            {questions.map((q, i) => {
+              const given = answers[q.id] ?? "";
+              const ok = isCorrect(q, given);
+              return (
+                <div key={q.id} className={cn("p-4 rounded-2xl border",
+                  ok ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100")}>
+                  <div className="flex items-start gap-2">
+                    {ok ? <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /> : <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />}
+                    <div className="flex-1">
+                      <p className="text-[13px] font-medium text-[#1D1D1F]">#{i + 1} {q.question}</p>
+                      {!ok && (
+                        <p className="text-[12px] mt-0.5 text-red-600">
+                          Votre réponse : {given || "—"} · <span className="text-green-700">Bonne : {q.correctAnswer}</span>
+                        </p>
+                      )}
+                      {q.explanation && <p className="text-[12px] mt-1 text-[#6E6E73] italic">{q.explanation}</p>}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        )}
+
+        <div className="flex gap-3 justify-center pt-2">
+          {!passed && (
+            <button onClick={startQuiz}
+              className="flex items-center gap-1.5 px-5 py-2.5 border border-[#D2D2D7] rounded-xl text-[13px] font-medium text-[#6E6E73] hover:bg-[#F5F5F7] transition-colors">
+              <RotateCcw className="w-3.5 h-3.5" /> Réessayer
+            </button>
+          )}
+          {onClose && (
+            <button onClick={onClose}
+              className="px-5 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors">
+              Retour au cours
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="flex gap-3 justify-center pt-2">
-        <button onClick={startQuiz}
-          className="flex items-center gap-1.5 px-5 py-2.5 border border-[#D2D2D7] rounded-xl text-[13px] font-medium text-[#6E6E73] hover:bg-[#F5F5F7] transition-colors">
-          <RotateCcw className="w-3.5 h-3.5" /> Réessayer
-        </button>
-        {onClose && (
-          <button onClick={onClose}
-            className="px-5 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors">
-            Retour au cours
-          </button>
-        )}
-      </div>
+      {/* Certificate — shown inline when quiz is passed */}
+      {passed && certResult && courseTitle && userName && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 px-1">
+            <div className="flex-1 h-px bg-[#E5E5EA]" />
+            <span className="text-[12px] font-semibold text-[#6E6E73] uppercase tracking-wide">Votre certificat</span>
+            <div className="flex-1 h-px bg-[#E5E5EA]" />
+          </div>
+          <CertificateView
+            id={certResult.id}
+            courseTitle={courseTitle}
+            learnerName={userName}
+            completedAt={certResult.completedAt}
+            hasQuiz={true}
+            logoPath={logoPath}
+            inlineMode={true}
+          />
+          <div className="flex gap-3 justify-center no-print">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-5 py-2.5 border border-[#D2D2D7] rounded-xl text-[13px] font-medium text-[#6E6E73] hover:bg-[#F5F5F7] transition-colors"
+            >
+              <Printer className="w-3.5 h-3.5" /> Imprimer / Télécharger
+            </button>
+            <Link
+              href="/dashboard/certificates"
+              className="flex items-center gap-1.5 px-5 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors"
+            >
+              Mes certificats
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

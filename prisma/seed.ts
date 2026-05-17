@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Création des rôles
-  for (const name of [RoleType.admin, RoleType.creator, RoleType.employee]) {
+  for (const name of [RoleType.admin, RoleType.manager, RoleType.creator, RoleType.learner]) {
     await prisma.role.upsert({
       where: { name },
       update: {},

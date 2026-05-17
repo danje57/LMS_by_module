@@ -1,7 +1,7 @@
 import { LoginForm } from "@/components/auth/login-form";
 import { prisma } from "@/lib/prisma";
 import Image from "next/image";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Info } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +15,6 @@ export default async function LoginPage() {
   const logoUrl = branding?.logoPath
     ? `/api/public/assets/${branding.logoPath}`
     : null;
-  const bannerUrl = branding?.bannerPath
-    ? `/api/public/assets/${branding.bannerPath}`
-    : null;
-
   return (
     <div className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
@@ -48,27 +44,21 @@ export default async function LoginPage() {
           </p>
         </div>
 
-        {/* Bannière optionnelle */}
-        {bannerUrl && (
-          <div className="relative w-full h-32 rounded-2xl overflow-hidden mb-6">
-            <Image
-              src={bannerUrl}
-              alt="Bannière"
-              fill
-              className="object-cover"
-              unoptimized
-            />
-          </div>
-        )}
-
         {/* Card formulaire */}
         <div className="bg-white rounded-2xl shadow-sm border border-[#D2D2D7]/60 px-8 py-8">
           <LoginForm />
         </div>
 
-        <p className="text-center text-xs text-[#6E6E73] mt-6">
-          Accès réservé aux utilisateurs autorisés
-        </p>
+        {branding?.loginNotice ? (
+          <div className="flex gap-2.5 mt-6 px-1">
+            <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#ADADB8]" />
+            <p className="text-[12px] text-[#6E6E73] leading-relaxed whitespace-pre-line">{branding.loginNotice}</p>
+          </div>
+        ) : (
+          <p className="text-center text-xs text-[#6E6E73] mt-6">
+            Accès réservé aux utilisateurs autorisés
+          </p>
+        )}
       </div>
     </div>
   );

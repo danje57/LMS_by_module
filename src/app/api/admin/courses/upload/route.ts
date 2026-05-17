@@ -58,7 +58,7 @@ function parseMultipart(req: NextRequest): Promise<{
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user.roles.includes("admin")) {
+  if (session?.user.sessionMode !== "admin") {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 

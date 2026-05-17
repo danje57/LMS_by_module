@@ -19,12 +19,14 @@ export default async function DashboardLayout({
   if (!session) redirect("/login");
 
   const branding = await getBranding();
+  const isAdmin = session.user.sessionMode === "admin";
 
   return (
     <div className="flex h-screen bg-[#F5F5F7]">
       <Sidebar
         appName={branding?.appName ?? "LMS"}
         logoPath={branding?.logoPath ? `/api/assets/${branding.logoPath}` : null}
+        isAdmin={isAdmin}
       />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header session={session} />

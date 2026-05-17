@@ -1,20 +1,71 @@
 import { prisma } from "@/lib/prisma";
-import { CourseList } from "@/components/courses/course-list";
+import { CourseList, type CourseProgress } from "@/components/courses/course-list";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
-async function getCourses() {
+async function getCourses(isAdmin: boolean, userId: string) {
+  if (isAdmin) {
+    return prisma.course.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: "desc" },
+    });
+  }
   return prisma.course.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      assignments: { some: { userId } },
+    },
     orderBy: { createdAt: "desc" },
   });
 }
 
+async function getProgressMap(userId: string): Promise<Record<string, CourseProgress>> {
+  const [progressRows, certRows] = await Promise.all([
+    prisma.userCourseProgress.findMany({
+      where: { userId },
+      select: { courseId: true, visitedSlides: true, completedAt: true },
+    }),
+    prisma.certificate.findMany({
+      where: { userId },
+      orderBy: { completedAt: "desc" },
+      select: { id: true, courseId: true, quizPassed: true },
+    }),
+  ]);
+
+  // Latest cert per course (already sorted desc)
+  const certMap = new Map<string, { id: string; quizPassed: boolean | null }>();
+  for (const c of certRows) {
+    if (c.courseId && !certMap.has(c.courseId)) certMap.set(c.courseId, { id: c.id, quizPassed: c.quizPassed });
+  }
+
+  const map: Record<string, CourseProgress> = {};
+  for (const p of progressRows) {
+    const cert = certMap.get(p.courseId);
+    let status: CourseProgress["status"] = "not_started";
+    if (cert) status = "completed";
+    else if (p.completedAt || p.visitedSlides.length > 0) status = "in_progress";
+
+    map[p.courseId] = {
+      status,
+      completedAt: p.completedAt ?? null,
+      quizPassed: cert?.quizPassed ?? null,
+      latestCertificateId: cert?.id ?? null,
+    };
+  }
+
+  return map;
+}
+
 export default async function CoursesPage() {
   const session = await auth();
-  const courses = await getCourses();
-  const isAdmin = session?.user.roles.includes("admin");
+  const isAdmin = session?.user.sessionMode === "admin";
+  const userId = session?.user.id ?? "";
+
+  const [courses, progressMap] = await Promise.all([
+    getCourses(isAdmin ?? false, userId),
+    isAdmin ? Promise.resolve({} as Record<string, CourseProgress>) : getProgressMap(userId),
+  ]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -22,7 +73,7 @@ export default async function CoursesPage() {
         <div>
           <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">Cours</h1>
           <p className="text-[15px] text-[#6E6E73] mt-0.5">
-            {courses.length} cours disponible{courses.length !== 1 ? "s" : ""}
+            {courses.length} cours {isAdmin ? "disponible" : "assigné"}{courses.length !== 1 ? "s" : ""}
           </p>
         </div>
         {isAdmin && (
@@ -35,7 +86,7 @@ export default async function CoursesPage() {
           </Link>
         )}
       </div>
-      <CourseList courses={courses} isAdmin={isAdmin} />
+      <CourseList courses={courses} isAdmin={isAdmin ?? false} progressMap={progressMap} />
     </div>
   );
 }

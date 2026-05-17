@@ -9,7 +9,7 @@ async function getBranding() {
 
 export default async function SettingsPage() {
   const session = await auth();
-  if (!session?.user.roles.includes("admin")) redirect("/dashboard");
+  if (session?.user.sessionMode !== "admin") redirect("/dashboard");
 
   const branding = await getBranding();
 

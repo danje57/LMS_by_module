@@ -19,7 +19,11 @@ model User {
   assignments    CourseAssignment[]
   courseProgress UserCourseProgress[]
   quizResults    UserQuizResult[]
+  certificates   Certificate[]
   roles          UserRole[]
+  teams          UserTeam[]
+  managedTeams   Team[]               @relation("ManagedTeams")
+  createdCourses Course[]             @relation("CreatedCourses")
 
   @@map("users")
 }
@@ -59,6 +63,29 @@ model UserRole {
   @@map("user_roles")
 }
 
+model Team {
+  id        String     @id @default(cuid())
+  name      String
+  managerId String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  manager   User?      @relation("ManagedTeams", fields: [managerId], references: [id], onDelete: SetNull)
+  members   UserTeam[]
+
+  @@map("teams")
+}
+
+model UserTeam {
+  userId    String
+  teamId    String
+  createdAt DateTime @default(now())
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, teamId])
+  @@map("user_teams")
+}
+
 model Course {
   id               String               @id @default(cuid())
   title            String
@@ -72,10 +99,13 @@ model Course {
   isActive         Boolean              @default(true)
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
+  createdById      String?
+  createdBy        User?                @relation("CreatedCourses", fields: [createdById], references: [id], onDelete: SetNull)
   assets           CourseAsset[]
   assignments      CourseAssignment[]
   progress         UserCourseProgress[]
   quizResults      UserQuizResult[]
+  certificates     Certificate[]
   questions        QuizQuestion[]
 
   @@map("courses")
@@ -131,16 +161,17 @@ model CourseAssignment {
 }
 
 model UserCourseProgress {
-  id           String    @id @default(cuid())
-  userId       String
-  courseId     String
-  progress     Int       @default(0)
-  startedAt    DateTime  @default(now())
-  lastAccessAt DateTime  @default(now())
-  completedAt  DateTime?
-  xapiState    Json?
-  course       Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String    @id @default(cuid())
+  userId        String
+  courseId      String
+  progress      Int       @default(0)
+  visitedSlides Int[]     @default([])
+  startedAt     DateTime  @default(now())
+  lastAccessAt  DateTime  @default(now())
+  completedAt   DateTime?
+  xapiState     Json?
+  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
   @@map("user_course_progress")
@@ -162,12 +193,30 @@ model UserQuizResult {
   @@map("user_quiz_results")
 }
 
+model Certificate {
+  id           String    @id @default(cuid())
+  userId       String
+  courseId     String?
+  courseTitle  String
+  completedAt  DateTime
+  hasQuiz      Boolean   @default(false)
+  quizPassed   Boolean?
+  quizScore    Int?
+  passingScore Int?
+  issuedAt     DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course       Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  @@map("certificates")
+}
+
 model BrandingSetting {
-  id         String   @id @default(cuid())
-  appName    String   @default("LMS")
-  logoPath   String?
-  bannerPath String?
-  updatedAt  DateTime @updatedAt
+  id           String   @id @default(cuid())
+  appName      String   @default("LMS")
+  logoPath     String?
+  bannerPath   String?
+  loginNotice  String?
+  updatedAt    DateTime @updatedAt
 
   @@map("branding_settings")
 }
@@ -186,8 +235,9 @@ model BackupRecord {
 
 enum RoleType {
   admin
+  manager
   creator
-  employee
+  learner
 }
 
 enum QuestionType {

@@ -98,6 +98,7 @@ function QuestionForm({
 }) {
   const [form, setForm] = useState<FormData>(initial);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const selectedLetters = new Set(form.correctAnswer.split(",").filter(Boolean));
 
@@ -114,6 +115,7 @@ function QuestionForm({
   }
 
   function handleChoiceChange(i: number, val: string) {
+    setFormError(null);
     setForm((f) => { const c = [...f.choices]; c[i] = val; return { ...f, choices: c }; });
   }
 
@@ -146,6 +148,14 @@ function QuestionForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (form.type === "qcm") {
+      const empty = form.choices.some((c) => !c.trim());
+      if (empty) {
+        setFormError("Tous les choix de réponse doivent être remplis.");
+        return;
+      }
+    }
+    setFormError(null);
     setSaving(true);
     await onSave(formToQuestion(form));
     setSaving(false);
@@ -255,6 +265,10 @@ function QuestionForm({
           className={fieldCls} placeholder="Ex : Le firewall filtre le trafic réseau entrant et sortant." />
       </div>
 
+      {formError && (
+        <p className="text-[13px] text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{formError}</p>
+      )}
+
       <div className="flex gap-2 pt-1">
         <button type="submit" disabled={saving}
           className="flex items-center gap-1.5 px-5 h-9 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors disabled:opacity-60">
@@ -270,7 +284,50 @@ function QuestionForm({
   );
 }
 
-export function QuizEditor({ courseId }: { courseId: string }) {
+function ThresholdBanner({ questionCount, passingScore }: { questionCount: number; passingScore: number }) {
+  if (questionCount === 0) return null;
+
+  const minCorrect = Math.ceil((questionCount * passingScore) / 100);
+  const effectiveScore = Math.round((minCorrect / questionCount) * 100);
+  const diff = effectiveScore - passingScore;
+
+  if (diff === 0) {
+    return (
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-100 rounded-xl text-[12px] text-green-700">
+        <span className="font-medium">Seuil cohérent :</span>
+        {minCorrect}/{questionCount} bonnes réponses requises — seuil effectif {effectiveScore}%.
+      </div>
+    );
+  }
+
+  // Find minimum questions for an exact match
+  let minQ = questionCount;
+  for (let n = 1; n <= 100; n++) {
+    const k = Math.ceil((n * passingScore) / 100);
+    if (Math.round((k / n) * 100) === passingScore) { minQ = n; break; }
+  }
+
+  const isWarning = diff >= 5;
+  return (
+    <div className={cn(
+      "px-4 py-2.5 rounded-xl border text-[12px] space-y-0.5",
+      isWarning ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-blue-50 border-blue-100 text-blue-800"
+    )}>
+      <p>
+        <span className="font-semibold">Seuil effectif : {effectiveScore}%</span>
+        {" "}— avec {questionCount} question{questionCount > 1 ? "s" : ""} et un seuil configuré à {passingScore}%, il faut{" "}
+        <span className="font-semibold">{minCorrect}/{questionCount}</span> bonne{minCorrect > 1 ? "s" : ""} réponse{minCorrect > 1 ? "s" : ""}.
+      </p>
+      {minQ > questionCount && (
+        <p className="text-[11px] opacity-80">
+          Pour atteindre exactement {passingScore}%, ajoutez au moins <span className="font-semibold">{minQ - questionCount} question{minQ - questionCount > 1 ? "s" : ""}</span> ({minQ} au total).
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function QuizEditor({ courseId, passingScore = 80, onCountChange }: { courseId: string; passingScore?: number; onCountChange?: (count: number) => void }) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -282,7 +339,9 @@ export function QuizEditor({ courseId }: { courseId: string }) {
   async function load() {
     setLoading(true);
     const res = await fetch(`/api/admin/courses/${courseId}/questions`);
-    setQuestions(await res.json());
+    const data = await res.json();
+    setQuestions(data);
+    onCountChange?.(data.length);
     setLoading(false);
   }
 
@@ -378,6 +437,8 @@ export function QuizEditor({ courseId }: { courseId: string }) {
 
       {importSuccess && <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-3 text-[13px] text-green-700">{importSuccess}</div>}
       {importError && <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-[13px] text-red-600">{importError}</div>}
+
+      <ThresholdBanner questionCount={questions.length} passingScore={passingScore} />
 
       {/* Format CSV */}
       <details className="text-[12px] text-[#6E6E73] bg-[#F5F5F7] rounded-xl px-4 py-3">

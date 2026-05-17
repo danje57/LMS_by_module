@@ -24,7 +24,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  if (!session?.user.roles.includes("admin")) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  if (session?.user.sessionMode !== "admin") return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
 
   const { id } = await params;
   const { title, duration, hasQuiz, passingScore } = await req.json();
@@ -46,7 +46,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  if (!session?.user.roles.includes("admin")) {
+  if (session?.user.sessionMode !== "admin") {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 

@@ -3,26 +3,138 @@
 import { useState } from "react";
 import type { Course } from "@prisma/client";
 import { formatDuration, formatFileSize } from "@/lib/utils";
-import { Search, Clock, CircleCheck, Play, Pencil } from "lucide-react";
+import { Search, Clock, CircleCheck, Play, Pencil, ArrowUpDown, UserPlus, Award } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { DeleteCourseButton } from "@/components/courses/delete-course-button";
+import { AssignModal } from "@/components/admin/assign-modal";
+
+export type CourseProgress = {
+  status: "not_started" | "in_progress" | "completed";
+  completedAt: Date | null;
+  quizPassed: boolean | null;
+  latestCertificateId: string | null;
+};
 
 interface CourseListProps {
   courses: Course[];
   isAdmin?: boolean;
+  progressMap?: Record<string, CourseProgress>;
 }
 
-export function CourseList({ courses, isAdmin = false }: CourseListProps) {
+function CourseCard({
+  course,
+  isAdmin,
+  progressMap,
+  onAssign,
+}: {
+  course: Course;
+  isAdmin: boolean;
+  progressMap: Record<string, CourseProgress>;
+  onAssign: (t: { id: string; title: string }) => void;
+}) {
+  const prog = progressMap[course.id];
+  const status = prog?.status ?? "not_started";
+  const isCompleted = status === "completed";
+
+  return (
+    <div className="group bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden hover:shadow-md hover:border-[#D2D2D7] transition-all">
+      {/* Color band */}
+      <div className={cn(
+        "h-1.5 bg-gradient-to-r",
+        isCompleted ? "from-emerald-400 to-teal-400" : status === "in_progress" ? "from-amber-400 to-orange-400" : "from-[#0071E3] to-[#40B3FF]"
+      )} />
+
+      <div className="p-5 space-y-4">
+        <h3 className="text-[15px] font-semibold text-[#1D1D1F] leading-snug line-clamp-2">
+          {course.title}
+        </h3>
+
+        {/* Badges */}
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#6E6E73] bg-[#F5F5F7] rounded-lg px-2.5 py-1">
+            <Clock className="w-3 h-3" />
+            {formatDuration(course.duration)}
+          </span>
+          {course.hasQuiz && (
+            <span className={cn(
+              "inline-flex items-center gap-1.5 text-[12px] font-medium rounded-lg px-2.5 py-1",
+              !isAdmin && isCompleted && prog?.quizPassed === true ? "text-emerald-600 bg-emerald-50" :
+              !isAdmin && isCompleted && prog?.quizPassed === false ? "text-red-500 bg-red-50" :
+              "text-amber-600 bg-amber-50"
+            )}>
+              <CircleCheck className="w-3 h-3" />
+              {!isAdmin && isCompleted && prog?.quizPassed !== null
+                ? (prog?.quizPassed ? "Quiz réussi" : "Quiz échoué")
+                : `Quiz · ${course.passingScore}%`}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] text-[#ADADB8]">{formatFileSize(course.fileSize)}</span>
+          <div className="flex items-center gap-1.5">
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => onAssign({ id: course.id, title: course.title })}
+                  className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
+                  title="Assigner"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                </button>
+                <Link
+                  href={`/dashboard/admin/courses/${course.id}/edit`}
+                  className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
+                  title="Éditer"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </Link>
+                <DeleteCourseButton courseId={course.id} courseTitle={course.title} />
+              </>
+            )}
+            {!isAdmin && isCompleted && prog?.latestCertificateId && (
+              <Link
+                href={`/dashboard/certificates/${prog.latestCertificateId}`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 border border-emerald-200 text-emerald-600 hover:bg-emerald-50 text-[13px] font-medium rounded-xl transition-colors"
+                title="Voir le certificat"
+              >
+                <Award className="w-3.5 h-3.5" />
+                Certificat
+              </Link>
+            )}
+            <Link
+              href={`/dashboard/courses/${course.id}/play`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors"
+            >
+              <Play className="w-3.5 h-3.5" />
+              {status === "in_progress" ? "Reprendre" : status === "completed" ? "Revoir" : "Lancer"}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function CourseList({ courses, isAdmin = false, progressMap = {} }: CourseListProps) {
   const [search, setSearch] = useState("");
   const [filterQuiz, setFilterQuiz] = useState<"all" | "yes" | "no">("all");
+  const [durationSort, setDurationSort] = useState<"none" | "asc" | "desc">("none");
+  const [assignTarget, setAssignTarget] = useState<{ id: string; title: string } | null>(null);
 
-  const filtered = courses.filter((c) => {
-    const matchSearch = c.title.toLowerCase().includes(search.toLowerCase());
-    const matchQuiz =
-      filterQuiz === "all" || (filterQuiz === "yes" ? c.hasQuiz : !c.hasQuiz);
-    return matchSearch && matchQuiz;
-  });
+  const filtered = courses
+    .filter((c) => {
+      const matchSearch = c.title.toLowerCase().includes(search.toLowerCase());
+      const matchQuiz =
+        filterQuiz === "all" || (filterQuiz === "yes" ? c.hasQuiz : !c.hasQuiz);
+      return matchSearch && matchQuiz;
+    })
+    .sort((a, b) => {
+      if (durationSort === "asc") return a.duration - b.duration;
+      if (durationSort === "desc") return b.duration - a.duration;
+      return 0;
+    });
 
   return (
     <div className="space-y-5">
@@ -55,6 +167,24 @@ export function CourseList({ courses, isAdmin = false }: CourseListProps) {
             </button>
           ))}
         </div>
+
+        <button
+          onClick={() =>
+            setDurationSort((s) => (s === "none" ? "asc" : s === "asc" ? "desc" : "none"))
+          }
+          className={cn(
+            "inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border text-[13px] font-medium transition-all whitespace-nowrap",
+            durationSort !== "none"
+              ? "bg-[#0071E3] border-[#0071E3] text-white shadow-sm"
+              : "bg-white border-[#D2D2D7] text-[#6E6E73] hover:text-[#1D1D1F]"
+          )}
+          title="Trier par durée"
+        >
+          <ArrowUpDown className="w-3.5 h-3.5" />
+          Durée
+          {durationSort === "asc" && <span className="text-[11px]">↑</span>}
+          {durationSort === "desc" && <span className="text-[11px]">↓</span>}
+        </button>
       </div>
 
       {/* Empty state */}
@@ -68,65 +198,46 @@ export function CourseList({ courses, isAdmin = false }: CourseListProps) {
         </div>
       )}
 
-      {/* Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((course) => (
-          <div
-            key={course.id}
-            className="group bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden hover:shadow-md hover:border-[#D2D2D7] transition-all"
-          >
-            {/* Color band */}
-            <div className="h-1.5 bg-gradient-to-r from-[#0071E3] to-[#40B3FF]" />
-
-            <div className="p-5 space-y-4">
-              <div>
-                <h3 className="text-[15px] font-semibold text-[#1D1D1F] leading-snug line-clamp-2">
-                  {course.title}
-                </h3>
-              </div>
-
-              {/* Badges */}
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#6E6E73] bg-[#F5F5F7] rounded-lg px-2.5 py-1">
-                  <Clock className="w-3 h-3" />
-                  {formatDuration(course.duration)}
-                </span>
-                {course.hasQuiz && (
-                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1">
-                    <CircleCheck className="w-3 h-3" />
-                    Quiz · {course.passingScore}%
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] text-[#ADADB8]">{formatFileSize(course.fileSize)}</span>
-                <div className="flex items-center gap-1.5">
-                  {isAdmin && (
-                    <>
-                      <Link
-                        href={`/dashboard/admin/courses/${course.id}/edit`}
-                        className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
-                        title="Éditer"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Link>
-                      <DeleteCourseButton courseId={course.id} courseTitle={course.title} />
-                    </>
-                  )}
-                  <Link
-                    href={`/dashboard/courses/${course.id}/play`}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors"
-                  >
-                    <Play className="w-3.5 h-3.5" />
-                    Lancer
-                  </Link>
+      {isAdmin ? (
+        /* Admin : grille plate */
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((course) => <CourseCard key={course.id} course={course} isAdmin={true} progressMap={progressMap} onAssign={setAssignTarget} />)}
+        </div>
+      ) : (
+        /* Apprenant : groupé par statut */
+        <div className="space-y-8">
+          {(
+            [
+              { key: "not_started",  label: "Non commencé",   color: "bg-[#0071E3]"  },
+              { key: "in_progress",  label: "En cours",       color: "bg-amber-400"  },
+              { key: "completed",    label: "Terminé",        color: "bg-emerald-400" },
+            ] as const
+          ).map(({ key, label, color }) => {
+            const group = filtered.filter((c) => (progressMap[c.id]?.status ?? "not_started") === key);
+            if (group.length === 0) return null;
+            return (
+              <div key={key}>
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className={cn("w-2.5 h-2.5 rounded-full", color)} />
+                  <h2 className="text-[15px] font-semibold text-[#1D1D1F]">{label}</h2>
+                  <span className="text-[12px] text-[#ADADB8] font-medium">{group.length}</span>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {group.map((course) => <CourseCard key={course.id} course={course} isAdmin={false} progressMap={progressMap} onAssign={setAssignTarget} />)}
                 </div>
               </div>
-            </div>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
+
+      {assignTarget && (
+        <AssignModal
+          courseId={assignTarget.id}
+          courseTitle={assignTarget.title}
+          onClose={() => setAssignTarget(null)}
+        />
+      )}
     </div>
   );
 }

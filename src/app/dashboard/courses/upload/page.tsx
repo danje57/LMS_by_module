@@ -4,7 +4,7 @@ import { UploadForm } from "@/components/courses/upload-form";
 
 export default async function UploadPage() {
   const session = await auth();
-  if (!session?.user.roles.includes("admin")) redirect("/dashboard/courses");
+  if (session?.user.sessionMode !== "admin") redirect("/dashboard/courses");
 
   return (
     <div className="max-w-2xl space-y-6">

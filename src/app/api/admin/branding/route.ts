@@ -6,8 +6,7 @@ import { revalidatePath } from "next/cache";
 import path from "path";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
-const MAX_LOGO = 2 * 1024 * 1024;   // 2 Mo
-const MAX_BANNER = 5 * 1024 * 1024; // 5 Mo
+const MAX_LOGO = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
 
 async function saveFile(file: File, subfolder: string, maxSize: number): Promise<string> {
@@ -32,7 +31,7 @@ async function saveFile(file: File, subfolder: string, maxSize: number): Promise
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user.roles.includes("admin")) {
+  if (session?.user.sessionMode !== "admin") {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 
@@ -45,22 +44,26 @@ export async function POST(req: NextRequest) {
 
   const existing = await prisma.brandingSetting.findFirst();
 
-  const updateData: { appName: string; logoPath?: string; bannerPath?: string } = { appName };
+  const loginNotice = (form.get("loginNotice") as string | null) ?? null;
+  const updateData: { appName: string; logoPath?: string; bannerPath?: string; loginNotice?: string | null } = {
+    appName,
+    loginNotice: loginNotice?.trim() || null,
+  };
 
-  const logoFile = form.get("logo") as File | null;
-  if (logoFile && logoFile.size > 0) {
-    updateData.logoPath = await saveFile(logoFile, "branding/logo", MAX_LOGO);
-  }
+  try {
+    const logoFile = form.get("logo") as File | null;
+    if (logoFile && logoFile.size > 0) {
+      updateData.logoPath = await saveFile(logoFile, "branding/logo", MAX_LOGO);
+    }
 
-  const bannerFile = form.get("banner") as File | null;
-  if (bannerFile && bannerFile.size > 0) {
-    updateData.bannerPath = await saveFile(bannerFile, "branding/banner", MAX_BANNER);
-  }
-
-  if (existing) {
-    await prisma.brandingSetting.update({ where: { id: existing.id }, data: updateData });
-  } else {
-    await prisma.brandingSetting.create({ data: updateData });
+    if (existing) {
+      await prisma.brandingSetting.update({ where: { id: existing.id }, data: updateData });
+    } else {
+      await prisma.brandingSetting.create({ data: updateData });
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Erreur inattendue";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 
   // Invalider le cache des pages qui affichent le branding
