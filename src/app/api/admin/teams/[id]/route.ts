@@ -26,6 +26,31 @@ export async function PATCH(
     },
   });
 
+  // Si un manager est assigné, s'assurer qu'il est membre de l'équipe
+  if (managerId) {
+    await prisma.userTeam.upsert({
+      where: { userId_teamId: { userId: managerId, teamId: id } },
+      update: {},
+      create: { userId: managerId, teamId: id },
+    });
+    // Recharger avec le membre potentiellement ajouté
+    const updated = await prisma.team.findUnique({
+      where: { id },
+      include: {
+        manager: { select: { id: true, name: true, email: true } },
+        members: { include: { user: { select: { id: true, name: true, email: true } } } },
+      },
+    });
+    if (updated) {
+      return NextResponse.json({
+        id: updated.id,
+        name: updated.name,
+        manager: updated.manager,
+        members: updated.members.map((m) => m.user),
+      });
+    }
+  }
+
   return NextResponse.json({
     id: team.id,
     name: team.name,
