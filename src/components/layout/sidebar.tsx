@@ -12,7 +12,7 @@ const navItems = [
   { href: "/dashboard/certificates", label: "Certificats", icon: Award, adminOnly: false, userOnly: true },
   { href: "/dashboard/admin/users", label: "Utilisateurs", icon: Users, adminOnly: true, userOnly: false },
   { href: "/dashboard/admin/teams", label: "Équipes", icon: UsersRound, adminOnly: true, userOnly: false },
-  { href: "/dashboard/admin/certificates", label: "Vérifier un certificat", icon: BadgeCheck, adminOnly: true, userOnly: false },
+  { href: "/dashboard/admin/certificates", label: "Gérer certificats", icon: BadgeCheck, adminOnly: true, userOnly: false },
   { href: "/dashboard/settings", label: "Paramètres", icon: Settings, adminOnly: true, userOnly: false },
 ];
 
