@@ -4,9 +4,10 @@ import { useState } from "react";
 import { RoleType } from "@prisma/client";
 import {
   Search, Plus, Pencil, Trash2, ShieldCheck,
-  UserCheck, UserX, X, Eye, EyeOff, Crown,
+  UserCheck, UserX, X, Eye, EyeOff, Crown, Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ImportModal } from "@/components/admin/import-modal";
 
 type UserRow = {
   id: string;
@@ -106,6 +107,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState<RoleType | "all">("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+  const [modalImport, setModalImport] = useState(false);
 
   const [modalCreate, setModalCreate] = useState(false);
   const [modalEdit, setModalEdit] = useState<UserRow | null>(null);
@@ -223,6 +225,14 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
             <option key={r} value={r}>{ROLE_LABELS[r]}</option>
           ))}
         </select>
+
+        <button
+          onClick={() => setModalImport(true)}
+          className="inline-flex items-center gap-2 h-10 px-4 bg-white border border-[#D2D2D7] hover:border-[#0071E3] hover:text-[#0071E3] text-[#1D1D1F] text-[14px] font-medium rounded-xl transition-colors whitespace-nowrap"
+        >
+          <Upload className="w-4 h-4" />
+          Importer
+        </button>
 
         <button
           onClick={() => { setModalCreate(true); setError(""); }}
@@ -372,6 +382,13 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
             </div>
           </div>
         </div>
+      )}
+
+      {modalImport && (
+        <ImportModal
+          onClose={() => setModalImport(false)}
+          onDone={() => { setModalImport(false); window.location.reload(); }}
+        />
       )}
     </div>
   );
