@@ -4,7 +4,6 @@ import { useState } from "react";
 import { signOut } from "next-auth/react";
 import type { Session } from "next-auth";
 import { LogOut, ShieldCheck, ShieldOff, X, TriangleAlert, ShieldAlert } from "lucide-react";
-import { setSessionMode } from "@/lib/actions/session";
 import { cn } from "@/lib/utils";
 
 interface HeaderProps {
@@ -26,14 +25,27 @@ export function Header({ session }: HeaderProps) {
     .slice(0, 2);
 
   async function applyMode(mode: "admin" | "user") {
-    setLoading(true);
     setPendingMode(null);
-    await setSessionMode(mode);
+    setLoading(true);
+    // Appel API classique (pas une server action) : pas de revalidation automatique
+    // de la route courante → plus de flash d'erreur sur les pages admin
+    await fetch("/api/auth/session-mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode }),
+    });
     window.location.href = "/dashboard";
   }
 
   return (
     <>
+      {/* Overlay plein écran pendant le changement de mode — masque tout flash de re-rendu */}
+      {loading && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[200] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full border-2 border-[#0071E3] border-t-transparent animate-spin" />
+        </div>
+      )}
+
       <header className="h-14 bg-white border-b border-[#E5E5EA] flex items-center justify-end px-6 gap-3 shrink-0">
 
         {hasAdminRole && (

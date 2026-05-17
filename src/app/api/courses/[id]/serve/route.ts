@@ -61,8 +61,7 @@ export async function GET(
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; background: #1a1a2e; }
-    #h5p-container { width: 100%; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 0; }
-    #h5p-container > div { width: 100%; }
+    #h5p-container { width: 100%; }
     .h5p-iframe-wrapper { width: 100% !important; }
   </style>
   <link rel="stylesheet" href="/h5p-standalone/styles/h5p.css">

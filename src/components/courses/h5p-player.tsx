@@ -12,11 +12,10 @@ export function H5PPlayer({ courseId, visitedSlides }: H5PPlayerProps) {
     : "";
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-black" style={{ minHeight: "600px" }}>
+    <div className="rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: "16/9", maxHeight: "calc(100vh - 280px)" }}>
       <iframe
         src={`/api/courses/${courseId}/serve${visited}`}
-        className="w-full"
-        style={{ height: "calc(100vh - 200px)", minHeight: "600px", border: "none" }}
+        style={{ width: "100%", height: "100%", border: "none", display: "block" }}
         allow="fullscreen"
         title="Contenu H5P"
       />
