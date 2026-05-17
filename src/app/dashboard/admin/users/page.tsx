@@ -7,7 +7,10 @@ async function getData() {
   const [users, teams] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
-      include: { roles: { include: { role: true } } },
+      include: {
+        roles: { include: { role: true } },
+        teams: { include: { team: { select: { id: true, name: true } } } },
+      },
     }),
     prisma.team.findMany({
       orderBy: { name: "asc" },
@@ -22,6 +25,7 @@ async function getData() {
       isActive: u.isActive,
       createdAt: u.createdAt.toISOString(),
       roles: u.roles.map((ur) => ur.role.name),
+      teams: u.teams.map((ut) => ({ id: ut.team.id, name: ut.team.name })),
     })),
     teams,
   };

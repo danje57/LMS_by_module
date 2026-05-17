@@ -4,7 +4,7 @@ import { useState } from "react";
 import { RoleType } from "@prisma/client";
 import {
   Search, Plus, Pencil, Trash2, ShieldCheck,
-  UserCheck, UserX, X, Eye, EyeOff, Crown, Upload,
+  UserCheck, UserX, X, Eye, EyeOff, Crown, Upload, Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ImportModal } from "@/components/admin/import-modal";
@@ -16,6 +16,7 @@ type UserRow = {
   isActive: boolean;
   createdAt: string;
   roles: RoleType[];
+  teams: { id: string; name: string }[];
 };
 
 const ALL_ROLES: RoleType[] = ["admin", "manager", "creator", "learner"];
@@ -107,6 +108,8 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState<RoleType | "all">("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+  const [filterTeam, setFilterTeam] = useState<string>("all");
+  const [groupByTeam, setGroupByTeam] = useState(false);
   const [modalImport, setModalImport] = useState(false);
 
   const [modalCreate, setModalCreate] = useState(false);
@@ -123,7 +126,10 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
     const matchStatus =
       filterStatus === "all" ||
       (filterStatus === "active" ? u.isActive : !u.isActive);
-    return matchSearch && matchRole && matchStatus;
+    const matchTeam =
+      filterTeam === "all" ||
+      (filterTeam === "none" ? u.teams.length === 0 : u.teams.some((t) => t.id === filterTeam));
+    return matchSearch && matchRole && matchStatus && matchTeam;
   });
 
   async function handleCreate(data: {
@@ -139,7 +145,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
     });
     const json = await res.json();
     if (!res.ok) { setLoading(false); setError(json.error ?? "Erreur"); return; }
-    setUsers((prev) => [json, ...prev]);
+    setUsers((prev) => [{ ...json, teams: [] }, ...prev]);
     await updateManagedTeam(json.id, managedTeamId, null);
     setLoading(false);
     setModalCreate(false);
@@ -159,7 +165,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
     });
     const json = await res.json();
     if (!res.ok) { setLoading(false); setError(json.error ?? "Erreur"); return; }
-    setUsers((prev) => prev.map((u) => (u.id === id ? json : u)));
+    setUsers((prev) => prev.map((u) => (u.id === id ? { ...json, teams: u.teams } : u)));
     await updateManagedTeam(id, managedTeamId, oldTeamId);
     setLoading(false);
     setModalEdit(null);
@@ -173,7 +179,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
     });
     if (!res.ok) return;
     const json = await res.json();
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? json : u)));
+    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...json, teams: u.teams } : u)));
   }
 
   async function handleDelete(user: UserRow) {
@@ -226,6 +232,32 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
           ))}
         </select>
 
+        <select
+          value={filterTeam}
+          onChange={(e) => setFilterTeam(e.target.value)}
+          className="h-10 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[13px] text-[#1D1D1F] outline-none focus:border-[#0071E3] transition-all"
+        >
+          <option value="all">Toutes les équipes</option>
+          <option value="none">Sans équipe</option>
+          {initialTeams.map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+
+        <button
+          onClick={() => setGroupByTeam((v) => !v)}
+          title="Grouper par équipe"
+          className={cn(
+            "inline-flex items-center gap-2 h-10 px-4 border text-[14px] font-medium rounded-xl transition-colors whitespace-nowrap",
+            groupByTeam
+              ? "bg-[#0071E3] border-[#0071E3] text-white"
+              : "bg-white border-[#D2D2D7] text-[#1D1D1F] hover:border-[#0071E3] hover:text-[#0071E3]"
+          )}
+        >
+          <Layers className="w-4 h-4" />
+          Grouper
+        </button>
+
         <button
           onClick={() => setModalImport(true)}
           className="inline-flex items-center gap-2 h-10 px-4 bg-white border border-[#D2D2D7] hover:border-[#0071E3] hover:text-[#0071E3] text-[#1D1D1F] text-[14px] font-medium rounded-xl transition-colors whitespace-nowrap"
@@ -258,66 +290,52 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
               <tr className="border-b border-[#E5E5EA]">
                 <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Utilisateur</th>
                 <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Rôles</th>
+                <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Équipe</th>
                 <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Statut</th>
                 <th className="px-5 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F5F5F7]">
-              {filtered.map((user) => (
-                <tr key={user.id} className={cn("hover:bg-[#F9F9FB] transition-colors", !user.isActive && "opacity-60")}>
-                  <td className="px-5 py-3.5">
-                    <p className="text-[14px] font-medium text-[#1D1D1F]">{user.name ?? <span className="italic text-[#ADADB8]">Sans nom</span>}</p>
-                    <p className="text-[12px] text-[#6E6E73]">{user.email}</p>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex flex-wrap gap-1.5">
-                      {user.roles.length === 0 ? (
-                        <span className="text-[12px] text-[#ADADB8] italic">Aucun</span>
-                      ) : user.roles.map((r) => (
-                        <span key={r} className={cn("text-[11px] font-medium px-2 py-0.5 rounded-md", ROLE_COLORS[r])}>
-                          {ROLE_LABELS[r]}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <span className={cn(
-                      "inline-flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1 rounded-lg",
-                      user.isActive ? "bg-green-50 text-green-600" : "bg-[#F5F5F7] text-[#6E6E73]"
-                    )}>
-                      {user.isActive ? <UserCheck className="w-3 h-3" /> : <UserX className="w-3 h-3" />}
-                      {user.isActive ? "Actif" : "Inactif"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => handleToggleActive(user)}
-                        disabled={user.id === currentUserId}
-                        title={user.isActive ? "Désactiver" : "Activer"}
-                        className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#1D1D1F] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {user.isActive ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        onClick={() => { setModalEdit(user); setError(""); }}
-                        title="Modifier"
-                        className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteTarget(user)}
-                        disabled={user.id === currentUserId}
-                        title="Supprimer"
-                        className="p-2 rounded-lg text-[#6E6E73] hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {groupByTeam
+                ? (() => {
+                    // Build groups: one per team + "Sans équipe"
+                    const groups: { teamId: string | null; teamName: string; users: UserRow[] }[] = [];
+                    const teamOrder = initialTeams.map((t) => t.id);
+                    const byTeam = new Map<string, UserRow[]>();
+                    const noTeam: UserRow[] = [];
+                    for (const u of filtered) {
+                      if (u.teams.length === 0) {
+                        noTeam.push(u);
+                      } else {
+                        for (const t of u.teams) {
+                          if (!byTeam.has(t.id)) byTeam.set(t.id, []);
+                          byTeam.get(t.id)!.push(u);
+                        }
+                      }
+                    }
+                    for (const id of teamOrder) {
+                      const t = initialTeams.find((x) => x.id === id)!;
+                      const members = byTeam.get(id);
+                      if (members && members.length > 0) groups.push({ teamId: id, teamName: t.name, users: members });
+                    }
+                    if (noTeam.length > 0) groups.push({ teamId: null, teamName: "Sans équipe", users: noTeam });
+
+                    return groups.flatMap(({ teamId, teamName, users: gUsers }) => [
+                      <tr key={`group-${teamId ?? "none"}`} className="bg-[#F5F5F7]">
+                        <td colSpan={5} className="px-5 py-2">
+                          <span className="text-[12px] font-semibold text-[#6E6E73] uppercase tracking-wide">
+                            {teamName}
+                            <span className="ml-2 font-normal normal-case">({gUsers.length})</span>
+                          </span>
+                        </td>
+                      </tr>,
+                      ...gUsers.map((user) => <UserTableRow key={user.id} user={user} currentUserId={currentUserId} onToggle={handleToggleActive} onEdit={(u) => { setModalEdit(u); setError(""); }} onDelete={setDeleteTarget} />),
+                    ]);
+                  })()
+                : filtered.map((user) => (
+                    <UserTableRow key={user.id} user={user} currentUserId={currentUserId} onToggle={handleToggleActive} onEdit={(u) => { setModalEdit(u); setError(""); }} onDelete={setDeleteTarget} />
+                  ))
+              }
             </tbody>
           </table>
         </div>
@@ -391,6 +409,87 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
         />
       )}
     </div>
+  );
+}
+
+function UserTableRow({
+  user,
+  currentUserId,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  user: UserRow;
+  currentUserId: string;
+  onToggle: (u: UserRow) => void;
+  onEdit: (u: UserRow) => void;
+  onDelete: (u: UserRow) => void;
+}) {
+  return (
+    <tr className={cn("hover:bg-[#F9F9FB] transition-colors", !user.isActive && "opacity-60")}>
+      <td className="px-5 py-3.5">
+        <p className="text-[14px] font-medium text-[#1D1D1F]">{user.name ?? <span className="italic text-[#ADADB8]">Sans nom</span>}</p>
+        <p className="text-[12px] text-[#6E6E73]">{user.email}</p>
+      </td>
+      <td className="px-5 py-3.5">
+        <div className="flex flex-wrap gap-1.5">
+          {user.roles.length === 0 ? (
+            <span className="text-[12px] text-[#ADADB8] italic">Aucun</span>
+          ) : user.roles.map((r) => (
+            <span key={r} className={cn("text-[11px] font-medium px-2 py-0.5 rounded-md", ROLE_COLORS[r])}>
+              {ROLE_LABELS[r]}
+            </span>
+          ))}
+        </div>
+      </td>
+      <td className="px-5 py-3.5">
+        <div className="flex flex-wrap gap-1.5">
+          {user.teams.length === 0 ? (
+            <span className="text-[12px] text-[#ADADB8] italic">—</span>
+          ) : user.teams.map((t) => (
+            <span key={t.id} className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600">
+              {t.name}
+            </span>
+          ))}
+        </div>
+      </td>
+      <td className="px-5 py-3.5">
+        <span className={cn(
+          "inline-flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1 rounded-lg",
+          user.isActive ? "bg-green-50 text-green-600" : "bg-[#F5F5F7] text-[#6E6E73]"
+        )}>
+          {user.isActive ? <UserCheck className="w-3 h-3" /> : <UserX className="w-3 h-3" />}
+          {user.isActive ? "Actif" : "Inactif"}
+        </span>
+      </td>
+      <td className="px-5 py-3.5">
+        <div className="flex items-center justify-end gap-1">
+          <button
+            onClick={() => onToggle(user)}
+            disabled={user.id === currentUserId}
+            title={user.isActive ? "Désactiver" : "Activer"}
+            className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#1D1D1F] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            {user.isActive ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+          </button>
+          <button
+            onClick={() => onEdit(user)}
+            title="Modifier"
+            className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onDelete(user)}
+            disabled={user.id === currentUserId}
+            title="Supprimer"
+            className="p-2 rounded-lg text-[#6E6E73] hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 }
 
