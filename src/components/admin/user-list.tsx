@@ -4,7 +4,7 @@ import { useState } from "react";
 import { RoleType } from "@prisma/client";
 import {
   Search, Plus, Pencil, Trash2, ShieldCheck,
-  UserCheck, UserX, X, Eye, EyeOff,
+  UserCheck, UserX, X, Eye, EyeOff, Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -68,13 +68,41 @@ function buildRoles(isAdmin: boolean, op: OperationalRole): RoleType[] {
   return isAdmin ? ["admin", ...base] : base;
 }
 
+type TeamRef = { id: string; name: string; managerId: string | null };
+
 interface UserListProps {
   initialUsers: UserRow[];
   currentUserId: string;
+  teams: TeamRef[];
 }
 
-export function UserList({ initialUsers, currentUserId }: UserListProps) {
+export function UserList({ initialUsers, currentUserId, teams: initialTeams }: UserListProps) {
   const [users, setUsers] = useState<UserRow[]>(initialUsers);
+  const [teams, setTeams] = useState<TeamRef[]>(initialTeams);
+
+  function getManagedTeamId(userId: string): string | null {
+    return teams.find((t) => t.managerId === userId)?.id ?? null;
+  }
+
+  async function updateManagedTeam(userId: string, newTeamId: string | null, oldTeamId: string | null) {
+    if (oldTeamId === newTeamId) return;
+    if (oldTeamId) {
+      await fetch(`/api/admin/teams/${oldTeamId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ managerId: null }),
+      });
+      setTeams((prev) => prev.map((t) => t.id === oldTeamId ? { ...t, managerId: null } : t));
+    }
+    if (newTeamId) {
+      await fetch(`/api/admin/teams/${newTeamId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ managerId: userId }),
+      });
+      setTeams((prev) => prev.map((t) => t.id === newTeamId ? { ...t, managerId: userId } : t));
+    }
+  }
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState<RoleType | "all">("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
@@ -97,36 +125,41 @@ export function UserList({ initialUsers, currentUserId }: UserListProps) {
   });
 
   async function handleCreate(data: {
-    name: string; email: string; password: string; roles: RoleType[];
+    name: string; email: string; password: string; roles: RoleType[]; managedTeamId: string | null;
   }) {
     setLoading(true);
     setError("");
+    const { managedTeamId, ...userData } = data;
     const res = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(userData),
     });
     const json = await res.json();
-    setLoading(false);
-    if (!res.ok) { setError(json.error ?? "Erreur"); return; }
+    if (!res.ok) { setLoading(false); setError(json.error ?? "Erreur"); return; }
     setUsers((prev) => [json, ...prev]);
+    await updateManagedTeam(json.id, managedTeamId, null);
+    setLoading(false);
     setModalCreate(false);
   }
 
   async function handleEdit(id: string, data: {
-    name?: string; email?: string; password?: string; roles?: RoleType[]; isActive?: boolean;
+    name?: string; email?: string; password?: string; roles?: RoleType[]; isActive?: boolean; managedTeamId: string | null;
   }) {
     setLoading(true);
     setError("");
+    const { managedTeamId, ...userData } = data;
+    const oldTeamId = getManagedTeamId(id);
     const res = await fetch(`/api/admin/users/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(userData),
     });
     const json = await res.json();
-    setLoading(false);
-    if (!res.ok) { setError(json.error ?? "Erreur"); return; }
+    if (!res.ok) { setLoading(false); setError(json.error ?? "Erreur"); return; }
     setUsers((prev) => prev.map((u) => (u.id === id ? json : u)));
+    await updateManagedTeam(id, managedTeamId, oldTeamId);
+    setLoading(false);
     setModalEdit(null);
   }
 
@@ -284,8 +317,9 @@ export function UserList({ initialUsers, currentUserId }: UserListProps) {
       {modalCreate && (
         <UserModal
           title="Créer un utilisateur"
+          teams={teams}
           onClose={() => setModalCreate(false)}
-          onSubmit={(data) => handleCreate(data as Parameters<typeof handleCreate>[0])}
+          onSubmit={(data) => handleCreate(data)}
           loading={loading}
           error={error}
         />
@@ -296,6 +330,8 @@ export function UserList({ initialUsers, currentUserId }: UserListProps) {
         <UserModal
           title="Modifier l'utilisateur"
           initial={modalEdit}
+          initialManagedTeamId={getManagedTeamId(modalEdit.id)}
+          teams={teams}
           onClose={() => setModalEdit(null)}
           onSubmit={(data) => handleEdit(modalEdit.id, data)}
           loading={loading}
@@ -344,6 +380,8 @@ export function UserList({ initialUsers, currentUserId }: UserListProps) {
 function UserModal({
   title,
   initial,
+  initialManagedTeamId = null,
+  teams,
   onClose,
   onSubmit,
   loading,
@@ -351,9 +389,11 @@ function UserModal({
 }: {
   title: string;
   initial?: UserRow;
+  initialManagedTeamId?: string | null;
+  teams: TeamRef[];
   onClose: () => void;
   onSubmit: (data: {
-    name: string; email: string; password: string; roles: RoleType[]; isActive: boolean;
+    name: string; email: string; password: string; roles: RoleType[]; isActive: boolean; managedTeamId: string | null;
   }) => void;
   loading: boolean;
   error: string;
@@ -368,6 +408,7 @@ function UserModal({
   const roles = buildRoles(isAdmin, opRole);
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
   const [showPassword, setShowPassword] = useState(false);
+  const [managedTeamId, setManagedTeamId] = useState<string | null>(initialManagedTeamId);
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -384,7 +425,7 @@ function UserModal({
         </div>
 
         <form
-          onSubmit={(e) => { e.preventDefault(); onSubmit({ name, email, password, roles, isActive }); }}
+          onSubmit={(e) => { e.preventDefault(); onSubmit({ name, email, password, roles, isActive, managedTeamId }); }}
           className="p-6 space-y-4"
         >
           {error && (
@@ -502,6 +543,26 @@ function UserModal({
               </p>
             </div>
           </div>
+
+          {/* Manager de */}
+          {opRole === "manager" && teams.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-[13px] font-medium text-[#1D1D1F] flex items-center gap-1.5">
+                <Crown className="w-3.5 h-3.5 text-purple-500" />
+                Manager de l&apos;équipe
+              </label>
+              <select
+                value={managedTeamId ?? ""}
+                onChange={(e) => setManagedTeamId(e.target.value || null)}
+                className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] text-[14px] text-[#1D1D1F] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
+              >
+                <option value="">— Aucune équipe —</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {initial && (
             <label className="flex items-center gap-2.5 cursor-pointer select-none">
