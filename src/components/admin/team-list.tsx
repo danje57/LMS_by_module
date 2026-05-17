@@ -181,7 +181,7 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
       <div className="space-y-3">
         {sorted.map((team) => {
           const isOpen = expanded === team.id;
-          const availableToAdd = allUsers.filter((u) => !team.members.some((m) => m.id === u.id));
+          const availableToAdd = allUsers.filter((u) => !team.members.some((m) => m.id === u.id) && u.id !== team.manager?.id);
           const managers = allUsers.filter((u) =>
             /* on propose tous les users comme managers potentiels */ true
           );
