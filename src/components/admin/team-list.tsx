@@ -297,21 +297,28 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
                       <p className="text-[13px] text-[#ADADB8] italic">Aucun membre</p>
                     ) : (
                       <div className="space-y-1.5">
-                        {team.members.map((m) => (
-                          <div key={m.id} className="flex items-center justify-between bg-white rounded-xl border border-[#E5E5EA] px-3 py-2">
-                            <div>
-                              <p className="text-[13px] font-medium text-[#1D1D1F]">{label(m)}</p>
-                              {m.name && <p className="text-[11px] text-[#6E6E73]">{m.email}</p>}
+                        {team.members.map((m) => {
+                          const isManager = m.id === team.manager?.id;
+                          return (
+                            <div key={m.id} className="flex items-center justify-between bg-white rounded-xl border border-[#E5E5EA] px-3 py-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {isManager && <Crown className="w-3.5 h-3.5 text-purple-400 shrink-0" />}
+                                <div>
+                                  <p className="text-[13px] font-medium text-[#1D1D1F]">{label(m)}</p>
+                                  {m.name && <p className="text-[11px] text-[#6E6E73]">{m.email}</p>}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleRemoveMember(team.id, m.id)}
+                                disabled={isManager}
+                                className="p-1.5 rounded-lg text-[#ADADB8] hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                title={isManager ? "Retirer le manager depuis le sélecteur ci-dessus" : "Retirer"}
+                              >
+                                <UserMinus className="w-3.5 h-3.5" />
+                              </button>
                             </div>
-                            <button
-                              onClick={() => handleRemoveMember(team.id, m.id)}
-                              className="p-1.5 rounded-lg text-[#ADADB8] hover:bg-red-50 hover:text-red-500 transition-colors"
-                              title="Retirer"
-                            >
-                              <UserMinus className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
