@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
       const evalStr = c.hasQuiz ? "Evaluation validee" : "Sans evaluation";
       return `${c.id.toUpperCase()};${name};${email};"${c.courseTitle}";${fmt(c.completedAt)};${fmt(c.issuedAt)};${evalStr}`;
     });
-    const csv = [header, ...rows].join("\n");
+    const csv = "﻿" + [header, ...rows].join("\n");
     const dateTag = new Date().toISOString().slice(0, 10);
     return new NextResponse(csv, {
       headers: {
