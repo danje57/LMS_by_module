@@ -63,7 +63,6 @@ const s = StyleSheet.create({
     top: 18,
     left: 16,
     height: 30,
-    width: 90,
   },
   overline: {
     fontSize: 9,
