@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { BookOpen, Users, GraduationCap, CircleCheck, Clock, LayoutList } from "lucide-react";
+import { BookOpen, Users, GraduationCap, CircleCheck, Clock, LayoutList, Circle } from "lucide-react";
 import Link from "next/link";
 
 async function getAdminStats() {
@@ -12,12 +12,29 @@ async function getAdminStats() {
 }
 
 async function getUserStats(userId: string) {
-  const [assigned, completed, inProgress] = await Promise.all([
-    prisma.courseAssignment.count({ where: { userId } }),
-    prisma.userCourseProgress.count({ where: { userId, completedAt: { not: null } } }),
-    prisma.userCourseProgress.count({ where: { userId, completedAt: null, progress: { gt: 0 } } }),
+  const assignments = await prisma.courseAssignment.findMany({
+    where: { userId },
+    select: { courseId: true },
+  });
+  const assignedIds = assignments.map((a) => a.courseId);
+  const total = assignedIds.length;
+
+  if (total === 0) return { total: 0, completed: 0, inProgress: 0, notStarted: 0 };
+
+  const [certSet, progressSet] = await Promise.all([
+    prisma.certificate
+      .findMany({ where: { userId, courseId: { in: assignedIds } }, select: { courseId: true }, distinct: ["courseId"] })
+      .then((r) => new Set(r.map((c) => c.courseId))),
+    prisma.userCourseProgress
+      .findMany({ where: { userId, courseId: { in: assignedIds } }, select: { courseId: true } })
+      .then((r) => new Set(r.map((p) => p.courseId))),
   ]);
-  return { assigned, completed, inProgress };
+
+  const completed = certSet.size;
+  const inProgress = [...progressSet].filter((id) => !certSet.has(id)).length;
+  const notStarted = total - completed - inProgress;
+
+  return { total, completed, inProgress, notStarted };
 }
 
 export default async function DashboardPage() {
@@ -68,25 +85,34 @@ export default async function DashboardPage() {
 
       {/* Stats utilisateur */}
       {!isAdmin && userStats && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { label: "Cours assignés", value: userStats.assigned, icon: LayoutList, color: "bg-blue-50 text-[#0071E3]" },
-            { label: "Terminés", value: userStats.completed, icon: CircleCheck, color: "bg-green-50 text-green-600" },
-            { label: "En cours", value: userStats.inProgress, icon: Clock, color: "bg-amber-50 text-amber-600" },
-          ].map((s) => {
-            const Icon = s.icon;
-            return (
-              <div key={s.label} className="bg-white rounded-2xl border border-[#E5E5EA] p-6 space-y-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.color}`}>
-                  <Icon className="w-5 h-5" />
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: "Total", value: userStats.total, icon: LayoutList, iconColor: "bg-blue-50 text-[#0071E3]", bar: null },
+              { label: "Non commencé", value: userStats.notStarted, icon: Circle, iconColor: "bg-[#F5F5F7] text-[#6E6E73]", bar: "bg-[#0071E3]" },
+              { label: "En cours", value: userStats.inProgress, icon: Clock, iconColor: "bg-amber-50 text-amber-500", bar: "bg-amber-400" },
+              { label: "Terminé", value: userStats.completed, icon: CircleCheck, iconColor: "bg-emerald-50 text-emerald-600", bar: "bg-emerald-400" },
+            ].map((s) => {
+              const Icon = s.icon;
+              const pct = userStats.total > 0 ? Math.round((s.value / userStats.total) * 100) : 0;
+              return (
+                <div key={s.label} className="bg-white rounded-2xl border border-[#E5E5EA] p-5 space-y-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${s.iconColor}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-[12px] text-[#6E6E73] font-medium">{s.label}</p>
+                    <p className="text-[30px] font-semibold text-[#1D1D1F] leading-none mt-0.5">{s.value}</p>
+                  </div>
+                  {s.bar && userStats.total > 0 && (
+                    <div className="h-1 w-full bg-[#F2F2F7] rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${s.bar}`} style={{ width: `${pct}%` }} />
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <p className="text-[13px] text-[#6E6E73] font-medium">{s.label}</p>
-                  <p className="text-[32px] font-semibold text-[#1D1D1F] leading-none mt-1">{s.value}</p>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
 
