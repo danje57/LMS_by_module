@@ -120,6 +120,7 @@ function CourseCard({
 export function CourseList({ courses, isAdmin = false, progressMap = {} }: CourseListProps) {
   const [search, setSearch] = useState("");
   const [filterQuiz, setFilterQuiz] = useState<"all" | "yes" | "no">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "not_started" | "in_progress" | "completed">("all");
   const [durationSort, setDurationSort] = useState<"none" | "asc" | "desc">("none");
   const [assignTarget, setAssignTarget] = useState<{ id: string; title: string } | null>(null);
 
@@ -187,6 +188,31 @@ export function CourseList({ courses, isAdmin = false, progressMap = {} }: Cours
         </button>
       </div>
 
+      {!isAdmin && (
+        <div className="flex gap-1.5 bg-white border border-[#D2D2D7] rounded-xl p-1 w-fit">
+          {([
+            { key: "all",         label: "Tous",            dot: null },
+            { key: "not_started", label: "Non commencé",    dot: "bg-[#0071E3]" },
+            { key: "in_progress", label: "En cours",        dot: "bg-amber-400" },
+            { key: "completed",   label: "Terminé",         dot: "bg-emerald-400" },
+          ] as const).map(({ key, label, dot }) => (
+            <button
+              key={key}
+              onClick={() => setFilterStatus(key)}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all",
+                filterStatus === key
+                  ? "bg-[#0071E3] text-white shadow-sm"
+                  : "text-[#6E6E73] hover:text-[#1D1D1F]"
+              )}
+            >
+              {dot && <span className={cn("w-2 h-2 rounded-full shrink-0", dot, filterStatus === key && "bg-white")} />}
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Empty state */}
       {filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -213,6 +239,7 @@ export function CourseList({ courses, isAdmin = false, progressMap = {} }: Cours
               { key: "completed",    label: "Terminé",        color: "bg-emerald-400" },
             ] as const
           ).map(({ key, label, color }) => {
+            if (filterStatus !== "all" && filterStatus !== key) return null;
             const group = filtered.filter((c) => (progressMap[c.id]?.status ?? "not_started") === key);
             if (group.length === 0) return null;
             return (
