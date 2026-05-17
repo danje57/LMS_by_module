@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { SessionGuard } from "@/components/layout/session-guard";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,7 @@ export default async function DashboardLayout({
       />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header session={session} />
+        <SessionGuard userId={session.user.id} />
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
       </div>
     </div>
