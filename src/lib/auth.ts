@@ -24,7 +24,7 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
         if (!credentials?.email || !credentials?.password) return null;
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
+          where: { email: (credentials.email as string).trim().toLowerCase() },
           include: {
             roles: { include: { role: true } },
           },
