@@ -62,9 +62,8 @@ const s = StyleSheet.create({
     position: "absolute",
     top: 18,
     left: 16,
-    maxHeight: 30,
-    maxWidth: 90,
-    objectFit: "contain",
+    height: 30,
+    width: 90,
   },
   overline: {
     fontSize: 9,
