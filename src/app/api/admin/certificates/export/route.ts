@@ -3,20 +3,21 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
 import AdmZip from "adm-zip";
-import { readFile } from "fs/promises";
+import { existsSync } from "fs";
 import path from "path";
 import { createElement } from "react";
 import type { DocumentProps } from "@react-pdf/renderer";
 import type { JSXElementConstructor, ReactElement } from "react";
 import { CertificatePDF } from "@/components/certificates/certificate-pdf";
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
+const UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR ?? "./uploads");
 
-async function getLogoBuffer(): Promise<Buffer | null> {
+async function getLogoAbsPath(): Promise<string | null> {
   try {
     const branding = await prisma.brandingSetting.findFirst({ select: { logoPath: true } });
     if (!branding?.logoPath) return null;
-    return await readFile(path.join(UPLOAD_DIR, branding.logoPath));
+    const abs = path.join(UPLOAD_DIR, branding.logoPath);
+    return existsSync(abs) ? abs : null;
   } catch {
     return null;
   }
@@ -81,7 +82,7 @@ export async function GET(req: NextRequest) {
 
   // ── ZIP with PDFs ─────────────────────────────────────────────────────────────
   if (format === "zip") {
-    const logoBuffer = await getLogoBuffer();
+    const logoSrc = await getLogoAbsPath();
     const zip = new AdmZip();
 
     for (const cert of certs) {
@@ -93,7 +94,7 @@ export async function GET(req: NextRequest) {
           learnerName,
           completedAt: cert.completedAt,
           hasQuiz: cert.hasQuiz,
-          logoBuffer,
+          logoSrc,
         }) as unknown as ReactElement<DocumentProps, JSXElementConstructor<DocumentProps>>
       );
 

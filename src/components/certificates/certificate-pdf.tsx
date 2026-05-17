@@ -6,7 +6,7 @@ interface Props {
   learnerName: string;
   completedAt: Date;
   hasQuiz: boolean;
-  logoBuffer?: Buffer | null;
+  logoSrc?: string | null;
 }
 
 const C = {
@@ -160,14 +160,10 @@ const s = StyleSheet.create({
   },
 });
 
-export function CertificatePDF({ id, courseTitle, learnerName, completedAt, hasQuiz, logoBuffer }: Props) {
+export function CertificatePDF({ id, courseTitle, learnerName, completedAt, hasQuiz, logoSrc }: Props) {
   const dateStr = new Intl.DateTimeFormat("fr-FR", {
     day: "numeric", month: "long", year: "numeric",
   }).format(new Date(completedAt));
-
-  const logoSrc = logoBuffer
-    ? `data:image/png;base64,${logoBuffer.toString("base64")}`
-    : null;
 
   return (
     <Document>
