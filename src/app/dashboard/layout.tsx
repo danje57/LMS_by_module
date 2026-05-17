@@ -19,8 +19,18 @@ export default async function DashboardLayout({
   const session = await auth();
   if (!session) redirect("/login");
 
-  const branding = await getBranding();
   const isAdmin = session.user.sessionMode === "admin";
+
+  const [branding, managerRole] = await Promise.all([
+    getBranding(),
+    isAdmin
+      ? Promise.resolve(null)
+      : prisma.userRole.findFirst({
+          where: { userId: session.user.id, role: { name: "manager" } },
+        }),
+  ]);
+
+  const isManager = !isAdmin && managerRole !== null;
 
   return (
     <div className="flex h-screen bg-[#F5F5F7]">
@@ -28,6 +38,7 @@ export default async function DashboardLayout({
         appName={branding?.appName ?? "LMS"}
         logoPath={branding?.logoPath ? `/api/assets/${branding.logoPath}` : null}
         isAdmin={isAdmin}
+        isManager={isManager}
       />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header session={session} />

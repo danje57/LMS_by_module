@@ -7,23 +7,25 @@ import { cn } from "@/lib/utils";
 import { LayoutDashboard, BookOpen, Settings, GraduationCap, Users, UsersRound, Award, BadgeCheck, BarChart2 } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, adminOnly: false, userOnly: false },
-  { href: "/dashboard/courses", label: "Cours", icon: BookOpen, adminOnly: false, userOnly: false },
-  { href: "/dashboard/certificates", label: "Certificats", icon: Award, adminOnly: false, userOnly: true },
-  { href: "/dashboard/admin/users", label: "Utilisateurs", icon: Users, adminOnly: true, userOnly: false },
-  { href: "/dashboard/admin/teams", label: "Équipes", icon: UsersRound, adminOnly: true, userOnly: false },
-  { href: "/dashboard/admin/progress", label: "Suivi", icon: BarChart2, adminOnly: true, userOnly: false },
-  { href: "/dashboard/admin/certificates", label: "Gérer certificats", icon: BadgeCheck, adminOnly: true, userOnly: false },
-  { href: "/dashboard/settings", label: "Paramètres", icon: Settings, adminOnly: true, userOnly: false },
+  { href: "/dashboard",                    label: "Tableau de bord",    icon: LayoutDashboard, adminOnly: false, userOnly: false, managerOnly: false },
+  { href: "/dashboard/courses",            label: "Cours",              icon: BookOpen,        adminOnly: false, userOnly: false, managerOnly: false },
+  { href: "/dashboard/certificates",       label: "Certificats",        icon: Award,           adminOnly: false, userOnly: true,  managerOnly: false },
+  { href: "/dashboard/progress",           label: "Suivi équipe",       icon: BarChart2,       adminOnly: false, userOnly: false, managerOnly: true  },
+  { href: "/dashboard/admin/users",        label: "Utilisateurs",       icon: Users,           adminOnly: true,  userOnly: false, managerOnly: false },
+  { href: "/dashboard/admin/teams",        label: "Équipes",            icon: UsersRound,      adminOnly: true,  userOnly: false, managerOnly: false },
+  { href: "/dashboard/admin/progress",     label: "Suivi",              icon: BarChart2,       adminOnly: true,  userOnly: false, managerOnly: false },
+  { href: "/dashboard/admin/certificates", label: "Gérer certificats",  icon: BadgeCheck,      adminOnly: true,  userOnly: false, managerOnly: false },
+  { href: "/dashboard/settings",           label: "Paramètres",         icon: Settings,        adminOnly: true,  userOnly: false, managerOnly: false },
 ];
 
 interface SidebarProps {
   appName: string;
   logoPath: string | null;
   isAdmin?: boolean;
+  isManager?: boolean;
 }
 
-export function Sidebar({ appName, logoPath, isAdmin = false }: SidebarProps) {
+export function Sidebar({ appName, logoPath, isAdmin = false, isManager = false }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -45,7 +47,11 @@ export function Sidebar({ appName, logoPath, isAdmin = false }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {navItems.filter((item) => (!item.adminOnly || isAdmin) && (!item.userOnly || !isAdmin)).map((item) => {
+        {navItems.filter((item) =>
+          (!item.adminOnly || isAdmin) &&
+          (!item.userOnly || !isAdmin) &&
+          (!item.managerOnly || isManager)
+        ).map((item) => {
           const Icon = item.icon;
           const active =
             item.href === "/dashboard"

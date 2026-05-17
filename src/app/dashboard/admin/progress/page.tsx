@@ -1,27 +1,8 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { ProgressClient } from "./progress-client";
-
-export type CourseStatus = "not_started" | "in_progress" | "completed";
-
-export type AssignmentRow = {
-  courseId: string;
-  courseTitle: string;
-  status: CourseStatus;
-  progress: number;
-};
-
-export type UserProgressRow = {
-  id: string;
-  name: string | null;
-  email: string;
-  teams: { id: string; name: string }[];
-  assignments: AssignmentRow[];
-};
-
-export type CourseRef = { id: string; title: string };
-export type TeamRef   = { id: string; name: string };
+import { ProgressClient } from "@/components/admin/progress-client";
+import type { UserProgressRow, CourseRef, TeamRef, CourseStatus } from "@/components/admin/progress-client";
 
 async function getData() {
   const [courses, teams, userRows] = await Promise.all([
