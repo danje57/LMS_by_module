@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, BookOpen, Settings, GraduationCap, Users, UsersRound, Award, BadgeCheck } from "lucide-react";
+import { LayoutDashboard, BookOpen, Settings, GraduationCap, Users, UsersRound, Award, BadgeCheck, BarChart2 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, adminOnly: false, userOnly: false },
@@ -12,6 +12,7 @@ const navItems = [
   { href: "/dashboard/certificates", label: "Certificats", icon: Award, adminOnly: false, userOnly: true },
   { href: "/dashboard/admin/users", label: "Utilisateurs", icon: Users, adminOnly: true, userOnly: false },
   { href: "/dashboard/admin/teams", label: "Équipes", icon: UsersRound, adminOnly: true, userOnly: false },
+  { href: "/dashboard/admin/progress", label: "Suivi", icon: BarChart2, adminOnly: true, userOnly: false },
   { href: "/dashboard/admin/certificates", label: "Gérer certificats", icon: BadgeCheck, adminOnly: true, userOnly: false },
   { href: "/dashboard/settings", label: "Paramètres", icon: Settings, adminOnly: true, userOnly: false },
 ];
