@@ -8,6 +8,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { DeleteCourseButton } from "@/components/courses/delete-course-button";
 import { AssignModal } from "@/components/admin/assign-modal";
+import { AssignModalManager } from "@/components/courses/assign-modal-manager";
 
 export type CourseProgress = {
   status: "not_started" | "in_progress" | "completed";
@@ -19,19 +20,27 @@ export type CourseProgress = {
 interface CourseListProps {
   courses: Course[];
   isAdmin?: boolean;
+  isManagerOrCreator?: boolean;
   progressMap?: Record<string, CourseProgress>;
+  assignedCourseIds?: string[];
 }
 
 function CourseCard({
   course,
   isAdmin,
+  isManagerOrCreator,
   progressMap,
+  isAssignedToMe,
   onAssign,
+  onManagerAssign,
 }: {
   course: Course;
   isAdmin: boolean;
+  isManagerOrCreator: boolean;
   progressMap: Record<string, CourseProgress>;
+  isAssignedToMe: boolean;
   onAssign: (t: { id: string; title: string }) => void;
+  onManagerAssign: (t: { id: string; title: string }) => void;
 }) {
   const prog = progressMap[course.id];
   const status = prog?.status ?? "not_started";
@@ -93,7 +102,16 @@ function CourseCard({
                 <DeleteCourseButton courseId={course.id} courseTitle={course.title} />
               </>
             )}
-            {!isAdmin && isCompleted && prog?.latestCertificateId && (
+            {isManagerOrCreator && (
+              <button
+                onClick={() => onManagerAssign({ id: course.id, title: course.title })}
+                className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
+                title="Affecter"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {!isAdmin && isAssignedToMe && isCompleted && prog?.latestCertificateId && (
               <Link
                 href={`/dashboard/certificates/${prog.latestCertificateId}`}
                 className="inline-flex items-center gap-1.5 px-3 py-2 border border-emerald-200 text-emerald-600 hover:bg-emerald-50 text-[13px] font-medium rounded-xl transition-colors"
@@ -103,13 +121,15 @@ function CourseCard({
                 Certificat
               </Link>
             )}
-            <Link
-              href={`/dashboard/courses/${course.id}/play`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors"
-            >
-              <Play className="w-3.5 h-3.5" />
-              {status === "in_progress" ? "Reprendre" : status === "completed" ? "Revoir" : "Lancer"}
-            </Link>
+            {!isAdmin && isAssignedToMe && (
+              <Link
+                href={`/dashboard/courses/${course.id}/play`}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors"
+              >
+                <Play className="w-3.5 h-3.5" />
+                {status === "in_progress" ? "Reprendre" : status === "completed" ? "Revoir" : "Lancer"}
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -117,12 +137,14 @@ function CourseCard({
   );
 }
 
-export function CourseList({ courses, isAdmin = false, progressMap = {} }: CourseListProps) {
+export function CourseList({ courses, isAdmin = false, isManagerOrCreator = false, progressMap = {}, assignedCourseIds }: CourseListProps) {
+  const assignedSet = new Set(assignedCourseIds ?? []);
   const [search, setSearch] = useState("");
   const [filterQuiz, setFilterQuiz] = useState<"all" | "yes" | "no">("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "not_started" | "in_progress" | "completed">("all");
   const [durationSort, setDurationSort] = useState<"none" | "asc" | "desc">("none");
   const [assignTarget, setAssignTarget] = useState<{ id: string; title: string } | null>(null);
+  const [managerAssignTarget, setManagerAssignTarget] = useState<{ id: string; title: string } | null>(null);
 
   const filtered = courses
     .filter((c) => {
@@ -227,7 +249,19 @@ export function CourseList({ courses, isAdmin = false, progressMap = {} }: Cours
       {isAdmin ? (
         /* Admin : grille plate */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((course) => <CourseCard key={course.id} course={course} isAdmin={true} progressMap={progressMap} onAssign={setAssignTarget} />)}
+          {filtered.map((course) => (
+            <CourseCard key={course.id} course={course} isAdmin={true} isManagerOrCreator={false}
+              progressMap={progressMap} isAssignedToMe={false} onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
+          ))}
+        </div>
+      ) : isManagerOrCreator ? (
+        /* Manager/Créateur : grille avec bouton Affecter sur chaque carte */
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((course) => (
+            <CourseCard key={course.id} course={course} isAdmin={false} isManagerOrCreator={true}
+              progressMap={progressMap} isAssignedToMe={assignedSet.has(course.id)}
+              onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
+          ))}
         </div>
       ) : (
         /* Apprenant : groupé par statut */
@@ -250,7 +284,11 @@ export function CourseList({ courses, isAdmin = false, progressMap = {} }: Cours
                   <span className="text-[12px] text-[#ADADB8] font-medium">{group.length}</span>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {group.map((course) => <CourseCard key={course.id} course={course} isAdmin={false} progressMap={progressMap} onAssign={setAssignTarget} />)}
+                  {group.map((course) => (
+                    <CourseCard key={course.id} course={course} isAdmin={false} isManagerOrCreator={false}
+                      progressMap={progressMap} isAssignedToMe={true}
+                      onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
+                  ))}
                 </div>
               </div>
             );
@@ -263,6 +301,14 @@ export function CourseList({ courses, isAdmin = false, progressMap = {} }: Cours
           courseId={assignTarget.id}
           courseTitle={assignTarget.title}
           onClose={() => setAssignTarget(null)}
+        />
+      )}
+
+      {managerAssignTarget && (
+        <AssignModalManager
+          courseId={managerAssignTarget.id}
+          courseTitle={managerAssignTarget.title}
+          onClose={() => setManagerAssignTarget(null)}
         />
       )}
     </div>

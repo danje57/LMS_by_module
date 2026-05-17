@@ -4,18 +4,13 @@ import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
-async function getCourses(isAdmin: boolean, userId: string) {
-  if (isAdmin) {
-    return prisma.course.findMany({
-      where: { isActive: true },
-      orderBy: { createdAt: "desc" },
-    });
+async function getCourses(isAdmin: boolean, isManagerOrCreator: boolean, userId: string) {
+  // Admins et managers/créateurs voient tous les cours actifs
+  if (isAdmin || isManagerOrCreator) {
+    return prisma.course.findMany({ where: { isActive: true }, orderBy: { createdAt: "desc" } });
   }
   return prisma.course.findMany({
-    where: {
-      isActive: true,
-      assignments: { some: { userId } },
-    },
+    where: { isActive: true, assignments: { some: { userId } } },
     orderBy: { createdAt: "desc" },
   });
 }
@@ -62,8 +57,15 @@ export default async function CoursesPage() {
   const isAdmin = session?.user.sessionMode === "admin";
   const userId = session?.user.id ?? "";
 
+  const roleRecord = !isAdmin && userId
+    ? await prisma.userRole.findFirst({
+        where: { userId, role: { name: { in: ["manager", "creator"] } } },
+      })
+    : null;
+  const isManagerOrCreator = !isAdmin && roleRecord !== null;
+
   const [courses, progressMap] = await Promise.all([
-    getCourses(isAdmin ?? false, userId),
+    getCourses(isAdmin ?? false, isManagerOrCreator, userId),
     isAdmin ? Promise.resolve({} as Record<string, CourseProgress>) : getProgressMap(userId),
   ]);
 
@@ -73,7 +75,7 @@ export default async function CoursesPage() {
         <div>
           <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">Cours</h1>
           <p className="text-[15px] text-[#6E6E73] mt-0.5">
-            {courses.length} cours {isAdmin ? "disponible" : "assigné"}{courses.length !== 1 ? "s" : ""}
+            {courses.length} cours {isAdmin ? "disponible" : "disponible"}{courses.length !== 1 ? "s" : ""}
           </p>
         </div>
         {isAdmin && (
@@ -86,7 +88,16 @@ export default async function CoursesPage() {
           </Link>
         )}
       </div>
-      <CourseList courses={courses} isAdmin={isAdmin ?? false} progressMap={progressMap} />
+      <CourseList
+        courses={courses}
+        isAdmin={isAdmin ?? false}
+        isManagerOrCreator={isManagerOrCreator}
+        progressMap={progressMap}
+        assignedCourseIds={isManagerOrCreator
+          ? (await prisma.courseAssignment.findMany({ where: { userId }, select: { courseId: true } })).map(a => a.courseId)
+          : undefined
+        }
+      />
     </div>
   );
 }

@@ -26,11 +26,11 @@ export default async function DashboardLayout({
     isAdmin
       ? Promise.resolve(null)
       : prisma.userRole.findFirst({
-          where: { userId: session.user.id, role: { name: "manager" } },
+          where: { userId: session.user.id, role: { name: { in: ["manager", "creator"] } } },
         }),
   ]);
 
-  const isManager = !isAdmin && managerRole !== null;
+  const isManager = !isAdmin && managerRole !== null; // true pour manager ET créateur
 
   return (
     <div className="flex h-screen bg-[#F5F5F7]">

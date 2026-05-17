@@ -70,8 +70,9 @@ model Team {
   managerId String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  manager   User?      @relation("ManagedTeams", fields: [managerId], references: [id], onDelete: SetNull)
-  members   UserTeam[]
+  manager            User?              @relation("ManagedTeams", fields: [managerId], references: [id], onDelete: SetNull)
+  members            UserTeam[]
+  assignedByTeam     CourseAssignment[] @relation("AssignedByTeam")
 
   @@map("teams")
 }
@@ -149,15 +150,17 @@ model CourseAsset {
 }
 
 model CourseAssignment {
-  id           String    @id @default(cuid())
-  userId       String
-  courseId     String
-  assignedAt   DateTime  @default(now())
-  dueDate      DateTime?
-  assignedById String?
-  course       Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  assignedBy   User?     @relation("AssignedByUser", fields: [assignedById], references: [id], onDelete: SetNull)
+  id              String    @id @default(cuid())
+  userId          String
+  courseId        String
+  assignedAt      DateTime  @default(now())
+  dueDate         DateTime?
+  assignedById    String?
+  assigningTeamId String?
+  course          Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedBy      User?     @relation("AssignedByUser", fields: [assignedById], references: [id], onDelete: SetNull)
+  assigningTeam   Team?     @relation("AssignedByTeam", fields: [assigningTeamId], references: [id], onDelete: SetNull)
 
   @@unique([userId, courseId])
   @@map("course_assignments")

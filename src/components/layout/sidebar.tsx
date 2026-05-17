@@ -10,7 +10,7 @@ const navItems = [
   { href: "/dashboard",                    label: "Tableau de bord",    icon: LayoutDashboard, adminOnly: false, userOnly: false, managerOnly: false },
   { href: "/dashboard/courses",            label: "Cours",              icon: BookOpen,        adminOnly: false, userOnly: false, managerOnly: false },
   { href: "/dashboard/certificates",       label: "Certificats",        icon: Award,           adminOnly: false, userOnly: true,  managerOnly: false },
-  { href: "/dashboard/progress",           label: "Suivi équipe",       icon: BarChart2,       adminOnly: false, userOnly: false, managerOnly: true  },
+  { href: "/dashboard/progress",           label: "Suivi",              icon: BarChart2,       adminOnly: false, userOnly: false, managerOnly: true  },
   { href: "/dashboard/admin/users",        label: "Utilisateurs",       icon: Users,           adminOnly: true,  userOnly: false, managerOnly: false },
   { href: "/dashboard/admin/teams",        label: "Équipes",            icon: UsersRound,      adminOnly: true,  userOnly: false, managerOnly: false },
   { href: "/dashboard/admin/progress",     label: "Suivi",              icon: BarChart2,       adminOnly: true,  userOnly: false, managerOnly: false },

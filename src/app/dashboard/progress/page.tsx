@@ -41,32 +41,40 @@ function buildUserRow(u: {
 
 async function getManagerData(userId: string) {
   // Équipes gérées + utilisateurs à qui ce manager a affecté des cours (hors équipe)
-  const [managedTeams, assignedByManager] = await Promise.all([
-    prisma.team.findMany({
-      where: { managerId: userId },
-      select: { id: true, name: true, members: { include: { user: { select: USER_SELECT } } } },
-    }),
-    prisma.courseAssignment.findMany({
-      where: { assignedById: userId },
-      include: { user: { select: USER_SELECT } },
-    }),
-  ]);
+  // Équipes gérées par ce manager
+  const managedTeams = await prisma.team.findMany({
+    where: { managerId: userId },
+    select: { id: true, name: true, members: { include: { user: { select: USER_SELECT } } } },
+  });
 
-  const hasScope = managedTeams.length > 0 || assignedByManager.length > 0;
+  // Affectations rattachées aux équipes du manager (via assigningTeamId) OU faites directement par lui
+  const managedTeamIds = managedTeams.map((t) => t.id);
+  const teamAssignments = managedTeamIds.length > 0
+    ? await prisma.courseAssignment.findMany({
+        where: { assigningTeamId: { in: managedTeamIds } },
+        include: { user: { select: USER_SELECT } },
+      })
+    : [];
+  const directAssignments = await prisma.courseAssignment.findMany({
+    where: { assignedById: userId, assigningTeamId: null },
+    include: { user: { select: USER_SELECT } },
+  });
+
+  const hasScope = managedTeams.length > 0 || teamAssignments.length > 0 || directAssignments.length > 0;
   if (!hasScope) return null;
 
   const teams = managedTeams.map((t) => ({ id: t.id, name: t.name }));
 
-  // Union des utilisateurs : membres d'équipe + utilisateurs assignés
+  // Union des utilisateurs : membres des équipes + destinataires des affectations
   const seenIds = new Set<string>();
-  const rawUsers: typeof assignedByManager[number]["user"][] = [];
+  const rawUsers: (typeof teamAssignments)[number]["user"][] = [];
 
   for (const t of managedTeams) {
     for (const m of t.members) {
       if (!seenIds.has(m.user.id)) { seenIds.add(m.user.id); rawUsers.push(m.user); }
     }
   }
-  for (const a of assignedByManager) {
+  for (const a of [...teamAssignments, ...directAssignments]) {
     if (!seenIds.has(a.user.id)) { seenIds.add(a.user.id); rawUsers.push(a.user); }
   }
 
@@ -86,6 +94,73 @@ async function getManagerData(userId: string) {
   return { courses, teams, users };
 }
 
+async function getCreatorData(userId: string) {
+  // Un créateur voit uniquement les affectations qu'il a personnellement créées
+  const assignments = await prisma.courseAssignment.findMany({
+    where: { assignedById: userId },
+    include: {
+      user: {
+        select: {
+          id: true, name: true, email: true,
+          teams: { include: { team: { select: { id: true, name: true } } } },
+          courseProgress: { select: { courseId: true, progress: true } },
+          certificates: { select: { courseId: true } },
+        },
+      },
+      course: { select: { id: true, title: true } },
+    },
+  });
+
+  if (assignments.length === 0) return null;
+
+  // Cours visibles
+  const courseMap = new Map(assignments.map((a) => [a.courseId, a.course.title]));
+  const courses = [...courseMap.entries()]
+    .map(([id, title]) => ({ id, title }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+
+  // Teams présentes parmi les apprenants assignés
+  const teamMap = new Map<string, string>();
+  for (const a of assignments) {
+    for (const ut of a.user.teams) teamMap.set(ut.team.id, ut.team.name);
+  }
+  const teams = [...teamMap.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+
+  // Dédupliquer les apprenants
+  const seenIds = new Set<string>();
+  const rawUsers: typeof assignments[number]["user"][] = [];
+  for (const a of assignments) {
+    if (!seenIds.has(a.user.id)) { seenIds.add(a.user.id); rawUsers.push(a.user); }
+  }
+
+  // Pour chaque apprenant, ne garder que les cours que ce créateur lui a assignés
+  const assignedByCourseMap = new Map<string, Set<string>>(); // userId → courseIds
+  for (const a of assignments) {
+    if (!assignedByCourseMap.has(a.userId)) assignedByCourseMap.set(a.userId, new Set());
+    assignedByCourseMap.get(a.userId)!.add(a.courseId);
+  }
+
+  const users: UserProgressRow[] = rawUsers
+    .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""))
+    .map((u) => {
+      const progressMap = new Map(u.courseProgress.map((p) => [p.courseId, p.progress]));
+      const certSet = new Set(u.certificates.map((c) => c.courseId).filter(Boolean) as string[]);
+      const myCourseIds = assignedByCourseMap.get(u.id) ?? new Set();
+      return {
+        id: u.id, name: u.name, email: u.email,
+        teams: u.teams.map((ut) => ({ id: ut.team.id, name: ut.team.name })),
+        assignments: [...myCourseIds].map((courseId) => {
+          const isDone = certSet.has(courseId);
+          const prog = progressMap.get(courseId) ?? 0;
+          const status: CourseStatus = isDone ? "completed" : prog > 0 ? "in_progress" : "not_started";
+          return { courseId, courseTitle: courseMap.get(courseId) ?? courseId, status, progress: isDone ? 100 : prog };
+        }),
+      };
+    });
+
+  return { courses, teams, users };
+}
+
 export default async function ManagerProgressPage() {
   const session = await auth();
   if (!session) redirect("/login");
@@ -93,37 +168,54 @@ export default async function ManagerProgressPage() {
   // Admin → rediriger vers la page admin complète
   if (session.user.sessionMode === "admin") redirect("/dashboard/admin/progress");
 
-  // Vérifier le rôle manager
+  // Vérifier rôle manager ou creator
+  const roleRecord = await prisma.userRole.findFirst({
+    where: { userId: session.user.id, role: { name: { in: ["manager", "creator"] } } },
+  });
+  if (!roleRecord) redirect("/dashboard");
+
   const isManager = await prisma.userRole.findFirst({
     where: { userId: session.user.id, role: { name: "manager" } },
-  });
-  if (!isManager) redirect("/dashboard");
+  }) !== null;
 
-  const data = await getManagerData(session.user.id);
+  // Manager → scope équipe (via assigningTeamId) + ses propres affectations directes
+  // Créateur → scope ses propres affectations uniquement
+  const data = isManager
+    ? await getManagerData(session.user.id)
+    : await getCreatorData(session.user.id);
+
+  const firstName = session.user.name?.split(" ")[0] ?? "";
 
   if (!data) {
+    const hint = isManager
+      ? "Vous n'êtes manager d'aucune équipe et n'avez pas encore effectué d'affectations."
+      : "Vous n'avez pas encore affecté de cours à des apprenants.";
     return (
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
-          <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">Suivi de mon équipe</h1>
+          <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">
+            {isManager ? "Suivi de mon équipe" : "Suivi de mes affectations"}
+          </h1>
         </div>
         <div className="bg-white rounded-2xl border border-[#E5E5EA] p-12 flex flex-col items-center gap-3 text-center">
-          <p className="text-[15px] font-medium text-[#1D1D1F]">Vous n&apos;êtes manager d&apos;aucune équipe</p>
-          <p className="text-[13px] text-[#6E6E73]">Contactez un administrateur pour être assigné à une équipe.</p>
+          <p className="text-[14px] text-[#6E6E73]">{hint}</p>
         </div>
       </div>
     );
   }
 
-  const firstName = session.user.name?.split(" ")[0] ?? "";
-  const teamNames = data.teams.map((t) => t.name).join(", ");
+  const subtitle = isManager
+    ? `Équipe${data.teams.length > 1 ? "s" : ""} : ${data.teams.map((t) => t.name).join(", ")}`
+    : "Progression des apprenants sur vos affectations";
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">Suivi de mon équipe</h1>
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">
+          {isManager ? "Suivi de mon équipe" : "Suivi de mes affectations"}
+        </h1>
         <p className="text-[15px] text-[#6E6E73] mt-0.5">
-          {firstName ? `${firstName} · ` : ""}Équipe{data.teams.length > 1 ? "s" : ""} : {teamNames}
+          {firstName ? `${firstName} · ` : ""}{subtitle}
         </p>
       </div>
       <ProgressClient courses={data.courses} teams={data.teams} users={data.users} />
