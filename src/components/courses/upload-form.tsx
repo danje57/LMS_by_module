@@ -416,7 +416,7 @@ function FormButtons({ loading, label, onCancel }: { loading: boolean; label: st
 // ─── Composant principal ──────────────────────────────────────────────────────
 export function UploadForm() {
   const router = useRouter();
-  const [tab, setTab] = useState<"h5p" | "pptx">("h5p");
+  const [tab, setTab] = useState<"h5p" | "pptx">("pptx");
 
   function onSuccess() {
     router.push("/dashboard/courses");
@@ -427,7 +427,7 @@ export function UploadForm() {
     <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-[#E5E5EA]">
-        {(["h5p", "pptx"] as const).map((t) => (
+        {(["pptx", "h5p"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
