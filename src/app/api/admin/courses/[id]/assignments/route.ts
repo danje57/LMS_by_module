@@ -34,10 +34,19 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  if (session?.user.sessionMode !== "admin")
+  if (!session?.user?.id)
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  // Admins et managers peuvent affecter des cours
+  const isAdmin = session.user.sessionMode === "admin";
+  if (!isAdmin) {
+    const isManager = await prisma.userRole.findFirst({
+      where: { userId: session.user.id, role: { name: "manager" } },
+    });
+    if (!isManager) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  }
 
   const { id: courseId } = await params;
+  const assignedById = session.user.id;
   const { assignments } = await req.json() as {
     assignments: { userId: string; dueDate: string | null }[];
   };
@@ -80,7 +89,7 @@ export async function PUT(
 
     ...toAdd.map(([userId, dueDate]) =>
       prisma.courseAssignment.create({
-        data: { courseId, userId, dueDate: dueDate ? new Date(dueDate) : null },
+        data: { courseId, userId, dueDate: dueDate ? new Date(dueDate) : null, assignedById },
       })
     ),
     ...toUpdate.map(([userId, dueDate]) =>

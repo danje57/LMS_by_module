@@ -4,80 +4,84 @@ import { prisma } from "@/lib/prisma";
 import { ProgressClient } from "@/components/admin/progress-client";
 import type { UserProgressRow, CourseStatus } from "@/components/admin/progress-client";
 
-async function getManagerData(userId: string) {
-  // Équipes gérées par ce manager
-  const managedTeams = await prisma.team.findMany({
-    where: { managerId: userId },
-    select: {
-      id: true,
-      name: true,
-      members: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              teams: { include: { team: { select: { id: true, name: true } } } },
-              assignments: { include: { course: { select: { id: true, title: true } } } },
-              courseProgress: { select: { courseId: true, progress: true } },
-              certificates: { select: { courseId: true } },
-            },
-          },
-        },
-      },
-    },
-  });
+const USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  teams: { include: { team: { select: { id: true, name: true } } } },
+  assignments: { include: { course: { select: { id: true, title: true } } } },
+  courseProgress: { select: { courseId: true, progress: true } },
+  certificates: { select: { courseId: true } },
+} as const;
 
-  if (managedTeams.length === 0) return null;
+function buildUserRow(u: {
+  id: string;
+  name: string | null;
+  email: string;
+  teams: { team: { id: string; name: string } }[];
+  assignments: { courseId: string; course: { id: string; title: string } }[];
+  courseProgress: { courseId: string; progress: number }[];
+  certificates: { courseId: string | null }[];
+}): UserProgressRow {
+  const progressMap = new Map(u.courseProgress.map((p) => [p.courseId, p.progress]));
+  const certSet = new Set(u.certificates.map((c) => c.courseId).filter(Boolean) as string[]);
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    teams: u.teams.map((ut) => ({ id: ut.team.id, name: ut.team.name })),
+    assignments: u.assignments.map((a) => {
+      const isDone = certSet.has(a.courseId);
+      const prog = progressMap.get(a.courseId) ?? 0;
+      const status: CourseStatus = isDone ? "completed" : prog > 0 ? "in_progress" : "not_started";
+      return { courseId: a.courseId, courseTitle: a.course.title, status, progress: isDone ? 100 : prog };
+    }),
+  };
+}
+
+async function getManagerData(userId: string) {
+  // Équipes gérées + utilisateurs à qui ce manager a affecté des cours (hors équipe)
+  const [managedTeams, assignedByManager] = await Promise.all([
+    prisma.team.findMany({
+      where: { managerId: userId },
+      select: { id: true, name: true, members: { include: { user: { select: USER_SELECT } } } },
+    }),
+    prisma.courseAssignment.findMany({
+      where: { assignedById: userId },
+      include: { user: { select: USER_SELECT } },
+    }),
+  ]);
+
+  const hasScope = managedTeams.length > 0 || assignedByManager.length > 0;
+  if (!hasScope) return null;
 
   const teams = managedTeams.map((t) => ({ id: t.id, name: t.name }));
 
-  // Dédupliquer les membres (un user peut être dans plusieurs équipes du manager)
+  // Union des utilisateurs : membres d'équipe + utilisateurs assignés
   const seenIds = new Set<string>();
-  const allMembers = managedTeams
-    .flatMap((t) => t.members.map((m) => m.user))
-    .filter((u) => {
-      if (seenIds.has(u.id)) return false;
-      seenIds.add(u.id);
-      return true;
-    });
+  const rawUsers: typeof assignedByManager[number]["user"][] = [];
 
-  // Cours assignés aux membres
-  const courseMap = new Map<string, string>();
-  for (const u of allMembers) {
-    for (const a of u.assignments) {
-      courseMap.set(a.course.id, a.course.title);
+  for (const t of managedTeams) {
+    for (const m of t.members) {
+      if (!seenIds.has(m.user.id)) { seenIds.add(m.user.id); rawUsers.push(m.user); }
     }
+  }
+  for (const a of assignedByManager) {
+    if (!seenIds.has(a.user.id)) { seenIds.add(a.user.id); rawUsers.push(a.user); }
+  }
+
+  // Cours visibles = cours assignés à ces utilisateurs (tous, pas seulement par ce manager)
+  const courseMap = new Map<string, string>();
+  for (const u of rawUsers) {
+    for (const a of u.assignments) courseMap.set(a.course.id, a.course.title);
   }
   const courses = [...courseMap.entries()]
     .map(([id, title]) => ({ id, title }))
     .sort((a, b) => a.title.localeCompare(b.title));
 
-  const users: UserProgressRow[] = allMembers
+  const users: UserProgressRow[] = rawUsers
     .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""))
-    .map((u) => {
-      const progressMap = new Map(u.courseProgress.map((p) => [p.courseId, p.progress]));
-      const certSet = new Set(u.certificates.map((c) => c.courseId).filter(Boolean) as string[]);
-
-      return {
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        teams: u.teams.map((ut) => ({ id: ut.team.id, name: ut.team.name })),
-        assignments: u.assignments.map((a) => {
-          const isDone = certSet.has(a.courseId);
-          const prog = progressMap.get(a.courseId) ?? 0;
-          const status: CourseStatus = isDone ? "completed" : prog > 0 ? "in_progress" : "not_started";
-          return {
-            courseId: a.courseId,
-            courseTitle: a.course.title,
-            status,
-            progress: isDone ? 100 : prog,
-          };
-        }),
-      };
-    });
+    .map(buildUserRow);
 
   return { courses, teams, users };
 }

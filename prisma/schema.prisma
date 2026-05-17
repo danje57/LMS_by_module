@@ -16,8 +16,9 @@ model User {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   authAccounts   AuthAccount[]
-  assignments    CourseAssignment[]
-  courseProgress UserCourseProgress[]
+  assignments      CourseAssignment[]
+  assignedCourses  CourseAssignment[]   @relation("AssignedByUser")
+  courseProgress   UserCourseProgress[]
   quizResults    UserQuizResult[]
   certificates   Certificate[]
   roles          UserRole[]
@@ -148,13 +149,15 @@ model CourseAsset {
 }
 
 model CourseAssignment {
-  id         String    @id @default(cuid())
-  userId     String
-  courseId   String
-  assignedAt DateTime  @default(now())
-  dueDate    DateTime?
-  course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  userId       String
+  courseId     String
+  assignedAt   DateTime  @default(now())
+  dueDate      DateTime?
+  assignedById String?
+  course       Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedBy   User?     @relation("AssignedByUser", fields: [assignedById], references: [id], onDelete: SetNull)
 
   @@unique([userId, courseId])
   @@map("course_assignments")
