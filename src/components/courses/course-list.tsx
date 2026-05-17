@@ -17,11 +17,17 @@ export type CourseProgress = {
   latestCertificateId: string | null;
 };
 
+export type CourseMeta = {
+  createdByName: string | null;
+  assignedByName: string | null;
+};
+
 interface CourseListProps {
   courses: Course[];
   isAdmin?: boolean;
   isManagerOrCreator?: boolean;
   progressMap?: Record<string, CourseProgress>;
+  metaMap?: Record<string, CourseMeta>;
   assignedCourseIds?: string[];
 }
 
@@ -30,6 +36,7 @@ function CourseCard({
   isAdmin,
   isManagerOrCreator,
   progressMap,
+  meta,
   isAssignedToMe,
   onAssign,
   onManagerAssign,
@@ -38,6 +45,7 @@ function CourseCard({
   isAdmin: boolean;
   isManagerOrCreator: boolean;
   progressMap: Record<string, CourseProgress>;
+  meta?: CourseMeta;
   isAssignedToMe: boolean;
   onAssign: (t: { id: string; title: string }) => void;
   onManagerAssign: (t: { id: string; title: string }) => void;
@@ -79,6 +87,14 @@ function CourseCard({
             </span>
           )}
         </div>
+
+        {(meta?.createdByName || (isAssignedToMe && meta?.assignedByName)) && (
+          <p className="text-[11px] text-[#ADADB8] leading-relaxed">
+            {meta?.createdByName && <span>Créé par <span className="text-[#6E6E73]">{meta.createdByName}</span></span>}
+            {meta?.createdByName && isAssignedToMe && meta?.assignedByName && <span> · </span>}
+            {isAssignedToMe && meta?.assignedByName && <span>Affecté par <span className="text-[#6E6E73]">{meta.assignedByName}</span></span>}
+          </p>
+        )}
 
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-[#ADADB8]">{formatFileSize(course.fileSize)}</span>
@@ -137,7 +153,7 @@ function CourseCard({
   );
 }
 
-export function CourseList({ courses, isAdmin = false, isManagerOrCreator = false, progressMap = {}, assignedCourseIds }: CourseListProps) {
+export function CourseList({ courses, isAdmin = false, isManagerOrCreator = false, progressMap = {}, metaMap = {}, assignedCourseIds }: CourseListProps) {
   const assignedSet = new Set(assignedCourseIds ?? []);
   const [search, setSearch] = useState("");
   const [filterQuiz, setFilterQuiz] = useState<"all" | "yes" | "no">("all");
@@ -210,7 +226,7 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
         </button>
       </div>
 
-      {!isAdmin && (
+      {!isAdmin && (!isManagerOrCreator || assignedSet.size > 0) && (
         <div className="flex gap-1.5 bg-white border border-[#D2D2D7] rounded-xl p-1 w-fit">
           {([
             { key: "all",         label: "Tous",            dot: null },
@@ -251,17 +267,72 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((course) => (
             <CourseCard key={course.id} course={course} isAdmin={true} isManagerOrCreator={false}
-              progressMap={progressMap} isAssignedToMe={false} onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
+              progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={false} onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
           ))}
         </div>
       ) : isManagerOrCreator ? (
-        /* Manager/Créateur : grille avec bouton Affecter sur chaque carte */
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((course) => (
-            <CourseCard key={course.id} course={course} isAdmin={false} isManagerOrCreator={true}
-              progressMap={progressMap} isAssignedToMe={assignedSet.has(course.id)}
-              onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
-          ))}
+        /* Manager/Créateur : "Mes formations" + "Bibliothèque" */
+        <div className="space-y-10">
+          {/* Section 1 — Mes formations (cours assignés à moi) */}
+          {(() => {
+            const myFormations = filtered.filter((c) => assignedSet.has(c.id));
+            const groups = [
+              { key: "not_started" as const, label: "Non commencé", color: "bg-[#0071E3]" },
+              { key: "in_progress"  as const, label: "En cours",     color: "bg-amber-400" },
+              { key: "completed"    as const, label: "Terminé",      color: "bg-emerald-400" },
+            ];
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2.5 border-b border-[#E5E5EA] pb-3">
+                  <h2 className="text-[17px] font-semibold text-[#1D1D1F]">Mes formations</h2>
+                  <span className="text-[12px] font-medium text-[#ADADB8]">{myFormations.length}</span>
+                </div>
+                {myFormations.length === 0 ? (
+                  <p className="text-[14px] text-[#6E6E73] py-4">Aucune formation ne vous est assignée.</p>
+                ) : (
+                  <div className="space-y-8">
+                    {groups.map(({ key, label, color }) => {
+                      if (filterStatus !== "all" && filterStatus !== key) return null;
+                      const group = myFormations.filter((c) => (progressMap[c.id]?.status ?? "not_started") === key);
+                      if (group.length === 0) return null;
+                      return (
+                        <div key={key}>
+                          <div className="flex items-center gap-2.5 mb-3">
+                            <div className={cn("w-2.5 h-2.5 rounded-full", color)} />
+                            <h3 className="text-[15px] font-semibold text-[#1D1D1F]">{label}</h3>
+                            <span className="text-[12px] text-[#ADADB8] font-medium">{group.length}</span>
+                          </div>
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {group.map((course) => (
+                              <CourseCard key={course.id} course={course} isAdmin={false} isManagerOrCreator={true}
+                                progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={true}
+                                onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Section 2 — Bibliothèque (tous les cours, pour affecter) */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2.5 border-b border-[#E5E5EA] pb-3">
+              <h2 className="text-[17px] font-semibold text-[#1D1D1F]">Bibliothèque</h2>
+              <span className="text-[12px] font-medium text-[#ADADB8]">{filtered.length}</span>
+              <span className="text-[12px] text-[#ADADB8]">— Affectez des cours à votre équipe</span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((course) => (
+                <CourseCard key={course.id} course={course} isAdmin={false} isManagerOrCreator={true}
+                  progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={false}
+                  onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
+              ))}
+            </div>
+          </div>
         </div>
       ) : (
         /* Apprenant : groupé par statut */
@@ -286,7 +357,7 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {group.map((course) => (
                     <CourseCard key={course.id} course={course} isAdmin={false} isManagerOrCreator={false}
-                      progressMap={progressMap} isAssignedToMe={true}
+                      progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={true}
                       onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
                   ))}
                 </div>

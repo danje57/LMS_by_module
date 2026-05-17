@@ -1,11 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { CourseList, type CourseProgress } from "@/components/courses/course-list";
+import { CourseList, type CourseProgress, type CourseMeta } from "@/components/courses/course-list";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
 async function getCourses(isAdmin: boolean, isManagerOrCreator: boolean, userId: string) {
-  // Admins et managers/créateurs voient tous les cours actifs
   if (isAdmin || isManagerOrCreator) {
     return prisma.course.findMany({ where: { isActive: true }, orderBy: { createdAt: "desc" } });
   }
@@ -13,6 +12,40 @@ async function getCourses(isAdmin: boolean, isManagerOrCreator: boolean, userId:
     where: { isActive: true, assignments: { some: { userId } } },
     orderBy: { createdAt: "desc" },
   });
+}
+
+async function getCourseMeta(
+  userId: string,
+  courseIds: string[],
+  isAdmin: boolean,
+): Promise<{ metaMap: Record<string, CourseMeta>; assignedCourseIds: string[] }> {
+  if (courseIds.length === 0) return { metaMap: {}, assignedCourseIds: [] };
+
+  const [createdByRows, assignmentRows] = await Promise.all([
+    prisma.course.findMany({
+      where: { id: { in: courseIds } },
+      select: { id: true, createdBy: { select: { name: true } } },
+    }),
+    isAdmin
+      ? Promise.resolve([] as { courseId: string; assignedBy: { name: string | null } | null }[])
+      : prisma.courseAssignment.findMany({
+          where: { userId, courseId: { in: courseIds } },
+          select: { courseId: true, assignedBy: { select: { name: true } } },
+        }),
+  ]);
+
+  const createdByMap = new Map(createdByRows.map((c) => [c.id, c.createdBy?.name ?? null]));
+  const assignedByMap = new Map(assignmentRows.map((a) => [a.courseId, a.assignedBy?.name ?? null]));
+
+  const metaMap: Record<string, CourseMeta> = {};
+  for (const id of courseIds) {
+    metaMap[id] = {
+      createdByName: createdByMap.get(id) ?? null,
+      assignedByName: assignedByMap.get(id) ?? null,
+    };
+  }
+
+  return { metaMap, assignedCourseIds: assignmentRows.map((a) => a.courseId) };
 }
 
 async function getProgressMap(userId: string): Promise<Record<string, CourseProgress>> {
@@ -64,9 +97,12 @@ export default async function CoursesPage() {
     : null;
   const isManagerOrCreator = !isAdmin && roleRecord !== null;
 
-  const [courses, progressMap] = await Promise.all([
-    getCourses(isAdmin ?? false, isManagerOrCreator, userId),
+  const courses = await getCourses(isAdmin ?? false, isManagerOrCreator, userId);
+  const courseIds = courses.map((c) => c.id);
+
+  const [progressMap, { metaMap, assignedCourseIds }] = await Promise.all([
     isAdmin ? Promise.resolve({} as Record<string, CourseProgress>) : getProgressMap(userId),
+    getCourseMeta(userId, courseIds, isAdmin ?? false),
   ]);
 
   return (
@@ -75,7 +111,7 @@ export default async function CoursesPage() {
         <div>
           <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">Cours</h1>
           <p className="text-[15px] text-[#6E6E73] mt-0.5">
-            {courses.length} cours {isAdmin ? "disponible" : "disponible"}{courses.length !== 1 ? "s" : ""}
+            {courses.length} cours{courses.length !== 1 ? "s" : ""} disponible{courses.length !== 1 ? "s" : ""}
           </p>
         </div>
         {isAdmin && (
@@ -93,10 +129,8 @@ export default async function CoursesPage() {
         isAdmin={isAdmin ?? false}
         isManagerOrCreator={isManagerOrCreator}
         progressMap={progressMap}
-        assignedCourseIds={isManagerOrCreator
-          ? (await prisma.courseAssignment.findMany({ where: { userId }, select: { courseId: true } })).map(a => a.courseId)
-          : undefined
-        }
+        metaMap={metaMap}
+        assignedCourseIds={isManagerOrCreator ? assignedCourseIds : undefined}
       />
     </div>
   );
