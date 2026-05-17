@@ -77,7 +77,7 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
     });
     const json = await res.json();
     if (!res.ok) return;
-    setTeams((prev) => prev.map((t) => (t.id === teamId ? { ...t, manager: json.manager } : t)));
+    setTeams((prev) => prev.map((t) => (t.id === teamId ? { ...t, manager: json.manager, members: json.members } : t)));
   }
 
   async function handleAddMember(teamId: string, userId: string) {
