@@ -151,16 +151,21 @@ export default async function CoursesPage() {
         <div>
           <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">Cours</h1>
           <p className="text-[15px] text-[#6E6E73] mt-0.5">
-            {courses.length} cours{courses.length !== 1 ? "s" : ""} disponible{courses.length !== 1 ? "s" : ""}
+            {isManagerOrCreator
+              ? `${assignedCourseIds.length} formation${assignedCourseIds.length !== 1 ? "s" : ""} assignée${assignedCourseIds.length !== 1 ? "s" : ""}`
+              : isAdmin
+              ? `${courses.length} cours disponible${courses.length !== 1 ? "s" : ""}`
+              : `${courses.length} formation${courses.length !== 1 ? "s" : ""} assignée${courses.length !== 1 ? "s" : ""}`
+            }
           </p>
         </div>
-        {isAdmin && (
+        {(isAdmin || isManagerOrCreator) && (
           <Link
             href="/dashboard/courses/upload"
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Ajouter
+            Ajouter un cours
           </Link>
         )}
       </div>

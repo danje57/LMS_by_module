@@ -333,7 +333,7 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
           <div className="flex border-b border-[#E5E5EA]">
             {([
               { key: "mes-formations" as const, label: "Mes formations", count: filtered.filter((c) => assignedSet.has(c.id)).length },
-              { key: "bibliotheque"   as const, label: "Bibliothèque",   count: filtered.length },
+              { key: "bibliotheque"   as const, label: "Bibliothèque",   count: assignableCourseIds ? filtered.filter((c) => assignableCourseIds.has(c.id)).length : filtered.length },
             ]).map(({ key, label, count }) => (
               <button
                 key={key}

@@ -9,6 +9,8 @@ const fieldClass =
   "w-full h-11 px-3.5 rounded-xl border border-[#D2D2D7] bg-white text-[15px] text-[#1D1D1F] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20";
 const labelClass = "block text-[13px] font-medium text-[#1D1D1F] mb-1.5";
 
+interface Creator { id: string; name: string | null; email: string }
+
 interface SharedFields {
   title: string;
   duration: string;
@@ -136,7 +138,7 @@ function ProgressBar({ progress, label }: { progress: number; label: string }) {
 type DuplicateInfo = { existingTitle: string; existingId: string };
 
 // ─── Formulaire H5P ──────────────────────────────────────────────────────────
-function H5PForm({ onSuccess }: { onSuccess: () => void }) {
+function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => void; isAdmin: boolean; userId: string; creators: Creator[] }) {
   const [hasQuiz, setHasQuiz] = useState(false);
   const [passingScore, setPassingScore] = useState("70");
   const [loading, setLoading] = useState(false);
@@ -208,6 +210,19 @@ function H5PForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
+      {isAdmin ? (
+        <div>
+          <label className={labelClass}>Créateur du cours</label>
+          <select name="createdById" required className={fieldClass}>
+            <option value="">— Sélectionner un manager / créateur —</option>
+            {creators.map((c) => (
+              <option key={c.id} value={c.id}>{c.name ?? c.email}</option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <input type="hidden" name="createdById" value={userId} />
+      )}
       <div>
         <label className={labelClass}>Titre du cours</label>
         <input name="title" required maxLength={255} placeholder="Ex : Introduction à la sécurité" className={fieldClass} />
@@ -230,7 +245,7 @@ function H5PForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 // ─── Formulaire PPTX ─────────────────────────────────────────────────────────
-function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
+function PPTXForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => void; isAdmin: boolean; userId: string; creators: Creator[] }) {
   const [hasQuiz, setHasQuiz] = useState(false);
   const [passingScore, setPassingScore] = useState("70");
   const [loading, setLoading] = useState(false);
@@ -240,6 +255,7 @@ function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
+  const [createdById, setCreatedById] = useState(isAdmin ? "" : userId);
   const durationRef = React.useRef<HTMLInputElement>(null);
 
   function handleFileChange(f: File | null) {
@@ -268,6 +284,7 @@ function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
     form.append("duration", durationRef.current?.value ?? "30");
     form.append("hasQuiz", hasQuiz ? "on" : "");
     form.append("passingScore", passingScore);
+    form.append("createdById", createdById);
     if (force) form.append("force", "true");
 
     try {
@@ -309,6 +326,7 @@ function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!selectedFile) { setError("Veuillez sélectionner un fichier .pptx."); return; }
+    if (isAdmin && !createdById) { setError("Veuillez sélectionner un créateur."); return; }
     await submit(false);
   }
 
@@ -320,6 +338,22 @@ function PPTXForm({ onSuccess }: { onSuccess: () => void }) {
           Chaque slide devient une page interactive. Durée de conversion&nbsp;: ~30s/slide.
         </p>
       </div>
+      {isAdmin && (
+        <div>
+          <label className={labelClass}>Créateur du cours</label>
+          <select
+            value={createdById}
+            onChange={(e) => setCreatedById(e.target.value)}
+            required
+            className={fieldClass}
+          >
+            <option value="">— Sélectionner un manager / créateur —</option>
+            {creators.map((c) => (
+              <option key={c.id} value={c.id}>{c.name ?? c.email}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <div>
         <label className={labelClass}>Titre du cours</label>
         <input
@@ -414,7 +448,7 @@ function FormButtons({ loading, label, onCancel }: { loading: boolean; label: st
 }
 
 // ─── Composant principal ──────────────────────────────────────────────────────
-export function UploadForm() {
+export function UploadForm({ isAdmin, userId, creators }: { isAdmin: boolean; userId: string; creators: Creator[] }) {
   const router = useRouter();
   const [tab, setTab] = useState<"h5p" | "pptx">("pptx");
 
@@ -453,7 +487,9 @@ export function UploadForm() {
             ? "Uploadez un fichier .h5p existant."
             : "Convertissez un PowerPoint (.pptx) en cours interactif automatiquement."}
         </p>
-        {tab === "h5p" ? <H5PForm onSuccess={onSuccess} /> : <PPTXForm onSuccess={onSuccess} />}
+        {tab === "h5p"
+          ? <H5PForm onSuccess={onSuccess} isAdmin={isAdmin} userId={userId} creators={creators} />
+          : <PPTXForm onSuccess={onSuccess} isAdmin={isAdmin} userId={userId} creators={creators} />}
       </div>
     </div>
   );

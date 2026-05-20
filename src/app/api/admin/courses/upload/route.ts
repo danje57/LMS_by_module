@@ -58,8 +58,14 @@ function parseMultipart(req: NextRequest): Promise<{
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (session?.user.sessionMode !== "admin") {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+
+  const isAdmin = session.user.sessionMode === "admin";
+  if (!isAdmin) {
+    const role = await prisma.userRole.findFirst({
+      where: { userId: session.user.id, role: { name: { in: ["manager", "creator"] } } },
+    });
+    if (!role) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 
   let tmpPath: string | null = null;
@@ -73,6 +79,7 @@ export async function POST(req: NextRequest) {
     const hasQuiz = fields.hasQuiz === "on";
     const passingScore = hasQuiz ? Math.max(0, Math.min(100, parseInt(fields.passingScore ?? "70", 10))) : null;
     const force = fields.force === "true";
+    const createdById = isAdmin ? (fields.createdById?.trim() || null) : session.user.id;
 
     if (!title) return NextResponse.json({ error: "Titre requis" }, { status: 400 });
     if (isNaN(duration) || duration < 1) return NextResponse.json({ error: "Durée invalide" }, { status: 400 });
@@ -103,7 +110,7 @@ export async function POST(req: NextRequest) {
     const relPath = path.join("courses", courseHash, safeName);
 
     await prisma.course.create({
-      data: { title, duration, hasQuiz, passingScore, filePath: relPath, originalFileName: file.originalName, fileSize: BigInt(file.size), fileHash },
+      data: { title, duration, hasQuiz, passingScore, filePath: relPath, originalFileName: file.originalName, fileSize: BigInt(file.size), fileHash, createdById },
     });
 
     return NextResponse.json({ ok: true });

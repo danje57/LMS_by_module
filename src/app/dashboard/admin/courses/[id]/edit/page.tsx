@@ -13,7 +13,10 @@ interface CourseData {
   duration: number;
   passingScore: number | null;
   hasQuiz: boolean;
+  createdById: string | null;
 }
+
+interface Creator { id: string; name: string | null; email: string }
 
 const inputCls = "w-full h-10 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[14px] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all";
 const labelCls = "block text-[12px] font-medium text-[#6E6E73] mb-1";
@@ -25,6 +28,8 @@ export default function EditCoursePage() {
   const [duration, setDuration] = useState(0);
   const [hasQuiz, setHasQuiz] = useState(false);
   const [passingScore, setPassingScore] = useState(80);
+  const [createdById, setCreatedById] = useState<string>("");
+  const [creators, setCreators] = useState<Creator[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
@@ -38,7 +43,12 @@ export default function EditCoursePage() {
         setDuration(data.duration);
         setHasQuiz(data.hasQuiz);
         setPassingScore(data.passingScore ?? 80);
+        setCreatedById(data.createdById ?? "");
       });
+
+    fetch("/api/admin/users/creators")
+      .then((r) => r.json())
+      .then((data: Creator[]) => setCreators(data));
   }, [id]);
 
   async function handleSave() {
@@ -46,7 +56,7 @@ export default function EditCoursePage() {
     await fetch(`/api/admin/courses/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, duration, hasQuiz, passingScore: hasQuiz ? passingScore : null }),
+      body: JSON.stringify({ title, duration, hasQuiz, passingScore: hasQuiz ? passingScore : null, createdById }),
     });
     setSaving(false);
     setSaved(true);
@@ -82,6 +92,15 @@ export default function EditCoursePage() {
         {/* Bloc infos */}
         <div className="p-6 space-y-4">
           <h2 className="text-[13px] font-semibold text-[#1D1D1F]">Informations</h2>
+          <div>
+            <label className={labelCls}>Créateur du cours</label>
+            <select value={createdById} onChange={(e) => setCreatedById(e.target.value)} className={inputCls}>
+              <option value="">— Aucun —</option>
+              {creators.map((c) => (
+                <option key={c.id} value={c.id}>{c.name ?? c.email}</option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className={labelCls}>Titre</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />

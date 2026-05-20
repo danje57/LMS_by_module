@@ -81,7 +81,15 @@ async function addLibrariesToZip(zip: AdmZip) {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+
+  const isAdmin = session.user.sessionMode === "admin";
+  if (!isAdmin) {
+    const role = await prisma.userRole.findFirst({
+      where: { userId: session.user.id, role: { name: { in: ["manager", "creator"] } } },
+    });
+    if (!role) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  }
 
   let pptxPath: string | null = null;
   let contentDir: string | null = null;
@@ -96,6 +104,7 @@ export async function POST(req: NextRequest) {
     const hasQuiz = fields.hasQuiz === "on";
     const passingScore = hasQuiz ? (parseInt(fields.passingScore ?? "70", 10) || 70) : null;
     const force = fields.force === "true";
+    const createdById = isAdmin ? (fields.createdById?.trim() || null) : session.user.id;
 
     // Hash du PPTX source pour détection de doublons
     const pptxBuffer = await readFile(pptxPath);
@@ -164,6 +173,7 @@ export async function POST(req: NextRequest) {
         hasQuiz,
         passingScore,
         isActive: true,
+        createdById,
       },
     });
 
