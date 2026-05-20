@@ -10,6 +10,7 @@ type Cert = {
   courseTitle: string;
   completedAt: Date;
   hasQuiz: boolean;
+  courseId: string | null;
 };
 
 type SortKey = "date" | "title";
@@ -29,7 +30,14 @@ function CertCard({ cert }: { cert: Cert }) {
         <Award className="w-5 h-5 text-emerald-500" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-semibold text-[#1D1D1F] truncate">{cert.courseTitle}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-[14px] font-semibold text-[#1D1D1F] truncate">{cert.courseTitle}</p>
+          {cert.courseId === null && (
+            <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[#F5F5F7] text-[#8E8E93] border border-[#E5E5EA]">
+              Cours supprimé
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2 mt-0.5">
           <Clock className="w-3 h-3 text-[#ADADB8]" />
           <span className="text-[12px] text-[#6E6E73]">{dateStr}</span>

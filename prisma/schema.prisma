@@ -157,6 +157,9 @@ model CourseAssignment {
   dueDate         DateTime?
   assignedById    String?
   assigningTeamId String?
+  notifiedAssignedAt DateTime?
+  notifiedWarningAt  DateTime?
+  notifiedExpiredAt  DateTime?
   course          Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignedBy      User?     @relation("AssignedByUser", fields: [assignedById], references: [id], onDelete: SetNull)
@@ -214,6 +217,30 @@ model Certificate {
   course       Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
 
   @@map("certificates")
+}
+
+model MailSetting {
+  id                String   @id @default(cuid())
+  provider          String   @default("smtp")
+  fromName          String   @default("LMS Notifications")
+  appUrl            String?
+  // SMTP
+  smtpHost          String?
+  smtpPort          Int      @default(587)
+  smtpSecure        Boolean  @default(false)
+  smtpUser          String?
+  smtpPass          String?
+  smtpFrom          String?
+  // Microsoft Graph (Exchange Online)
+  graphTenantId     String?
+  graphClientId     String?
+  graphClientSecret String?
+  graphFrom         String?
+  // Cron
+  cronSecret        String?
+  updatedAt         DateTime @updatedAt
+
+  @@map("mail_settings")
 }
 
 model BrandingSetting {

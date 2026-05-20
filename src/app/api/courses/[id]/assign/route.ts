@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendMail, isMailConfigured } from "@/lib/mail";
+import { getMailConfig } from "@/lib/mail-config";
+import { templateAssignment } from "@/lib/mail-templates";
 
 // GET — liste des affectations actuelles (manager/créateur)
 export async function GET(
@@ -53,6 +56,32 @@ export async function PUT(
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
 
   const { id: courseId } = await params;
+
+  // Vérifier que le manager/creator est autorisé à affecter CE cours
+  if (!isAdmin) {
+    const course = await prisma.course.findUnique({ where: { id: courseId }, select: { createdById: true } });
+    const isOwn = course?.createdById === session.user.id;
+    if (!isOwn) {
+      // Manager : vérifier si le créateur du cours est membre d'une de ses équipes
+      const isManager = await prisma.userRole.findFirst({
+        where: { userId: session.user.id, role: { name: "manager" } },
+      });
+      if (!isManager) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+
+      if (course?.createdById) {
+        const creatorInTeam = await prisma.userTeam.findFirst({
+          where: {
+            userId: course.createdById,
+            team: { managerId: session.user.id },
+          },
+        });
+        if (!creatorInTeam) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+      } else {
+        return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+      }
+    }
+  }
+
   const { assignments, teamContextId } = await req.json() as {
     assignments: { userId: string; dueDate: string | null }[];
     teamContextId: string | null;
@@ -106,7 +135,14 @@ export async function PUT(
     ]),
     ...toAdd.map(([userId, dueDate]) =>
       prisma.courseAssignment.create({
-        data: { courseId, userId, dueDate: dueDate ? new Date(dueDate) : null, assignedById, assigningTeamId },
+        data: {
+          courseId,
+          userId,
+          dueDate: dueDate ? new Date(dueDate) : null,
+          assignedById,
+          assigningTeamId,
+          notifiedAssignedAt: null,
+        },
       })
     ),
     ...toUpdate.map(([userId, dueDate]) =>
@@ -116,6 +152,70 @@ export async function PUT(
       })
     ),
   ]);
+
+  // Envoyer les emails d'affectation (hors transaction — best-effort)
+  if (toAdd.length && await isMailConfigured()) {
+    const newUserIds = toAdd.map(([userId]) => userId);
+    const [newUsers, course, assigner, mailCfg] = await Promise.all([
+      prisma.user.findMany({
+        where: { id: { in: newUserIds } },
+        select: { id: true, name: true, email: true },
+      }),
+      prisma.course.findUnique({ where: { id: courseId }, select: { title: true } }),
+      prisma.user.findUnique({ where: { id: assignedById }, select: { name: true } }),
+      getMailConfig(),
+    ]);
+
+    const branding = {
+      appName: mailCfg.fromName,
+      appUrl: mailCfg.appUrl ?? undefined,
+    };
+    const dueDateMap = new Map(toAdd.map(([userId, dueDate]) => [userId, dueDate]));
+
+    await Promise.allSettled(
+      newUsers.map((u) => {
+        const dd = dueDateMap.get(u.id);
+        const { subject, html } = templateAssignment({
+          branding,
+          userName: u.name ?? u.email,
+          courseTitle: course?.title ?? "Formation",
+          dueDate: dd ? new Date(dd) : null,
+          assignedByName: assigner?.name ?? null,
+        });
+        return sendMail({ to: u.email, subject, html }).then(() =>
+          prisma.courseAssignment.update({
+            where: { userId_courseId: { userId: u.id, courseId } },
+            data: { notifiedAssignedAt: new Date() },
+          })
+        );
+      })
+    );
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+// PATCH — mise à jour de la deadline d'un seul utilisateur
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+
+  const isAdmin = session.user.sessionMode === "admin";
+  const allowed = isAdmin || await prisma.userRole.findFirst({
+    where: { userId: session.user.id, role: { name: { in: ["manager", "creator"] } } },
+  });
+  if (!allowed) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+
+  const { id: courseId } = await params;
+  const { userId, dueDate } = await req.json() as { userId: string; dueDate: string | null };
+
+  await prisma.courseAssignment.update({
+    where: { userId_courseId: { userId, courseId } },
+    data: { dueDate: dueDate ? new Date(dueDate) : null },
+  });
 
   return NextResponse.json({ ok: true });
 }

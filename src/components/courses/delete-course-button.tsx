@@ -7,9 +7,10 @@ import { Trash2, AlertTriangle } from "lucide-react";
 interface DeleteCourseButtonProps {
   courseId: string;
   courseTitle: string;
+  isManagerContext?: boolean;
 }
 
-export function DeleteCourseButton({ courseId, courseTitle }: DeleteCourseButtonProps) {
+export function DeleteCourseButton({ courseId, courseTitle, isManagerContext = false }: DeleteCourseButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -59,8 +60,12 @@ export function DeleteCourseButton({ courseId, courseTitle }: DeleteCourseButton
             <p className="text-[14px] text-[#3C3C43]">
               Voulez-vous vraiment supprimer{" "}
               <span className="font-semibold">« {courseTitle} »</span> ?
-              Le fichier H5P sera également supprimé du serveur.
             </p>
+            <ul className="text-[13px] text-[#6E6E73] space-y-1 list-disc list-inside">
+              <li>Le fichier H5P sera supprimé du serveur.</li>
+              <li>Toutes les affectations en cours seront supprimées.</li>
+              <li className="text-emerald-600 font-medium">Les certificats déjà obtenus sont conservés.</li>
+            </ul>
 
             <div className="flex gap-2 pt-1">
               <button

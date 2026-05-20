@@ -3,6 +3,10 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { RoleType } from "@prisma/client";
+import { sendMail, isMailConfigured } from "@/lib/mail";
+import { getMailConfig } from "@/lib/mail-config";
+import { templateAccountCreated } from "@/lib/mail-templates";
+import { validatePassword, generateStrongPassword } from "@/lib/password";
 
 export async function GET() {
   const session = await auth();
@@ -31,15 +35,16 @@ export async function POST(req: NextRequest) {
   if (session?.user.sessionMode !== "admin")
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
 
-  const { name, email, password, roles } = await req.json();
+  const { name, email, roles } = await req.json();
 
-  if (!email || !password)
-    return NextResponse.json({ error: "Email et mot de passe requis" }, { status: 400 });
+  if (!email)
+    return NextResponse.json({ error: "Email requis" }, { status: 400 });
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing)
     return NextResponse.json({ error: "Cet email est déjà utilisé" }, { status: 409 });
 
+  const password = generateStrongPassword();
   const passwordHash = await bcrypt.hash(password, 12);
 
   const roleRecords = await prisma.role.findMany({
@@ -57,6 +62,19 @@ export async function POST(req: NextRequest) {
     },
     include: { roles: { include: { role: true } } },
   });
+
+  // Email de bienvenue (best-effort)
+  if (await isMailConfigured()) {
+    const mailCfg = await getMailConfig();
+    const branding = { appName: mailCfg.fromName, appUrl: mailCfg.appUrl ?? undefined };
+    const { subject, html } = templateAccountCreated({
+      branding,
+      userName: user.name ?? user.email,
+      email: user.email,
+      password,
+    });
+    await sendMail({ to: user.email, subject, html }).catch(() => null);
+  }
 
   return NextResponse.json(
     {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Search, Users, UserPlus, Building2, CheckCheck } from "lucide-react";
+import { X, Search, Users, UserPlus, Building2, CheckCheck, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type UserRef  = { id: string; name: string | null; email: string; roles: string[] };
@@ -24,7 +24,9 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
   const [callerTeams, setCallerTeams]   = useState<{ id: string; name: string }[]>([]);
   const [teamContext, setTeamContext]    = useState<string | null>(null);
   const [selected, setSelected]         = useState<Set<string>>(new Set());
+  const [alreadyAssigned, setAlreadyAssigned] = useState<Set<string>>(new Set());
   const [dueDates, setDueDates]         = useState<Record<string, string>>({});
+  const [commonDueDate, setCommonDueDate] = useState<string>("");
   const [search, setSearch]             = useState("");
   const [tab, setTab]                   = useState<"teams" | "users">("teams");
   const [loading, setLoading]           = useState(true);
@@ -42,10 +44,11 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
       setAllUsers(ctx.users);
       setTeams(ctx.teams);
       setCallerTeams(ctx.callerTeams);
-      // Auto-sélectionner le contexte si une seule équipe
       if (ctx.callerTeams.length === 1) setTeamContext(ctx.callerTeams[0].id);
 
-      setSelected(new Set(assigned.map((a: AssignedUser) => a.userId)));
+      const assignedIds = new Set(assigned.map((a: AssignedUser) => a.userId));
+      setSelected(assignedIds);
+      setAlreadyAssigned(assignedIds);
       const dates: Record<string, string> = {};
       assigned.forEach((a: AssignedUser) => { if (a.dueDate) dates[a.userId] = a.dueDate.slice(0, 10); });
       setDueDates(dates);
@@ -55,12 +58,43 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
   }, [courseId]);
 
   function toggleUser(id: string) {
-    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) { n.delete(id); }
+      else { n.add(id); if (commonDueDate) setDueDates((d) => ({ ...d, [id]: commonDueDate })); }
+      return n;
+    });
   }
+
   function toggleTeam(team: TeamInfo) {
     const ids = team.memberIds;
     const allIn = ids.every((id) => selected.has(id));
-    setSelected((prev) => { const n = new Set(prev); ids.forEach((id) => allIn ? n.delete(id) : n.add(id)); return n; });
+    setSelected((prev) => {
+      const n = new Set(prev);
+      ids.forEach((id) => {
+        if (allIn) { n.delete(id); }
+        else { n.add(id); }
+      });
+      return n;
+    });
+    if (!allIn && commonDueDate) {
+      setDueDates((prev) => {
+        const n = { ...prev };
+        ids.forEach((id) => { n[id] = commonDueDate; });
+        return n;
+      });
+    }
+  }
+
+  function applyCommonDate(date: string) {
+    setCommonDueDate(date);
+    if (date) {
+      setDueDates((prev) => {
+        const n = { ...prev };
+        selected.forEach((id) => { n[id] = date; });
+        return n;
+      });
+    }
   }
 
   async function handleSave() {
@@ -130,8 +164,32 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
           </div>
         ) : (
           <>
+            {/* Deadline commune */}
+            <div className="px-6 pt-4 shrink-0">
+              <div className="flex items-center gap-3 p-3 bg-[#F5F5F7] rounded-xl">
+                <CalendarDays className="w-4 h-4 text-[#6E6E73] shrink-0" />
+                <span className="text-[13px] text-[#1D1D1F] font-medium flex-1">Deadline commune</span>
+                <input
+                  type="date"
+                  value={commonDueDate}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => applyCommonDate(e.target.value)}
+                  className="h-8 px-2 rounded-lg border border-[#D2D2D7] bg-white text-[12px] outline-none focus:border-[#0071E3] transition-all"
+                />
+                {commonDueDate && (
+                  <button
+                    onClick={() => { setCommonDueDate(""); setDueDates({}); }}
+                    className="text-[11px] text-[#ADADB8] hover:text-[#1D1D1F] transition-colors"
+                  >
+                    Effacer
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-[#ADADB8] mt-1.5 ml-1">S'applique à tous les sélectionnés · modifiable individuellement dans l'onglet Individuel</p>
+            </div>
+
             {/* Tabs */}
-            <div className="flex gap-1 px-6 pt-4 shrink-0">
+            <div className="flex gap-1 px-6 pt-3 shrink-0">
               {(["teams", "users"] as const).map((t) => (
                 <button key={t} onClick={() => setTab(t)}
                   className={cn("px-4 py-2 rounded-xl text-[13px] font-medium transition-all",
@@ -187,6 +245,9 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
                             <input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleUser(u.id)}
                               className="w-4 h-4 rounded accent-[#0071E3]" />
                             <span className="text-[13px] text-[#1D1D1F] flex-1">{label(u)}</span>
+                            {alreadyAssigned.has(u.id) && (
+                              <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">Déjà assigné</span>
+                            )}
                             <span className="text-[11px] text-[#ADADB8]">{u.email}</span>
                           </label>
                         ))}
@@ -195,11 +256,19 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
                   })
               ) : (
                 filteredUsers.map((u) => (
-                  <label key={u.id} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F5F5F7] cursor-pointer transition-colors">
+                  <label key={u.id} className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors",
+                    alreadyAssigned.has(u.id) ? "bg-emerald-50/50 hover:bg-emerald-50" : "hover:bg-[#F5F5F7]"
+                  )}>
                     <input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleUser(u.id)}
                       className="w-4 h-4 rounded accent-[#0071E3]" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-medium text-[#1D1D1F]">{label(u)}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[13px] font-medium text-[#1D1D1F]">{label(u)}</p>
+                        {alreadyAssigned.has(u.id) && (
+                          <span className="text-[10px] font-medium text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-md shrink-0">Déjà assigné</span>
+                        )}
+                      </div>
                       <p className="text-[11px] text-[#ADADB8] truncate">{u.email}</p>
                     </div>
                     {selected.has(u.id) && (
@@ -208,8 +277,14 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
                         value={dueDates[u.id] ?? ""}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => setDueDates((prev) => ({ ...prev, [u.id]: e.target.value }))}
-                        className="h-8 px-2 rounded-lg border border-[#D2D2D7] text-[12px] outline-none focus:border-[#0071E3] transition-all"
-                        placeholder="Échéance"
+                        min={alreadyAssigned.has(u.id) ? undefined : new Date().toISOString().slice(0, 10)}
+                        title={alreadyAssigned.has(u.id) ? "Modifier la deadline existante" : "Définir une deadline"}
+                        className={cn(
+                          "h-8 px-2 rounded-lg border text-[12px] outline-none transition-all",
+                          alreadyAssigned.has(u.id)
+                            ? "border-emerald-200 bg-emerald-50 focus:border-emerald-400"
+                            : "border-[#D2D2D7] bg-white focus:border-[#0071E3]"
+                        )}
                       />
                     )}
                   </label>

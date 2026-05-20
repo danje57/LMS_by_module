@@ -25,7 +25,7 @@ async function getData() {
         name: true,
         email: true,
         teams: { include: { team: { select: { id: true, name: true } } } },
-        assignments: { include: { course: { select: { id: true, title: true } } } },
+        assignments: { select: { courseId: true, dueDate: true, assignedAt: true, course: { select: { id: true, title: true } } } },
         courseProgress: { select: { courseId: true, progress: true } },
         certificates: { select: { courseId: true } },
       },
@@ -51,6 +51,8 @@ async function getData() {
           courseTitle: a.course.title,
           status,
           progress: isDone ? 100 : prog,
+          dueDate: a.dueDate?.toISOString() ?? null,
+          assignedAt: a.assignedAt?.toISOString() ?? null,
         };
       }),
     };

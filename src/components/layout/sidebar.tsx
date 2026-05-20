@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, BookOpen, Settings, GraduationCap, Users, UsersRound, Award, BadgeCheck, BarChart2 } from "lucide-react";
+import { LayoutDashboard, BookOpen, Settings, GraduationCap, Users, UsersRound, Award, BadgeCheck, BarChart2, UserCircle } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard",                    label: "Tableau de bord",    icon: LayoutDashboard, adminOnly: false, userOnly: false, managerOnly: false },
@@ -77,8 +77,20 @@ export function Sidebar({ appName, logoPath, isAdmin = false, isManager = false 
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-4 border-t border-[#E5E5EA]">
-        <p className="text-[11px] text-[#ADADB8] text-center">{appName} · v0.1</p>
+      <div className="px-3 py-3 border-t border-[#E5E5EA] space-y-0.5">
+        <Link
+          href="/dashboard/profile"
+          className={cn(
+            "flex items-center gap-2.5 px-3 py-2 rounded-xl text-[14px] font-medium transition-all",
+            pathname === "/dashboard/profile"
+              ? "bg-[#0071E3]/10 text-[#0071E3]"
+              : "text-[#3C3C43] hover:bg-[#F5F5F7] hover:text-[#1D1D1F]"
+          )}
+        >
+          <UserCircle className={cn("w-4 h-4 shrink-0", pathname === "/dashboard/profile" ? "text-[#0071E3]" : "text-[#8E8E93]")} />
+          Mon profil
+        </Link>
+        <p className="text-[11px] text-[#ADADB8] text-center pt-1">{appName} · v0.1</p>
       </div>
     </aside>
   );

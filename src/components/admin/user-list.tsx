@@ -4,10 +4,11 @@ import { useState } from "react";
 import { RoleType } from "@prisma/client";
 import {
   Search, Plus, Pencil, Trash2, ShieldCheck,
-  UserCheck, UserX, X, Eye, EyeOff, Crown, Upload, Layers,
+  UserCheck, UserX, X, Eye, EyeOff, Crown, Upload, Layers, KeyRound, Copy, Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ImportModal } from "@/components/admin/import-modal";
+import { validatePassword, RULES } from "@/lib/password";
 
 type UserRow = {
   id: string;
@@ -115,6 +116,8 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
   const [modalCreate, setModalCreate] = useState(false);
   const [modalEdit, setModalEdit] = useState<UserRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
+  const [resetTarget, setResetTarget] = useState<UserRow | null>(null);
+  const [resetResult, setResetResult] = useState<{ password: string; emailSent: boolean; userName: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -189,6 +192,16 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
     if (!res.ok) return;
     setUsers((prev) => prev.filter((u) => u.id !== user.id));
     setDeleteTarget(null);
+  }
+
+  async function handleResetPassword(user: UserRow) {
+    setLoading(true);
+    const res = await fetch(`/api/admin/users/${user.id}/reset-password`, { method: "POST" });
+    const json = await res.json();
+    setLoading(false);
+    if (!res.ok) return;
+    setResetTarget(null);
+    setResetResult({ password: json.password, emailSent: json.emailSent, userName: user.name ?? user.email });
   }
 
   return (
@@ -329,11 +342,11 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
                           </span>
                         </td>
                       </tr>,
-                      ...gUsers.map((user) => <UserTableRow key={user.id} user={user} currentUserId={currentUserId} onToggle={handleToggleActive} onEdit={(u) => { setModalEdit(u); setError(""); }} onDelete={setDeleteTarget} />),
+                      ...gUsers.map((user) => <UserTableRow key={user.id} user={user} currentUserId={currentUserId} onToggle={handleToggleActive} onEdit={(u) => { setModalEdit(u); setError(""); }} onDelete={setDeleteTarget} onReset={setResetTarget} />),
                     ]);
                   })()
                 : filtered.map((user) => (
-                    <UserTableRow key={user.id} user={user} currentUserId={currentUserId} onToggle={handleToggleActive} onEdit={(u) => { setModalEdit(u); setError(""); }} onDelete={setDeleteTarget} />
+                    <UserTableRow key={user.id} user={user} currentUserId={currentUserId} onToggle={handleToggleActive} onEdit={(u) => { setModalEdit(u); setError(""); }} onDelete={setDeleteTarget} onReset={setResetTarget} />
                   ))
               }
             </tbody>
@@ -402,6 +415,51 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
         </div>
       )}
 
+      {/* Modale confirmation reset mot de passe */}
+      {resetTarget && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                <KeyRound className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-[15px] font-semibold text-[#1D1D1F]">Réinitialiser le mot de passe</p>
+                <p className="text-[13px] text-[#6E6E73]">{resetTarget.name ?? resetTarget.email}</p>
+              </div>
+            </div>
+            <p className="text-[13px] text-[#6E6E73]">
+              Un nouveau mot de passe fort sera généré automatiquement et envoyé par email à{" "}
+              <strong className="text-[#1D1D1F]">{resetTarget.email}</strong>.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setResetTarget(null)}
+                disabled={loading}
+                className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] disabled:opacity-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => handleResetPassword(resetTarget)}
+                disabled={loading}
+                className="flex-1 h-10 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[14px] font-medium disabled:opacity-50 transition-colors"
+              >
+                {loading ? "Réinitialisation…" : "Réinitialiser"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modale résultat reset */}
+      {resetResult && (
+        <ResetResultModal
+          result={resetResult}
+          onClose={() => setResetResult(null)}
+        />
+      )}
+
       {modalImport && (
         <ImportModal
           onClose={() => setModalImport(false)}
@@ -412,18 +470,84 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
   );
 }
 
+function ResetResultModal({
+  result,
+  onClose,
+}: {
+  result: { password: string; emailSent: boolean; userName: string };
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  function copy() {
+    navigator.clipboard.writeText(result.password);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+            <KeyRound className="w-5 h-5 text-emerald-500" />
+          </div>
+          <div>
+            <p className="text-[15px] font-semibold text-[#1D1D1F]">Mot de passe réinitialisé</p>
+            <p className="text-[13px] text-[#6E6E73]">{result.userName}</p>
+          </div>
+        </div>
+
+        <div className="bg-[#F5F5F7] rounded-xl px-4 py-3 space-y-2">
+          <p className="text-[12px] font-medium text-[#8E8E93] uppercase tracking-wide">Nouveau mot de passe</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-[16px] font-bold text-[#1D1D1F] font-mono tracking-wider">{result.password}</code>
+            <button
+              onClick={copy}
+              className="p-2 rounded-lg hover:bg-[#E5E5EA] transition-colors text-[#6E6E73]"
+              title="Copier"
+            >
+              {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        {result.emailSent ? (
+          <p className="text-[13px] text-emerald-600 flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5 shrink-0" />
+            Email envoyé à l&apos;utilisateur avec ses nouveaux identifiants.
+          </p>
+        ) : (
+          <p className="text-[13px] text-amber-600">
+            ⚠️ Email non envoyé (mail non configuré). Transmettez ce mot de passe manuellement.
+          </p>
+        )}
+
+        <button
+          onClick={onClose}
+          className="w-full h-10 rounded-xl bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium transition-colors"
+        >
+          Fermer
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function UserTableRow({
   user,
   currentUserId,
   onToggle,
   onEdit,
   onDelete,
+  onReset,
 }: {
   user: UserRow;
   currentUserId: string;
   onToggle: (u: UserRow) => void;
   onEdit: (u: UserRow) => void;
   onDelete: (u: UserRow) => void;
+  onReset: (u: UserRow) => void;
 }) {
   return (
     <tr className={cn("hover:bg-[#F9F9FB] transition-colors", !user.isActive && "opacity-60")}>
@@ -478,6 +602,14 @@ function UserTableRow({
             className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onReset(user)}
+            disabled={user.id === currentUserId}
+            title="Réinitialiser le mot de passe"
+            className="p-2 rounded-lg text-[#6E6E73] hover:bg-amber-50 hover:text-amber-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <KeyRound className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onDelete(user)}
@@ -570,28 +702,57 @@ function UserModal({
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[13px] font-medium text-[#1D1D1F]">
-              Mot de passe {initial ? <span className="text-[#ADADB8] font-normal">(laisser vide pour ne pas changer)</span> : <span className="text-red-500">*</span>}
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                required={!initial}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={initial ? "••••••••" : ""}
-                className="w-full h-10 px-3 pr-10 rounded-xl border border-[#D2D2D7] text-[14px] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#ADADB8] hover:text-[#6E6E73]"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+          {initial ? (
+            /* Édition — champ optionnel pour changer le mot de passe */
+            <div className="space-y-1.5">
+              <label className="text-[13px] font-medium text-[#1D1D1F]">
+                Mot de passe <span className="text-[#ADADB8] font-normal">(laisser vide pour ne pas changer)</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full h-10 px-3 pr-10 rounded-xl border border-[#D2D2D7] text-[14px] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
+                />
+                <button type="button" onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#ADADB8] hover:text-[#6E6E73]">
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {password.length > 0 && (() => {
+                const check = validatePassword(password);
+                const passed = RULES.filter((r) => r.test(password)).length;
+                const colors = ["bg-red-400", "bg-red-400", "bg-orange-400", "bg-amber-400", "bg-emerald-500"];
+                const labels = ["", "Très faible", "Faible", "Moyen", "Fort", "Très fort"];
+                const labelColors = ["", "text-red-500", "text-red-500", "text-orange-500", "text-amber-500", "text-emerald-600"];
+                return (
+                  <div className="space-y-1.5 pt-0.5">
+                    <div className="flex gap-1">
+                      {RULES.map((_, i) => (
+                        <div key={i} className={cn("h-1 flex-1 rounded-full transition-all", i < passed ? colors[passed] : "bg-[#E5E5EA]")} />
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={cn("text-[11px] font-medium", labelColors[passed])}>{labels[passed]}</span>
+                      {check.errors.length > 0 && (
+                        <span className="text-[11px] text-[#8E8E93]">Manque : {check.errors.join(", ")}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
-          </div>
+          ) : (
+            /* Création — mot de passe généré automatiquement */
+            <div className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-blue-50 border border-blue-100">
+              <KeyRound className="w-4 h-4 text-[#0071E3] shrink-0" />
+              <p className="text-[13px] text-[#0071E3]">
+                Un mot de passe fort sera généré automatiquement et envoyé par email à l&apos;utilisateur.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-3">
             {/* Toggle admin */}

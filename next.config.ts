@@ -4,6 +4,7 @@ const MB = 1024 * 1024;
 const MAX_UPLOAD = 600 * MB; // 600 MB en octets
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   images: {
     domains: [],
   },

@@ -12,7 +12,7 @@ export default async function CertificatesPage() {
   const certificates = await prisma.certificate.findMany({
     where: { userId: session.user.id },
     orderBy: { completedAt: "desc" },
-    select: { id: true, courseTitle: true, completedAt: true, hasQuiz: true },
+    select: { id: true, courseTitle: true, completedAt: true, hasQuiz: true, courseId: true },
   });
 
   return (

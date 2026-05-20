@@ -14,6 +14,41 @@ async function getCourses(isAdmin: boolean, isManagerOrCreator: boolean, userId:
   });
 }
 
+// Cours que le manager/creator est autorisé à affecter :
+// - manager : ses propres cours + ceux des creators membres de ses équipes
+// - creator  : uniquement ses propres cours
+async function getAssignableCourseIds(userId: string): Promise<Set<string>> {
+  const isManager = await prisma.userRole.findFirst({
+    where: { userId, role: { name: "manager" } },
+  });
+
+  if (!isManager) {
+    const own = await prisma.course.findMany({ where: { createdById: userId, isActive: true }, select: { id: true } });
+    return new Set(own.map((c) => c.id));
+  }
+
+  // Manager : récupère les creators membres de ses équipes managées
+  const managedTeams = await prisma.team.findMany({
+    where: { managerId: userId },
+    include: { members: { select: { userId: true } } },
+  });
+  const teamMemberIds = managedTeams.flatMap((t) => t.members.map((m) => m.userId));
+
+  const creatorMembers = teamMemberIds.length
+    ? await prisma.userRole.findMany({
+        where: { userId: { in: teamMemberIds }, role: { name: "creator" } },
+        select: { userId: true },
+      })
+    : [];
+  const authorizedCreatorIds = new Set([userId, ...creatorMembers.map((r) => r.userId)]);
+
+  const assignable = await prisma.course.findMany({
+    where: { isActive: true, createdById: { in: [...authorizedCreatorIds] } },
+    select: { id: true },
+  });
+  return new Set(assignable.map((c) => c.id));
+}
+
 async function getCourseMeta(
   userId: string,
   courseIds: string[],
@@ -27,21 +62,25 @@ async function getCourseMeta(
       select: { id: true, createdBy: { select: { name: true } } },
     }),
     isAdmin
-      ? Promise.resolve([] as { courseId: string; assignedBy: { name: string | null } | null }[])
+      ? Promise.resolve([] as { courseId: string; assignedBy: { name: string | null } | null; dueDate: Date | null; assignedAt: Date }[])
       : prisma.courseAssignment.findMany({
           where: { userId, courseId: { in: courseIds } },
-          select: { courseId: true, assignedBy: { select: { name: true } } },
+          select: { courseId: true, assignedBy: { select: { name: true } }, dueDate: true, assignedAt: true },
         }),
   ]);
 
   const createdByMap = new Map(createdByRows.map((c) => [c.id, c.createdBy?.name ?? null]));
   const assignedByMap = new Map(assignmentRows.map((a) => [a.courseId, a.assignedBy?.name ?? null]));
+  const dueDateMap    = new Map(assignmentRows.map((a) => [a.courseId, a.dueDate?.toISOString() ?? null]));
+  const assignedAtMap = new Map(assignmentRows.map((a) => [a.courseId, a.assignedAt?.toISOString() ?? null]));
 
   const metaMap: Record<string, CourseMeta> = {};
   for (const id of courseIds) {
     metaMap[id] = {
       createdByName: createdByMap.get(id) ?? null,
       assignedByName: assignedByMap.get(id) ?? null,
+      dueDate:    dueDateMap.get(id) ?? null,
+      assignedAt: assignedAtMap.get(id) ?? null,
     };
   }
 
@@ -100,9 +139,10 @@ export default async function CoursesPage() {
   const courses = await getCourses(isAdmin ?? false, isManagerOrCreator, userId);
   const courseIds = courses.map((c) => c.id);
 
-  const [progressMap, { metaMap, assignedCourseIds }] = await Promise.all([
+  const [progressMap, { metaMap, assignedCourseIds }, assignableCourseIds] = await Promise.all([
     isAdmin ? Promise.resolve({} as Record<string, CourseProgress>) : getProgressMap(userId),
     getCourseMeta(userId, courseIds, isAdmin ?? false),
+    isManagerOrCreator ? getAssignableCourseIds(userId) : Promise.resolve(new Set<string>()),
   ]);
 
   return (
@@ -131,6 +171,7 @@ export default async function CoursesPage() {
         progressMap={progressMap}
         metaMap={metaMap}
         assignedCourseIds={isManagerOrCreator ? assignedCourseIds : undefined}
+        assignableCourseIds={isManagerOrCreator ? assignableCourseIds : undefined}
       />
     </div>
   );

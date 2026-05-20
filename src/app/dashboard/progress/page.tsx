@@ -9,7 +9,7 @@ const USER_SELECT = {
   name: true,
   email: true,
   teams: { include: { team: { select: { id: true, name: true } } } },
-  assignments: { include: { course: { select: { id: true, title: true } } } },
+  assignments: { select: { courseId: true, dueDate: true, assignedAt: true, course: { select: { id: true, title: true } } } },
   courseProgress: { select: { courseId: true, progress: true } },
   certificates: { select: { courseId: true } },
 } as const;
@@ -19,7 +19,7 @@ function buildUserRow(u: {
   name: string | null;
   email: string;
   teams: { team: { id: string; name: string } }[];
-  assignments: { courseId: string; course: { id: string; title: string } }[];
+  assignments: { courseId: string; dueDate: Date | null; assignedAt: Date; course: { id: string; title: string } }[];
   courseProgress: { courseId: string; progress: number }[];
   certificates: { courseId: string | null }[];
 }): UserProgressRow {
@@ -34,7 +34,14 @@ function buildUserRow(u: {
       const isDone = certSet.has(a.courseId);
       const prog = progressMap.get(a.courseId) ?? 0;
       const status: CourseStatus = isDone ? "completed" : prog > 0 ? "in_progress" : "not_started";
-      return { courseId: a.courseId, courseTitle: a.course.title, status, progress: isDone ? 100 : prog };
+      return {
+        courseId: a.courseId,
+        courseTitle: a.course.title,
+        status,
+        progress: isDone ? 100 : prog,
+        dueDate: a.dueDate?.toISOString() ?? null,
+        assignedAt: a.assignedAt?.toISOString() ?? null,
+      };
     }),
   };
 }
@@ -153,7 +160,16 @@ async function getCreatorData(userId: string) {
           const isDone = certSet.has(courseId);
           const prog = progressMap.get(courseId) ?? 0;
           const status: CourseStatus = isDone ? "completed" : prog > 0 ? "in_progress" : "not_started";
-          return { courseId, courseTitle: courseMap.get(courseId) ?? courseId, status, progress: isDone ? 100 : prog };
+          // dueDate from the creator's own assignment record
+        const assignmentRecord = assignments.find((a) => a.userId === u.id && a.courseId === courseId);
+        return {
+          courseId,
+          courseTitle: courseMap.get(courseId) ?? courseId,
+          status,
+          progress: isDone ? 100 : prog,
+          dueDate: assignmentRecord?.dueDate?.toISOString() ?? null,
+          assignedAt: assignmentRecord?.assignedAt?.toISOString() ?? null,
+        };
         }),
       };
     });

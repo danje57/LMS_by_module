@@ -3,6 +3,10 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { RoleType } from "@prisma/client";
+import { validatePassword } from "@/lib/password";
+import { sendMail, isMailConfigured } from "@/lib/mail";
+import { getMailConfig } from "@/lib/mail-config";
+import { templateAccountCreated } from "@/lib/mail-templates";
 
 type CsvRow = {
   prenom: string;
@@ -35,6 +39,7 @@ export async function POST(req: NextRequest) {
   let created = 0;
   let updated = 0;
   const errors: { line: number; email: string; message: string }[] = [];
+  const toEmail: { email: string; name: string | null; password: string }[] = [];
 
   // Cache équipes créées/trouvées durant l'import
   const teamCache = new Map<string, string>(); // name → id
@@ -67,6 +72,11 @@ export async function POST(req: NextRequest) {
         // Mettre à jour : nom, rôles, mot de passe si fourni
         const updateData: Record<string, unknown> = { name: name || existing.name };
         if (row.mot_de_passe?.trim()) {
+          const pwCheck = validatePassword(row.mot_de_passe.trim());
+          if (!pwCheck.valid) {
+            errors.push({ line: lineNum, email, message: `Mot de passe trop faible — requis : ${pwCheck.errors.join(", ")}` });
+            continue;
+          }
           updateData.passwordHash = await bcrypt.hash(row.mot_de_passe.trim(), 10);
         }
         await prisma.user.update({ where: { id: existing.id }, data: updateData });
@@ -86,8 +96,15 @@ export async function POST(req: NextRequest) {
           errors.push({ line: lineNum, email, message: "Mot de passe requis pour un nouvel utilisateur" });
           continue;
         }
-        const passwordHash = await bcrypt.hash(row.mot_de_passe.trim(), 10);
+        const pwCheck = validatePassword(row.mot_de_passe.trim());
+        if (!pwCheck.valid) {
+          errors.push({ line: lineNum, email, message: `Mot de passe trop faible — requis : ${pwCheck.errors.join(", ")}` });
+          continue;
+        }
+        const plainPassword = row.mot_de_passe.trim();
+        const passwordHash = await bcrypt.hash(plainPassword, 10);
         const user = await prisma.user.create({ data: { email, name, passwordHash, isActive: true } });
+        toEmail.push({ email, name, password: plainPassword });
 
         for (const r of roles) {
           const role = await prisma.role.findUnique({ where: { name: r } });
@@ -117,6 +134,23 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       errors.push({ line: lineNum, email, message: e instanceof Error ? e.message : "Erreur inconnue" });
     }
+  }
+
+  // Envoi des emails de bienvenue en parallèle (best-effort)
+  if (toEmail.length && await isMailConfigured()) {
+    const mailCfg = await getMailConfig();
+    const branding = { appName: mailCfg.fromName, appUrl: mailCfg.appUrl ?? undefined };
+    await Promise.allSettled(
+      toEmail.map(({ email, name, password }) => {
+        const { subject, html } = templateAccountCreated({
+          branding,
+          userName: name ?? email,
+          email,
+          password,
+        });
+        return sendMail({ to: email, subject, html });
+      })
+    );
   }
 
   return NextResponse.json({ created, updated, errors });

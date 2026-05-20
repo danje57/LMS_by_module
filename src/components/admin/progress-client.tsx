@@ -1,16 +1,33 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Layers, Users, BookOpen, TrendingUp, CheckCircle2, Clock, Circle } from "lucide-react";
+import { Search, Layers, Users, BookOpen, TrendingUp, CheckCircle2, Clock, Circle, AlertTriangle, CalendarClock, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 export type CourseStatus = "not_started" | "in_progress" | "completed";
+export type DeadlineState = "overdue" | "danger" | "warning" | "normal" | null;
 
 export type AssignmentRow = {
   courseId: string;
   courseTitle: string;
   status: CourseStatus;
   progress: number;
+  dueDate: string | null;
+  assignedAt: string | null;
 };
+
+export function getDeadlineState(dueDate: string | null, assignedAt: string | null): DeadlineState {
+  if (!dueDate) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due   = new Date(dueDate); due.setHours(0, 0, 0, 0);
+  const remaining = Math.round((due.getTime() - today.getTime()) / 86400000);
+  if (remaining < 0) return "overdue";
+  const assigned = assignedAt ? new Date(assignedAt) : null;
+  const total = assigned ? Math.round((due.getTime() - assigned.getTime()) / 86400000) : 0;
+  const threshold = Math.max(total * 0.15, 3);
+  if (remaining <= 3)         return "danger";
+  if (remaining <= threshold) return "warning";
+  return "normal";
+}
 
 export type UserProgressRow = {
   id: string;
@@ -52,6 +69,15 @@ export function ProgressClient({ courses, teams, users }: Props) {
   const [filterTeam, setFilterTeam] = useState("all");
   const [filterCourse, setFilterCourse] = useState("all");
   const [groupByTeam, setGroupByTeam] = useState(false);
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+
+  function toggleExpand(id: string) {
+    setExpandedUsers((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  }
 
   // Filter users
   const filtered = useMemo(() => {
@@ -177,13 +203,30 @@ export function ProgressClient({ courses, teams, users }: Props) {
           <Layers className="w-4 h-4" />
           Grouper
         </button>
+
       </div>
 
-      {/* Count */}
-      <p className="text-[13px] text-[#6E6E73]">
-        {filtered.length} apprenant{filtered.length !== 1 ? "s" : ""}
-        {isCourseView && <> · cours&nbsp;: <span className="font-medium text-[#1D1D1F]">{selectedCourseTitle}</span></>}
-      </p>
+      {/* Count + légende deadline */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <p className="text-[13px] text-[#6E6E73]">
+          {filtered.length} apprenant{filtered.length !== 1 ? "s" : ""}
+          {isCourseView && <> · cours&nbsp;: <span className="font-medium text-[#1D1D1F]">{selectedCourseTitle}</span></>}
+        </p>
+        <div className="flex items-center gap-3 text-[11px] text-[#6E6E73]">
+          <span className="font-medium">Deadline :</span>
+          {([
+            { label: "En retard",  dot: "bg-red-400" },
+            { label: "≤ 3 jours",  dot: "bg-orange-400" },
+            { label: "Bientôt",    dot: "bg-amber-400" },
+            { label: "OK",         dot: "bg-[#D2D2D7]" },
+          ] as const).map(({ label, dot }) => (
+            <span key={label} className="flex items-center gap-1.5">
+              <span className={cn("w-2 h-2 rounded-full shrink-0", dot)} />
+              {label}
+            </span>
+          ))}
+        </div>
+      </div>
 
       {/* Table */}
       {filtered.length === 0 ? (
@@ -198,11 +241,29 @@ export function ProgressClient({ courses, teams, users }: Props) {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#E5E5EA]">
-                <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Apprenant</th>
+                <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">
+                  <div className="flex items-center gap-3">
+                    <span>Apprenant</span>
+                    {!isCourseView && (
+                      <button
+                        onClick={() => {
+                          const allIds = filtered.map((u) => u.id);
+                          const allExpanded = allIds.every((id) => expandedUsers.has(id));
+                          setExpandedUsers(allExpanded ? new Set() : new Set(allIds));
+                        }}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-[#0071E3] hover:text-[#0077ED] transition-colors"
+                      >
+                        <ChevronRight className={cn("w-3 h-3 transition-transform", filtered.every((u) => expandedUsers.has(u.id)) && "rotate-90")} />
+                        {filtered.every((u) => expandedUsers.has(u.id)) ? "Tout replier" : "Tout dépiler"}
+                      </button>
+                    )}
+                  </div>
+                </th>
                 <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Équipe</th>
                 {isCourseView ? (
                   <>
                     <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Statut</th>
+                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Deadline</th>
                     <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3 w-40">Progression</th>
                   </>
                 ) : (
@@ -210,6 +271,7 @@ export function ProgressClient({ courses, teams, users }: Props) {
                     <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Assignés</th>
                     <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Terminés</th>
                     <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">En cours</th>
+                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">En retard</th>
                     <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3 w-36">Progression</th>
                   </>
                 )}
@@ -219,7 +281,7 @@ export function ProgressClient({ courses, teams, users }: Props) {
               {groupByTeam
                 ? buildGroups(filtered).flatMap(({ teamId, teamName, users: gUsers }) => [
                     <tr key={`g-${teamId ?? "none"}`} className="bg-[#F5F5F7]">
-                      <td colSpan={isCourseView ? 4 : 6} className="px-5 py-2">
+                      <td colSpan={isCourseView ? 4 : 7} className="px-5 py-2">
                         <span className="text-[12px] font-semibold text-[#6E6E73] uppercase tracking-wide">
                           {teamName}
                           <span className="ml-2 font-normal normal-case">({gUsers.length})</span>
@@ -227,11 +289,13 @@ export function ProgressClient({ courses, teams, users }: Props) {
                       </td>
                     </tr>,
                     ...gUsers.map((u) => (
-                      <UserRow key={u.id} user={u} courseId={filterCourse !== "all" ? filterCourse : null} />
+                      <UserRow key={u.id} user={u} courseId={filterCourse !== "all" ? filterCourse : null}
+                        expanded={expandedUsers.has(u.id)} onToggle={() => toggleExpand(u.id)} />
                     )),
                   ])
                 : filtered.map((u) => (
-                    <UserRow key={u.id} user={u} courseId={filterCourse !== "all" ? filterCourse : null} />
+                    <UserRow key={u.id} user={u} courseId={filterCourse !== "all" ? filterCourse : null}
+                      expanded={expandedUsers.has(u.id)} onToggle={() => toggleExpand(u.id)} />
                   ))
               }
             </tbody>
@@ -242,26 +306,43 @@ export function ProgressClient({ courses, teams, users }: Props) {
   );
 }
 
-function UserRow({ user, courseId }: { user: UserProgressRow; courseId: string | null }) {
+function UserRow({ user, courseId, expanded, onToggle }: {
+  user: UserProgressRow;
+  courseId: string | null;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
   const isCourseView = courseId !== null;
 
   const assignment = isCourseView
     ? user.assignments.find((a) => a.courseId === courseId)
     : null;
 
-  const completed = user.assignments.filter((a) => a.status === "completed").length;
+  const completed  = user.assignments.filter((a) => a.status === "completed").length;
   const inProgress = user.assignments.filter((a) => a.status === "in_progress").length;
-  const total = user.assignments.length;
-  const globalPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const overdue    = user.assignments.filter((a) => a.status !== "completed" && getDeadlineState(a.dueDate, a.assignedAt) === "overdue").length;
+  const total      = user.assignments.length;
+  const globalPct  = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
-    <tr className="hover:bg-[#F9F9FB] transition-colors">
+    <>
+    <tr
+      className={cn("transition-colors", !isCourseView ? "cursor-pointer hover:bg-[#F5F5F7]" : "hover:bg-[#F9F9FB]", expanded && !isCourseView && "bg-[#F5F5F7]")}
+      onClick={!isCourseView ? onToggle : undefined}
+    >
       {/* Apprenant */}
       <td className="px-5 py-3.5">
-        <p className="text-[14px] font-medium text-[#1D1D1F]">
-          {user.name ?? <span className="italic text-[#ADADB8]">Sans nom</span>}
-        </p>
-        <p className="text-[12px] text-[#6E6E73]">{user.email}</p>
+        <div className="flex items-center gap-2">
+          {!isCourseView && (
+            <ChevronRight className={cn("w-4 h-4 text-[#ADADB8] shrink-0 transition-transform", expanded && "rotate-90")} />
+          )}
+          <div>
+            <p className="text-[14px] font-medium text-[#1D1D1F]">
+              {user.name ?? <span className="italic text-[#ADADB8]">Sans nom</span>}
+            </p>
+            <p className="text-[12px] text-[#6E6E73]">{user.email}</p>
+          </div>
+        </div>
       </td>
 
       {/* Équipe */}
@@ -285,6 +366,14 @@ function UserRow({ user, courseId }: { user: UserProgressRow; courseId: string |
               <StatusBadge status={assignment.status} />
             ) : (
               <span className="text-[12px] text-[#ADADB8] italic">Non assigné</span>
+            )}
+          </td>
+          {/* Deadline */}
+          <td className="px-5 py-3.5">
+            {assignment ? (
+              <DeadlineBadge dueDate={assignment.dueDate} assignedAt={assignment.assignedAt} completed={assignment.status === "completed"} />
+            ) : (
+              <span className="text-[12px] text-[#ADADB8]">—</span>
             )}
           </td>
           {/* Progression cours */}
@@ -314,6 +403,17 @@ function UserRow({ user, courseId }: { user: UserProgressRow; courseId: string |
               {inProgress}
             </span>
           </td>
+          {/* En retard */}
+          <td className="px-5 py-3.5 text-center">
+            {overdue > 0 ? (
+              <span className="inline-flex items-center gap-1 text-[13px] font-medium text-red-600">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                {overdue}
+              </span>
+            ) : (
+              <span className="text-[14px] text-[#ADADB8]">—</span>
+            )}
+          </td>
           {/* Progression globale */}
           <td className="px-5 py-3.5">
             {total > 0 ? (
@@ -325,6 +425,31 @@ function UserRow({ user, courseId }: { user: UserProgressRow; courseId: string |
         </>
       )}
     </tr>
+
+    {/* Sous-lignes cours (accordion, vue globale uniquement) */}
+    {!isCourseView && expanded && user.assignments.map((a) => (
+      <tr key={`${user.id}-${a.courseId}`} className="bg-[#FAFAFA] border-t border-[#F0F0F5]">
+        <td className="pl-12 pr-5 py-2.5" colSpan={2}>
+          <p className="text-[13px] font-medium text-[#1D1D1F]">{a.courseTitle}</p>
+        </td>
+        <td className="px-5 py-2.5">
+          <StatusBadge status={a.status} />
+        </td>
+        <td className="px-5 py-2.5" colSpan={2}>
+          <DeadlineEditor
+            courseId={a.courseId}
+            userId={user.id}
+            dueDate={a.dueDate}
+            assignedAt={a.assignedAt}
+            completed={a.status === "completed"}
+          />
+        </td>
+        <td className="px-5 py-2.5" colSpan={2}>
+          <ProgressBar pct={a.progress} />
+        </td>
+      </tr>
+    ))}
+    </>
   );
 }
 
@@ -335,6 +460,73 @@ function StatusBadge({ status }: { status: CourseStatus }) {
       <Icon className="w-3 h-3" />
       {STATUS_LABEL[status]}
     </span>
+  );
+}
+
+function DeadlineBadge({ dueDate, assignedAt, completed }: { dueDate: string | null; assignedAt: string | null; completed: boolean }) {
+  if (!dueDate) return <span className="text-[12px] text-[#ADADB8]">—</span>;
+  if (completed) return <span className="text-[12px] text-[#ADADB8]">—</span>;
+  const state = getDeadlineState(dueDate, assignedAt);
+  const date = new Date(dueDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  const styles: Record<NonNullable<DeadlineState>, string> = {
+    overdue: "text-red-600 bg-red-50",
+    danger:  "text-orange-600 bg-orange-50",
+    warning: "text-amber-600 bg-amber-50",
+    normal:  "text-[#6E6E73] bg-[#F5F5F7]",
+  };
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-lg", styles[state ?? "normal"])}>
+      {state === "overdue" ? <AlertTriangle className="w-3 h-3" /> : <CalendarClock className="w-3 h-3" />}
+      {state === "overdue" ? `En retard · ${date}` : date}
+    </span>
+  );
+}
+
+function DeadlineEditor({ courseId, userId, dueDate, assignedAt, completed }: {
+  courseId: string;
+  userId: string;
+  dueDate: string | null;
+  assignedAt: string | null;
+  completed: boolean;
+}) {
+  const [value, setValue] = useState(dueDate ? dueDate.slice(0, 10) : "");
+  const [saving, setSaving] = useState(false);
+
+  async function handleChange(newDate: string) {
+    setValue(newDate);
+    setSaving(true);
+    await fetch(`/api/courses/${courseId}/assign`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, dueDate: newDate || null }),
+    });
+    setSaving(false);
+  }
+
+  if (completed) return <span className="text-[12px] text-[#ADADB8]">—</span>;
+
+  const state = getDeadlineState(value || null, assignedAt);
+  const styles: Record<NonNullable<DeadlineState>, string> = {
+    overdue: "border-red-300 bg-red-50 text-red-600",
+    danger:  "border-orange-300 bg-orange-50 text-orange-600",
+    warning: "border-amber-300 bg-amber-50 text-amber-600",
+    normal:  "border-[#D2D2D7] bg-white text-[#1D1D1F]",
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => handleChange(e.target.value)}
+        className={cn(
+          "h-7 px-2 rounded-lg border text-[12px] outline-none focus:ring-2 focus:ring-[#0071E3]/20 transition-all",
+          styles[state ?? "normal"]
+        )}
+      />
+      {saving && <div className="w-3 h-3 border-2 border-[#0071E3] border-t-transparent rounded-full animate-spin shrink-0" />}
+      {!saving && value && state === "overdue" && <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+    </div>
   );
 }
 
