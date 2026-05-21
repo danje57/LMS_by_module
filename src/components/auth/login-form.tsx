@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 export function LoginForm() {
   const router = useRouter();
+  const t = useTranslations("auth");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +24,7 @@ export function LoginForm() {
     });
 
     if (result?.error) {
-      setError("Identifiant ou mot de passe incorrect.");
+      setError(t("invalidCredentials"));
       setLoading(false);
       return;
     }
@@ -35,7 +37,7 @@ export function LoginForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
         <label htmlFor="email" className="block text-[13px] font-medium text-[#1D1D1F]">
-          Identifiant
+          {t("identifier")}
         </label>
         <input
           id="email"
@@ -50,7 +52,7 @@ export function LoginForm() {
 
       <div className="space-y-1.5">
         <label htmlFor="password" className="block text-[13px] font-medium text-[#1D1D1F]">
-          Mot de passe
+          {t("password")}
         </label>
         <input
           id="password"
@@ -74,7 +76,7 @@ export function LoginForm() {
         disabled={loading}
         className="w-full h-11 rounded-xl bg-[#0071E3] hover:bg-[#0077ED] active:bg-[#006EDB] text-white text-[15px] font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-2"
       >
-        {loading ? "Connexion…" : "Se connecter"}
+        {loading ? t("signingIn") : t("signIn")}
       </button>
     </form>
   );

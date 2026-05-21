@@ -6,6 +6,7 @@ import { formatDuration, formatFileSize } from "@/lib/utils";
 import { Search, Clock, CircleCheck, Play, Pencil, ArrowUpDown, UserPlus, Award, CalendarClock, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useTranslations, useLocale } from "next-intl";
 import { DeleteCourseButton } from "@/components/courses/delete-course-button";
 import { AssignModal } from "@/components/admin/assign-modal";
 import { AssignModalManager } from "@/components/courses/assign-modal-manager";
@@ -73,10 +74,15 @@ function CourseCard({
   onAssign: (t: { id: string; title: string }) => void;
   onManagerAssign: (t: { id: string; title: string }) => void;
 }) {
+  const t = useTranslations("courses");
+  const locale = useLocale();
   const prog = progressMap[course.id];
   const status = prog?.status ?? "not_started";
   const isCompleted = status === "completed";
   const deadlineState = !isCompleted && isAssignedToMe && !hideDeadline ? getDeadlineState(meta?.dueDate ?? null, meta?.assignedAt ?? null) : null;
+
+  const fmtDate = (d: string) =>
+    new Date(d).toLocaleDateString(locale === "en" ? "en-GB" : "fr-FR", { day: "numeric", month: "short" });
 
   return (
     <div className={cn(
@@ -85,7 +91,6 @@ function CourseCard({
       !hideDeadline && deadlineState === "danger"  ? "border-orange-300 hover:border-orange-400" :
       "border-[#E5E5EA] hover:border-[#D2D2D7]"
     )}>
-      {/* Color band */}
       <div className={cn(
         "h-1.5 bg-gradient-to-r",
         hideDeadline                              ? "from-[#0071E3] to-[#40B3FF]" :
@@ -102,7 +107,6 @@ function CourseCard({
           {course.title}
         </h3>
 
-        {/* Deadline badge */}
         {deadlineState && meta?.dueDate && (
           <div className={cn(
             "inline-flex items-center gap-1.5 text-[12px] font-medium rounded-lg px-2.5 py-1 w-fit",
@@ -113,13 +117,12 @@ function CourseCard({
           )}>
             {deadlineState === "overdue" ? <AlertTriangle className="w-3 h-3" /> : <CalendarClock className="w-3 h-3" />}
             {deadlineState === "overdue"
-              ? `En retard · ${new Date(meta.dueDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`
-              : `Échéance · ${new Date(meta.dueDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`
+              ? t("overdue", { date: fmtDate(meta.dueDate) })
+              : t("deadline", { date: fmtDate(meta.dueDate) })
             }
           </div>
         )}
 
-        {/* Badges */}
         <div className="flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#6E6E73] bg-[#F5F5F7] rounded-lg px-2.5 py-1">
             <Clock className="w-3 h-3" />
@@ -134,17 +137,17 @@ function CourseCard({
             )}>
               <CircleCheck className="w-3 h-3" />
               {!isAdmin && isCompleted && prog?.quizPassed !== null
-                ? (prog?.quizPassed ? "Quiz réussi" : "Quiz échoué")
-                : `Quiz · ${course.passingScore}%`}
+                ? (prog?.quizPassed ? t("quizPassed") : t("quizFailed"))
+                : t("quizScore", { score: course.passingScore ?? 0 })}
             </span>
           )}
         </div>
 
         {(meta?.createdByName || (isAssignedToMe && meta?.assignedByName)) && (
           <p className="text-[11px] text-[#ADADB8] leading-relaxed">
-            {meta?.createdByName && <span>Créé par <span className="text-[#6E6E73]">{meta.createdByName}</span></span>}
+            {meta?.createdByName && <span>{t("createdBy")} <span className="text-[#6E6E73]">{meta.createdByName}</span></span>}
             {meta?.createdByName && isAssignedToMe && meta?.assignedByName && <span> · </span>}
-            {isAssignedToMe && meta?.assignedByName && <span>Affecté par <span className="text-[#6E6E73]">{meta.assignedByName}</span></span>}
+            {isAssignedToMe && meta?.assignedByName && <span>{t("assignedBy")} <span className="text-[#6E6E73]">{meta.assignedByName}</span></span>}
           </p>
         )}
 
@@ -156,14 +159,14 @@ function CourseCard({
                 <button
                   onClick={() => onAssign({ id: course.id, title: course.title })}
                   className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
-                  title="Assigner"
+                  title={t("assign")}
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                 </button>
                 <Link
                   href={`/dashboard/admin/courses/${course.id}/edit`}
                   className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
-                  title="Éditer"
+                  title={t("edit")}
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </Link>
@@ -177,7 +180,7 @@ function CourseCard({
               <button
                 onClick={() => onManagerAssign({ id: course.id, title: course.title })}
                 className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
-                title="Affecter"
+                title={t("affect")}
               >
                 <UserPlus className="w-3.5 h-3.5" />
               </button>
@@ -186,10 +189,10 @@ function CourseCard({
               <Link
                 href={`/dashboard/certificates/${prog.latestCertificateId}`}
                 className="inline-flex items-center gap-1.5 px-3 py-2 border border-emerald-200 text-emerald-600 hover:bg-emerald-50 text-[13px] font-medium rounded-xl transition-colors"
-                title="Voir le certificat"
+                title={t("certificate")}
               >
                 <Award className="w-3.5 h-3.5" />
-                Certificat
+                {t("certificate")}
               </Link>
             )}
             {!isAdmin && !hideDeadline && isAssignedToMe && (
@@ -198,7 +201,7 @@ function CourseCard({
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors"
               >
                 <Play className="w-3.5 h-3.5" />
-                {status === "in_progress" ? "Reprendre" : status === "completed" ? "Revoir" : "Lancer"}
+                {status === "in_progress" ? t("resume") : status === "completed" ? t("review") : t("launch")}
               </Link>
             )}
           </div>
@@ -209,6 +212,7 @@ function CourseCard({
 }
 
 export function CourseList({ courses, isAdmin = false, isManagerOrCreator = false, progressMap = {}, metaMap = {}, assignedCourseIds, assignableCourseIds }: CourseListProps) {
+  const t = useTranslations("courses");
   const assignedSet = new Set(assignedCourseIds ?? []);
   const [search, setSearch] = useState("");
   const [filterQuiz, setFilterQuiz] = useState<"all" | "yes" | "no">("all");
@@ -221,8 +225,7 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
   const filtered = courses
     .filter((c) => {
       const matchSearch = c.title.toLowerCase().includes(search.toLowerCase());
-      const matchQuiz =
-        filterQuiz === "all" || (filterQuiz === "yes" ? c.hasQuiz : !c.hasQuiz);
+      const matchQuiz = filterQuiz === "all" || (filterQuiz === "yes" ? c.hasQuiz : !c.hasQuiz);
       return matchSearch && matchQuiz;
     })
     .sort((a, b) => {
@@ -233,13 +236,12 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
 
   return (
     <div className="space-y-5">
-      {/* Search + filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ADADB8]" />
           <input
             type="text"
-            placeholder="Rechercher un cours…"
+            placeholder={t("searchCourse")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#D2D2D7] bg-white text-[14px] text-[#1D1D1F] placeholder:text-[#ADADB8] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
@@ -253,30 +255,25 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
               onClick={() => setFilterQuiz(v)}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all",
-                filterQuiz === v
-                  ? "bg-[#0071E3] text-white shadow-sm"
-                  : "text-[#6E6E73] hover:text-[#1D1D1F]"
+                filterQuiz === v ? "bg-[#0071E3] text-white shadow-sm" : "text-[#6E6E73] hover:text-[#1D1D1F]"
               )}
             >
-              {v === "all" ? "Tous" : v === "yes" ? "Avec quiz" : "Sans quiz"}
+              {v === "all" ? t("all") : v === "yes" ? t("withQuiz") : t("withoutQuiz")}
             </button>
           ))}
         </div>
 
         <button
-          onClick={() =>
-            setDurationSort((s) => (s === "none" ? "asc" : s === "asc" ? "desc" : "none"))
-          }
+          onClick={() => setDurationSort((s) => (s === "none" ? "asc" : s === "asc" ? "desc" : "none"))}
           className={cn(
             "inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border text-[13px] font-medium transition-all whitespace-nowrap",
             durationSort !== "none"
               ? "bg-[#0071E3] border-[#0071E3] text-white shadow-sm"
               : "bg-white border-[#D2D2D7] text-[#6E6E73] hover:text-[#1D1D1F]"
           )}
-          title="Trier par durée"
         >
           <ArrowUpDown className="w-3.5 h-3.5" />
-          Durée
+          {t("duration")}
           {durationSort === "asc" && <span className="text-[11px]">↑</span>}
           {durationSort === "desc" && <span className="text-[11px]">↓</span>}
         </button>
@@ -285,41 +282,37 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
       {!isAdmin && (!isManagerOrCreator || (assignedSet.size > 0 && activeTab === "mes-formations")) && (
         <div className="flex gap-1.5 bg-white border border-[#D2D2D7] rounded-xl p-1 w-fit">
           {([
-            { key: "all",         label: "Tous",            dot: null },
-            { key: "not_started", label: "Non commencé",    dot: "bg-[#0071E3]" },
-            { key: "in_progress", label: "En cours",        dot: "bg-amber-400" },
-            { key: "completed",   label: "Terminé",         dot: "bg-emerald-400" },
-          ] as const).map(({ key, label, dot }) => (
+            { key: "all" as const,         labelKey: "all" as const,        dot: null },
+            { key: "not_started" as const, labelKey: "notStarted" as const, dot: "bg-[#0071E3]" },
+            { key: "in_progress" as const, labelKey: "inProgress" as const, dot: "bg-amber-400" },
+            { key: "completed" as const,   labelKey: "completed" as const,  dot: "bg-emerald-400" },
+          ]).map(({ key, labelKey, dot }) => (
             <button
               key={key}
               onClick={() => setFilterStatus(key)}
               className={cn(
                 "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all",
-                filterStatus === key
-                  ? "bg-[#0071E3] text-white shadow-sm"
-                  : "text-[#6E6E73] hover:text-[#1D1D1F]"
+                filterStatus === key ? "bg-[#0071E3] text-white shadow-sm" : "text-[#6E6E73] hover:text-[#1D1D1F]"
               )}
             >
               {dot && <span className={cn("w-2 h-2 rounded-full shrink-0", dot, filterStatus === key && "bg-white")} />}
-              {label}
+              {t(labelKey as Parameters<typeof t>[0])}
             </button>
           ))}
         </div>
       )}
 
-      {/* Empty state */}
       {filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] flex items-center justify-center mb-4">
             <Search className="w-6 h-6 text-[#ADADB8]" />
           </div>
-          <p className="text-[15px] font-medium text-[#1D1D1F]">Aucun cours trouvé</p>
-          <p className="text-[13px] text-[#6E6E73] mt-1">Modifiez vos filtres ou ajoutez un cours.</p>
+          <p className="text-[15px] font-medium text-[#1D1D1F]">{t("noCourseFound")}</p>
+          <p className="text-[13px] text-[#6E6E73] mt-1">{t("adjustFilters")}</p>
         </div>
       )}
 
       {isAdmin ? (
-        /* Admin : grille plate */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((course) => (
             <CourseCard key={course.id} course={course} isAdmin={true} isManagerOrCreator={false}
@@ -327,22 +320,18 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
           ))}
         </div>
       ) : isManagerOrCreator ? (
-        /* Manager/Créateur : onglets "Mes formations" / "Bibliothèque" */
         <div className="space-y-6">
-          {/* Tab bar */}
           <div className="flex border-b border-[#E5E5EA]">
             {([
-              { key: "mes-formations" as const, label: "Mes formations", count: filtered.filter((c) => assignedSet.has(c.id)).length },
-              { key: "bibliotheque"   as const, label: "Bibliothèque",   count: assignableCourseIds ? filtered.filter((c) => assignableCourseIds.has(c.id)).length : filtered.length },
+              { key: "mes-formations" as const, label: t("myTrainings"), count: filtered.filter((c) => assignedSet.has(c.id)).length },
+              { key: "bibliotheque"   as const, label: t("library"),     count: assignableCourseIds ? filtered.filter((c) => assignableCourseIds.has(c.id)).length : filtered.length },
             ]).map(({ key, label, count }) => (
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
                 className={cn(
                   "flex items-center gap-2 px-5 py-2.5 text-[14px] font-medium border-b-2 -mb-px transition-colors",
-                  activeTab === key
-                    ? "border-[#0071E3] text-[#0071E3]"
-                    : "border-transparent text-[#6E6E73] hover:text-[#1D1D1F]"
+                  activeTab === key ? "border-[#0071E3] text-[#0071E3]" : "border-transparent text-[#6E6E73] hover:text-[#1D1D1F]"
                 )}
               >
                 {label}
@@ -356,16 +345,15 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
             ))}
           </div>
 
-          {/* Onglet Mes formations */}
           {activeTab === "mes-formations" && (() => {
             const myFormations = filtered.filter((c) => assignedSet.has(c.id));
             const groups = [
-              { key: "not_started" as const, label: "Non commencé", color: "bg-[#0071E3]" },
-              { key: "in_progress"  as const, label: "En cours",     color: "bg-amber-400" },
-              { key: "completed"    as const, label: "Terminé",      color: "bg-emerald-400" },
+              { key: "not_started" as const, label: t("notStarted"), color: "bg-[#0071E3]" },
+              { key: "in_progress"  as const, label: t("inProgress"), color: "bg-amber-400" },
+              { key: "completed"    as const, label: t("completed"),  color: "bg-emerald-400" },
             ];
             return myFormations.length === 0 ? (
-              <p className="text-[14px] text-[#6E6E73] py-8">Aucune formation ne vous est assignée.</p>
+              <p className="text-[14px] text-[#6E6E73] py-8">{t("noAssignedTraining")}</p>
             ) : (
               <div className="space-y-8">
                 {groups.map(({ key, label, color }) => {
@@ -393,7 +381,6 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
             );
           })()}
 
-          {/* Onglet Bibliothèque */}
           {activeTab === "bibliotheque" && (() => {
             const libraryFiltered = assignableCourseIds
               ? filtered.filter((c) => assignableCourseIds.has(c.id))
@@ -401,10 +388,10 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
             return (
               <div className="space-y-4">
                 <p className="text-[13px] text-[#ADADB8]">
-                  Cours que vous pouvez affecter ({libraryFiltered.length}).
+                  {t("coursesYouCanAssign")} ({libraryFiltered.length}).
                 </p>
                 {libraryFiltered.length === 0 ? (
-                  <p className="text-[14px] text-[#6E6E73] py-8">Aucun cours à affecter — créez un cours pour commencer.</p>
+                  <p className="text-[14px] text-[#6E6E73] py-8">{t("noCoursesToAssign")}</p>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {libraryFiltered.map((course) => (
@@ -420,14 +407,13 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
           })()}
         </div>
       ) : (
-        /* Apprenant : groupé par statut */
         <div className="space-y-8">
           {(
             [
-              { key: "not_started",  label: "Non commencé",   color: "bg-[#0071E3]"  },
-              { key: "in_progress",  label: "En cours",       color: "bg-amber-400"  },
-              { key: "completed",    label: "Terminé",        color: "bg-emerald-400" },
-            ] as const
+              { key: "not_started" as const, label: t("notStarted"), color: "bg-[#0071E3]"  },
+              { key: "in_progress" as const, label: t("inProgress"), color: "bg-amber-400"  },
+              { key: "completed"   as const, label: t("completed"),  color: "bg-emerald-400" },
+            ]
           ).map(({ key, label, color }) => {
             if (filterStatus !== "all" && filterStatus !== key) return null;
             const group = filtered.filter((c) => (progressMap[c.id]?.status ?? "not_started") === key);

@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BrandingSetting } from "@prisma/client";
 import { CheckCircle, AlertCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface BrandingFormProps {
   branding: BrandingSetting | null;
 }
 
 export function BrandingForm({ branding }: BrandingFormProps) {
+  const t = useTranslations("settings");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -23,7 +25,7 @@ export function BrandingForm({ branding }: BrandingFormProps) {
     const res = await fetch("/api/admin/branding", { method: "POST", body: form });
 
     if (res.ok) {
-      setMessage({ type: "success", text: "Branding mis à jour." });
+      setMessage({ type: "success", text: t("brandingUpdated") });
       // Rafraîchit les server components (sidebar, login) sans recharger la page entière
       router.refresh();
     } else {
@@ -39,15 +41,15 @@ export function BrandingForm({ branding }: BrandingFormProps) {
   return (
     <div className="bg-white rounded-2xl border border-[#E5E5EA] p-7 space-y-6">
       <div>
-        <h2 className="text-[17px] font-semibold text-[#1D1D1F]">Branding</h2>
+        <h2 className="text-[17px] font-semibold text-[#1D1D1F]">{t("branding")}</h2>
         <p className="text-[13px] text-[#6E6E73] mt-0.5">
-          Personnalisez l&apos;apparence de votre application.
+          {t("brandingDesc")}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label htmlFor="appName" className={labelClass}>Nom de l&apos;application</label>
+          <label htmlFor="appName" className={labelClass}>{t("appName")}</label>
           <input
             id="appName" name="appName" required maxLength={100}
             defaultValue={branding?.appName ?? "LMS"}
@@ -58,21 +60,21 @@ export function BrandingForm({ branding }: BrandingFormProps) {
         <div className="h-px bg-[#F5F5F7]" />
 
         <div>
-          <label htmlFor="logo" className={labelClass}>Logo</label>
-          <p className="text-[12px] text-[#6E6E73] mb-2">PNG, SVG ou JPG · max 2 Mo</p>
+          <label htmlFor="logo" className={labelClass}>{t("logo")}</label>
+          <p className="text-[12px] text-[#6E6E73] mb-2">{t("logoFormats")}</p>
           <input id="logo" name="logo" type="file" accept="image/*"
             className="w-full text-[13px] text-[#6E6E73] file:mr-3 file:px-4 file:py-2 file:rounded-xl file:border-0 file:text-[13px] file:font-medium file:bg-[#F5F5F7] file:text-[#1D1D1F] hover:file:bg-[#E5E5EA] cursor-pointer" />
           {branding?.logoPath && (
             <p className="text-[12px] text-[#ADADB8] mt-1.5">
-              Actuel : {branding.logoPath.split("/").pop()}
+              {t("currentFile", { filename: branding.logoPath.split("/").pop() ?? "" })}
             </p>
           )}
         </div>
 
         <div>
-          <label htmlFor="loginNotice" className={labelClass}>Notice informative (page de connexion)</label>
+          <label htmlFor="loginNotice" className={labelClass}>{t("loginNotice")}</label>
           <p className="text-[12px] text-[#6E6E73] mb-2">
-            Texte affiché avant le formulaire de connexion. Laisser vide pour ne rien afficher.
+            {t("loginNoticeDesc")}
           </p>
           <textarea
             id="loginNotice"
@@ -104,7 +106,7 @@ export function BrandingForm({ branding }: BrandingFormProps) {
             disabled={loading}
             className="h-11 px-6 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[15px] font-medium rounded-xl transition-colors disabled:opacity-60"
           >
-            {loading ? "Enregistrement…" : "Enregistrer"}
+            {loading ? t("saving") : t("save")}
           </button>
         </div>
       </form>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Award, CheckCircle2, Clock, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations, useLocale } from "next-intl";
 
 type Cert = {
   id: string;
@@ -17,7 +18,11 @@ type SortKey = "date" | "title";
 type SortDir = "asc" | "desc";
 
 function CertCard({ cert }: { cert: Cert }) {
-  const dateStr = new Intl.DateTimeFormat("fr-FR", {
+  const t = useTranslations("certificates");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? "en-GB" : "fr-FR";
+
+  const dateStr = new Intl.DateTimeFormat(dateLocale, {
     day: "numeric", month: "long", year: "numeric",
   }).format(new Date(cert.completedAt));
 
@@ -34,7 +39,7 @@ function CertCard({ cert }: { cert: Cert }) {
           <p className="text-[14px] font-semibold text-[#1D1D1F] truncate">{cert.courseTitle}</p>
           {cert.courseId === null && (
             <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[#F5F5F7] text-[#8E8E93] border border-[#E5E5EA]">
-              Cours supprimé
+              {t("deletedCourse")}
             </span>
           )}
         </div>
@@ -46,20 +51,21 @@ function CertCard({ cert }: { cert: Cert }) {
               <span className="text-[#D2D2D7]">·</span>
               <span className="inline-flex items-center gap-1 text-[12px] font-medium text-emerald-600">
                 <CheckCircle2 className="w-3 h-3" />
-                Évaluation validée
+                {t("assessmentPassed")}
               </span>
             </>
           )}
         </div>
       </div>
       <span className="shrink-0 text-[11px] font-semibold rounded-full px-2.5 py-1 bg-emerald-50 text-emerald-600">
-        Réussi
+        {t("passed")}
       </span>
     </Link>
   );
 }
 
 export function CertificateList({ certificates }: { certificates: Cert[] }) {
+  const t = useTranslations("certificates");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -105,9 +111,9 @@ export function CertificateList({ certificates }: { certificates: Cert[] }) {
     <div className="space-y-4">
       {/* Tri */}
       <div className="flex items-center gap-2">
-        <span className="text-[12px] text-[#ADADB8] font-medium">Trier par</span>
-        <SortButton k="date" label="Date" />
-        <SortButton k="title" label="Nom" />
+        <span className="text-[12px] text-[#ADADB8] font-medium">{t("sortBy")}</span>
+        <SortButton k="date" label={t("sortDate")} />
+        <SortButton k="title" label={t("sortName")} />
       </div>
 
       {sortKey === "date" ? (
@@ -127,7 +133,7 @@ export function CertificateList({ certificates }: { certificates: Cert[] }) {
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-[13px] font-bold text-[#1D1D1F]">{year}</span>
                     <div className="flex-1 h-px bg-[#E5E5EA]" />
-                    <span className="text-[11px] text-[#ADADB8]">{byYear[year].length} certificat{byYear[year].length !== 1 ? "s" : ""}</span>
+                    <span className="text-[11px] text-[#ADADB8]">{t("obtained", { count: byYear[year].length })}</span>
                   </div>
                   <div className="space-y-3">
                     {byYear[year].map((cert) => <CertCard key={cert.id} cert={cert} />)}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Users, ChevronDown, ChevronUp, X, Check, Crown, UserMinus, UserPlus, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 type UserRef = { id: string; name: string | null; email: string };
 type TeamRow = { id: string; name: string; manager: UserRef | null; members: UserRef[] };
@@ -16,6 +17,7 @@ type SortField = "name" | "members";
 type SortDir = "asc" | "desc";
 
 export function TeamList({ initialTeams, allUsers }: TeamListProps) {
+  const t = useTranslations("teams");
   const [teams, setTeams] = useState<TeamRow[]>(initialTeams);
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -125,11 +127,11 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); if (e.key === "Escape") setCreating(false); }}
-            placeholder="Nom de l'équipe…"
+            placeholder={t("teamNamePlaceholder")}
             className="flex-1 h-10 px-3 rounded-xl border border-[#0071E3] text-[14px] outline-none ring-3 ring-[#0071E3]/20"
           />
           <button onClick={handleCreate} disabled={loading} className="h-10 px-4 rounded-xl bg-[#0071E3] text-white text-[13px] font-medium disabled:opacity-50">
-            Créer
+            {t("save")}
           </button>
           <button onClick={() => setCreating(false)} className="h-10 px-3 rounded-xl border border-[#D2D2D7] text-[#6E6E73]">
             <X className="w-4 h-4" />
@@ -141,7 +143,7 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
           className="inline-flex items-center gap-2 h-10 px-4 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium rounded-xl transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Nouvelle équipe
+          {t("newTeam")}
         </button>
       )}
 
@@ -151,15 +153,15 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
           <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] flex items-center justify-center mb-4">
             <Users className="w-6 h-6 text-[#ADADB8]" />
           </div>
-          <p className="text-[15px] font-medium text-[#1D1D1F]">Aucune équipe</p>
-          <p className="text-[13px] text-[#6E6E73] mt-1">Créez votre première équipe.</p>
+          <p className="text-[15px] font-medium text-[#1D1D1F]">{t("noTeams")}</p>
+          <p className="text-[13px] text-[#6E6E73] mt-1">{t("createFirst")}</p>
         </div>
       )}
 
       {/* Tri */}
       {teams.length > 1 && (
         <div className="flex gap-2">
-          {([["name", "Nom"], ["members", "Membres"]] as [SortField, string][]).map(([field, label]) => (
+          {([["name", t("rename")], ["members", t("members")]] as [SortField, string][]).map(([field, lbl]) => (
             <button
               key={field}
               onClick={() => toggleSort(field)}
@@ -171,7 +173,7 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
               )}
             >
               <ArrowUpDown className="w-3.5 h-3.5" />
-              {label}
+              {lbl}
               {sortField === field && <span className="text-[11px]">{sortDir === "asc" ? "↑" : "↓"}</span>}
             </button>
           ))}
@@ -211,8 +213,8 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
                   <div className="flex-1 min-w-0">
                     <p className="text-[15px] font-semibold text-[#1D1D1F]">{team.name}</p>
                     <p className="text-[12px] text-[#6E6E73] mt-0.5">
-                      {team.members.length} membre{team.members.length !== 1 ? "s" : ""}
-                      {team.manager ? ` · Manager : ${label(team.manager)}` : " · Sans manager"}
+                      {t("memberCount", { count: team.members.length })}
+                      {team.manager ? ` · ${t("manager")} : ${label(team.manager)}` : ` · ${t("noManager")}`}
                     </p>
                   </div>
                 )}
@@ -223,14 +225,14 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
                     <button
                       onClick={() => { setEditingId(team.id); setEditName(team.name); }}
                       className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
-                      title="Renommer"
+                      title={t("rename")}
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setDeleteTarget(team)}
                       className="p-2 rounded-lg text-[#6E6E73] hover:bg-red-50 hover:text-red-500 transition-colors"
-                      title="Supprimer"
+                      title={t("delete")}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -250,14 +252,14 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
 
                   {/* Manager */}
                   <div className="space-y-2">
-                    <p className="text-[12px] font-semibold text-[#6E6E73] uppercase tracking-wide">Manager</p>
+                    <p className="text-[12px] font-semibold text-[#6E6E73] uppercase tracking-wide">{t("manager")}</p>
                     <div className="flex items-center gap-2">
                       <select
                         value={team.manager?.id ?? ""}
                         onChange={(e) => handleSetManager(team.id, e.target.value || null)}
                         className="flex-1 h-9 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[13px] text-[#1D1D1F] outline-none focus:border-[#0071E3] transition-all"
                       >
-                        <option value="">— Aucun manager —</option>
+                        <option value="">{t("noManager")}</option>
                         {managers.map((u) => (
                           <option key={u.id} value={u.id}>{label(u)}</option>
                         ))}
@@ -265,7 +267,7 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
                       {team.manager && (
                         <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
                           <Crown className="w-3 h-3" />
-                          Manager
+                          {t("manager")}
                         </span>
                       )}
                     </div>
@@ -273,7 +275,7 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
 
                   {/* Membres */}
                   <div className="space-y-2">
-                    <p className="text-[12px] font-semibold text-[#6E6E73] uppercase tracking-wide">Membres</p>
+                    <p className="text-[12px] font-semibold text-[#6E6E73] uppercase tracking-wide">{t("members")}</p>
 
                     {/* Ajouter un membre */}
                     {availableToAdd.length > 0 && (
@@ -283,7 +285,7 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
                           onChange={(e) => { if (e.target.value) { handleAddMember(team.id, e.target.value); e.target.value = ""; } }}
                           className="flex-1 h-9 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[13px] text-[#1D1D1F] outline-none focus:border-[#0071E3] transition-all"
                         >
-                          <option value="">Ajouter un membre…</option>
+                          <option value="">{t("addMember")}</option>
                           {availableToAdd.map((u) => (
                             <option key={u.id} value={u.id}>{label(u)}</option>
                           ))}
@@ -294,7 +296,7 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
 
                     {/* Liste membres */}
                     {team.members.length === 0 ? (
-                      <p className="text-[13px] text-[#ADADB8] italic">Aucun membre</p>
+                      <p className="text-[13px] text-[#ADADB8] italic">{t("noMembers")}</p>
                     ) : (
                       <div className="space-y-1.5">
                         {team.members.map((m) => {
@@ -312,7 +314,7 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
                                 onClick={() => handleRemoveMember(team.id, m.id)}
                                 disabled={isManager}
                                 className="p-1.5 rounded-lg text-[#ADADB8] hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                title={isManager ? "Retirer le manager depuis le sélecteur ci-dessus" : "Retirer"}
+                                title={isManager ? "Retirer le manager depuis le sélecteur ci-dessus" : t("remove")}
                               >
                                 <UserMinus className="w-3.5 h-3.5" />
                               </button>
@@ -338,19 +340,19 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
                 <Trash2 className="w-5 h-5 text-red-500" />
               </div>
               <div>
-                <p className="text-[15px] font-semibold text-[#1D1D1F]">Supprimer l&apos;équipe</p>
+                <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("deleteTeam")}</p>
                 <p className="text-[13px] text-[#6E6E73]">{deleteTarget.name}</p>
               </div>
             </div>
             <p className="text-[13px] text-[#6E6E73]">
-              Les membres ne seront pas supprimés. L&apos;équipe sera orpheline si un nouveau manager n&apos;est pas désigné.
+              {t("deleteTeamDesc")}
             </p>
             <div className="flex gap-3 pt-2">
               <button onClick={() => setDeleteTarget(null)} className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors">
-                Annuler
+                {t("cancel")}
               </button>
               <button onClick={() => handleDelete(deleteTarget)} disabled={loading} className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium disabled:opacity-50 transition-colors">
-                {loading ? "Suppression…" : "Supprimer"}
+                {loading ? t("saving") : t("delete")}
               </button>
             </div>
           </div>

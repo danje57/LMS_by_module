@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Mail, Server, Cloud, CheckCircle, AlertCircle, Send, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 type Provider = "smtp" | "graph";
 
@@ -67,6 +68,7 @@ function PasswordInput({ id, name, placeholder, hasExisting }: {
 }
 
 export function MailSettingsForm() {
+  const t = useTranslations("settings");
   const [data, setData] = useState<MailSettingsData>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -107,7 +109,7 @@ export function MailSettingsForm() {
       body: JSON.stringify(body),
     });
     if (res.ok) {
-      setMsg({ type: "success", text: "Paramètres mail enregistrés." });
+      setMsg({ type: "success", text: t("mailSaved") });
       // Rafraîchir pour mettre à jour hasSmtpPass / hasGraphSecret
       const refreshed = await fetch("/api/admin/mail-settings").then((r) => r.json());
       if (refreshed) setData((prev) => ({ ...prev, ...refreshed }));
@@ -124,9 +126,9 @@ export function MailSettingsForm() {
     const res = await fetch("/api/admin/mail-settings/test", { method: "POST" });
     const d = await res.json().catch(() => ({}));
     if (res.ok) {
-      setMsg({ type: "success", text: `Email de test envoyé à ${d.sentTo}.` });
+      setMsg({ type: "success", text: t("testEmailSent", { email: d.sentTo }) });
     } else {
-      setMsg({ type: "error", text: d.error ?? "Échec de l'envoi." });
+      setMsg({ type: "error", text: d.error ?? t("sendFailed") });
     }
     setTesting(false);
   }
@@ -135,7 +137,7 @@ export function MailSettingsForm() {
     return (
       <div className="bg-white rounded-2xl border border-[#E5E5EA] p-7 flex items-center gap-3 text-[#8E8E93]">
         <RefreshCw className="w-4 h-4 animate-spin" />
-        <span className="text-[14px]">Chargement des paramètres…</span>
+        <span className="text-[14px]">{t("loading")}</span>
       </div>
     );
   }
@@ -147,8 +149,8 @@ export function MailSettingsForm() {
           <Mail className="w-4 h-4 text-[#0071E3]" />
         </div>
         <div>
-          <h2 className="text-[17px] font-semibold text-[#1D1D1F]">Notifications email</h2>
-          <p className="text-[13px] text-[#6E6E73]">Configuration de l&apos;envoi d&apos;emails (affectations, deadlines).</p>
+          <h2 className="text-[17px] font-semibold text-[#1D1D1F]">{t("mailTitle")}</h2>
+          <p className="text-[13px] text-[#6E6E73]">{t("mailSubtitle")}</p>
         </div>
       </div>
 
@@ -157,11 +159,11 @@ export function MailSettingsForm() {
         {/* Fournisseur */}
         <div>
           <input type="hidden" name="provider" value={data.provider} />
-          <p className={labelClass}>Fournisseur</p>
+          <p className={labelClass}>{t("provider")}</p>
           <div className="flex gap-2 mt-1">
             {([
-              { v: "smtp", icon: Server, label: "SMTP", desc: "Gmail, Exchange SMTP AUTH, tout serveur SMTP" },
-              { v: "graph", icon: Cloud, label: "Microsoft Graph", desc: "Exchange Online / Microsoft 365 (OAuth2)" },
+              { v: "smtp", icon: Server, label: t("smtp"), desc: t("smtpDesc") },
+              { v: "graph", icon: Cloud, label: t("graph"), desc: t("graphDesc") },
             ] as const).map(({ v, icon: Icon, label, desc }) => (
               <button key={v} type="button"
                 onClick={() => setData((d) => ({ ...d, provider: v }))}
@@ -186,13 +188,13 @@ export function MailSettingsForm() {
         {/* Paramètres communs */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="fromName" className={labelClass}>Nom de l&apos;expéditeur</label>
+            <label htmlFor="fromName" className={labelClass}>{t("senderName")}</label>
             <input id="fromName" name="fromName" defaultValue={data.fromName} placeholder="LMS Notifications" className={fieldClass} />
           </div>
           <div>
-            <label htmlFor="appUrl" className={labelClass}>URL de l&apos;application</label>
+            <label htmlFor="appUrl" className={labelClass}>{t("appUrl")}</label>
             <input id="appUrl" name="appUrl" type="url" defaultValue={data.appUrl} placeholder="https://votre-domaine.com" className={fieldClass} />
-            <p className={hintClass}>Lien inclus dans les emails.</p>
+            <p className={hintClass}>{t("appUrlDesc")}</p>
           </div>
         </div>
 
@@ -202,7 +204,7 @@ export function MailSettingsForm() {
         {data.provider === "smtp" && (
           <div className="space-y-4">
             <p className="text-[13px] font-semibold text-[#1D1D1F] flex items-center gap-2">
-              <Server className="w-3.5 h-3.5 text-[#8E8E93]" /> Configuration SMTP
+              <Server className="w-3.5 h-3.5 text-[#8E8E93]" /> {t("smtpConfig")}
             </p>
 
             <div className="bg-[#F5F5F7] rounded-xl px-4 py-3 text-[12px] text-[#6E6E73] space-y-1">
@@ -212,11 +214,11 @@ export function MailSettingsForm() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2 sm:col-span-1">
-                <label htmlFor="smtpHost" className={labelClass}>Serveur SMTP</label>
+                <label htmlFor="smtpHost" className={labelClass}>{t("smtpServer")}</label>
                 <input id="smtpHost" name="smtpHost" defaultValue={data.smtpHost} placeholder="smtp.gmail.com" className={fieldClass} />
               </div>
               <div>
-                <label htmlFor="smtpPort" className={labelClass}>Port</label>
+                <label htmlFor="smtpPort" className={labelClass}>{t("port")}</label>
                 <input id="smtpPort" name="smtpPort" type="number" defaultValue={data.smtpPort} className={fieldClass} />
               </div>
             </div>
@@ -225,25 +227,25 @@ export function MailSettingsForm() {
               <input id="smtpSecure" name="smtpSecure" type="checkbox" defaultChecked={data.smtpSecure}
                 className="w-4 h-4 rounded text-[#0071E3] accent-[#0071E3]" />
               <label htmlFor="smtpSecure" className="text-[13px] text-[#1D1D1F]">
-                Connexion sécurisée TLS/SSL (port 465)
+                {t("secureTls")}
               </label>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="smtpUser" className={labelClass}>Identifiant (email)</label>
+                <label htmlFor="smtpUser" className={labelClass}>{t("smtpUser")}</label>
                 <input id="smtpUser" name="smtpUser" defaultValue={data.smtpUser} placeholder="vous@gmail.com" className={fieldClass} />
               </div>
               <div>
-                <label htmlFor="smtpPass" className={labelClass}>Mot de passe / App password</label>
+                <label htmlFor="smtpPass" className={labelClass}>{t("smtpPass")}</label>
                 <PasswordInput id="smtpPass" name="smtpPass" hasExisting={data.hasSmtpPass} placeholder="xxxx xxxx xxxx xxxx" />
               </div>
             </div>
 
             <div>
-              <label htmlFor="smtpFrom" className={labelClass}>Adresse d&apos;envoi</label>
+              <label htmlFor="smtpFrom" className={labelClass}>{t("senderAddress")}</label>
               <input id="smtpFrom" name="smtpFrom" type="email" defaultValue={data.smtpFrom} placeholder="notifications@votre-domaine.com" className={fieldClass} />
-              <p className={hintClass}>Adresse affichée dans le champ &quot;De&quot; des emails reçus.</p>
+              <p className={hintClass}>{t("senderAddressDesc")}</p>
             </div>
           </div>
         )}
@@ -252,7 +254,7 @@ export function MailSettingsForm() {
         {data.provider === "graph" && (
           <div className="space-y-4">
             <p className="text-[13px] font-semibold text-[#1D1D1F] flex items-center gap-2">
-              <Cloud className="w-3.5 h-3.5 text-[#8E8E93]" /> Microsoft Graph API
+              <Cloud className="w-3.5 h-3.5 text-[#8E8E93]" /> {t("graphApi")}
             </p>
 
             <div className="bg-[#F5F5F7] rounded-xl px-4 py-3 text-[12px] text-[#6E6E73] space-y-1">
@@ -263,24 +265,24 @@ export function MailSettingsForm() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="graphTenantId" className={labelClass}>Tenant ID</label>
+                <label htmlFor="graphTenantId" className={labelClass}>{t("tenantId")}</label>
                 <input id="graphTenantId" name="graphTenantId" defaultValue={data.graphTenantId}
                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" className={fieldClass} />
               </div>
               <div>
-                <label htmlFor="graphClientId" className={labelClass}>Client ID (Application ID)</label>
+                <label htmlFor="graphClientId" className={labelClass}>{t("clientId")}</label>
                 <input id="graphClientId" name="graphClientId" defaultValue={data.graphClientId}
                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" className={fieldClass} />
               </div>
             </div>
 
             <div>
-              <label htmlFor="graphClientSecret" className={labelClass}>Secret client</label>
-              <PasswordInput id="graphClientSecret" name="graphClientSecret" hasExisting={data.hasGraphSecret} placeholder="Votre secret client Azure AD" />
+              <label htmlFor="graphClientSecret" className={labelClass}>{t("clientSecret")}</label>
+              <PasswordInput id="graphClientSecret" name="graphClientSecret" hasExisting={data.hasGraphSecret} placeholder={t("clientSecretPlaceholder")} />
             </div>
 
             <div>
-              <label htmlFor="graphFrom" className={labelClass}>Adresse d&apos;envoi (boîte Exchange autorisée)</label>
+              <label htmlFor="graphFrom" className={labelClass}>{t("graphSenderAddress")}</label>
               <input id="graphFrom" name="graphFrom" type="email" defaultValue={data.graphFrom}
                 placeholder="notifications@votre-domaine.com" className={fieldClass} />
             </div>
@@ -291,15 +293,11 @@ export function MailSettingsForm() {
 
         {/* Cron secret */}
         <div>
-          <label htmlFor="cronSecret" className={labelClass}>Secret cron</label>
+          <label htmlFor="cronSecret" className={labelClass}>{t("cronSecret")}</label>
           <PasswordInput id="cronSecret" name="cronSecret" hasExisting={!!data.hasCronSecret}
             placeholder="Générez un token aléatoire fort" />
           <p className={hintClass}>
-            Protège le endpoint <code className="bg-[#F5F5F7] px-1 py-0.5 rounded text-[11px]">/api/cron/notifications</code>.
-            Appel Linux (8h chaque matin) :{" "}
-            <code className="bg-[#F5F5F7] px-1 py-0.5 rounded text-[11px]">
-              0 8 * * * curl -s -H &quot;Authorization: Bearer VOTRE_SECRET&quot; https://votre-domaine.com/api/cron/notifications
-            </code>
+            {t("cronSecretDesc")}
           </p>
         </div>
 
@@ -322,12 +320,12 @@ export function MailSettingsForm() {
         <div className="flex items-center gap-3 pt-1">
           <button type="submit" disabled={saving}
             className="h-11 px-6 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium rounded-xl transition-colors disabled:opacity-60">
-            {saving ? "Enregistrement…" : "Enregistrer"}
+            {saving ? t("saving") : t("save")}
           </button>
           <button type="button" onClick={handleTest} disabled={testing || saving}
             className="h-11 px-5 flex items-center gap-2 border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] rounded-xl hover:bg-[#F5F5F7] transition-colors disabled:opacity-50">
             <Send className="w-3.5 h-3.5" />
-            {testing ? "Envoi…" : "Envoyer un email de test"}
+            {testing ? "Envoi…" : t("sendTestEmail")}
           </button>
         </div>
       </form>

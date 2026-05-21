@@ -9,6 +9,7 @@ declare module "next-auth" {
       name?: string | null;
       roles: RoleType[];
       sessionMode: "admin" | "user" | null;
+      locale: "fr" | "en";
     };
   }
 }
@@ -18,5 +19,6 @@ declare module "next-auth/jwt" {
     id: string;
     roles: RoleType[];
     sessionMode: "admin" | "user" | null;
+    locale: "fr" | "en";
   }
 }

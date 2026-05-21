@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { Eye, EyeOff, Lock, CheckCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import { validatePassword, RULES } from "@/lib/password";
 
 export function ChangePasswordForm() {
+  const t = useTranslations("profile");
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -17,14 +19,14 @@ export function ChangePasswordForm() {
   const check = validatePassword(next);
   const passed = RULES.filter((r) => r.test(next)).length;
   const colors = ["bg-red-400", "bg-red-400", "bg-orange-400", "bg-amber-400", "bg-emerald-500"];
-  const labels = ["", "Très faible", "Faible", "Moyen", "Fort", "Très fort"];
+  const strengthLabels = [t("veryWeak"), t("veryWeak"), t("weak"), t("medium"), t("strong"), t("veryStrong")];
   const labelColors = ["", "text-red-500", "text-red-500", "text-orange-500", "text-amber-500", "text-emerald-600"];
   const mismatch = confirm.length > 0 && next !== confirm;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!check.valid) { setMsg({ type: "error", text: `Mot de passe trop faible — requis : ${check.errors.join(", ")}.` }); return; }
-    if (next !== confirm) { setMsg({ type: "error", text: "Les mots de passe ne correspondent pas." }); return; }
+    if (!check.valid) { setMsg({ type: "error", text: t("passwordWeak", { errors: check.errors.join(", ") }) }); return; }
+    if (next !== confirm) { setMsg({ type: "error", text: t("passwordMismatch") }); return; }
 
     setLoading(true);
     setMsg(null);
@@ -37,10 +39,10 @@ export function ChangePasswordForm() {
     setLoading(false);
 
     if (res.ok) {
-      setMsg({ type: "success", text: "Mot de passe mis à jour avec succès." });
+      setMsg({ type: "success", text: t("passwordUpdated") });
       setCurrent(""); setNext(""); setConfirm("");
     } else {
-      setMsg({ type: "error", text: data.error ?? "Une erreur est survenue." });
+      setMsg({ type: "error", text: data.error ?? t("error") });
     }
   }
 
@@ -53,15 +55,14 @@ export function ChangePasswordForm() {
           <Lock className="w-4 h-4 text-[#8E8E93]" />
         </div>
         <div>
-          <h2 className="text-[17px] font-semibold text-[#1D1D1F]">Changer le mot de passe</h2>
-          <p className="text-[13px] text-[#6E6E73]">Choisissez un mot de passe fort et unique.</p>
+          <h2 className="text-[17px] font-semibold text-[#1D1D1F]">{t("changePassword")}</h2>
+          <p className="text-[13px] text-[#6E6E73]">{t("passwordDesc")}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Mot de passe actuel */}
         <div>
-          <label className="block text-[13px] font-medium text-[#1D1D1F] mb-1.5">Mot de passe actuel</label>
+          <label className="block text-[13px] font-medium text-[#1D1D1F] mb-1.5">{t("currentPassword")}</label>
           <div className="relative">
             <input
               type={showCurrent ? "text" : "password"}
@@ -80,9 +81,8 @@ export function ChangePasswordForm() {
 
         <div className="h-px bg-[#F5F5F7]" />
 
-        {/* Nouveau mot de passe */}
         <div>
-          <label className="block text-[13px] font-medium text-[#1D1D1F] mb-1.5">Nouveau mot de passe</label>
+          <label className="block text-[13px] font-medium text-[#1D1D1F] mb-1.5">{t("newPassword")}</label>
           <div className="relative">
             <input
               type={showNext ? "text" : "password"}
@@ -105,18 +105,17 @@ export function ChangePasswordForm() {
                 ))}
               </div>
               <div className="flex items-center justify-between">
-                <span className={cn("text-[11px] font-medium", labelColors[passed])}>{labels[passed]}</span>
+                <span className={cn("text-[11px] font-medium", labelColors[passed])}>{strengthLabels[passed]}</span>
                 {check.errors.length > 0 && (
-                  <span className="text-[11px] text-[#8E8E93]">Manque : {check.errors.join(", ")}</span>
+                  <span className="text-[11px] text-[#8E8E93]">{t("missing", { errors: check.errors.join(", ") })}</span>
                 )}
               </div>
             </div>
           )}
         </div>
 
-        {/* Confirmation */}
         <div>
-          <label className="block text-[13px] font-medium text-[#1D1D1F] mb-1.5">Confirmer le nouveau mot de passe</label>
+          <label className="block text-[13px] font-medium text-[#1D1D1F] mb-1.5">{t("confirmPassword")}</label>
           <input
             type="password"
             value={confirm}
@@ -125,7 +124,7 @@ export function ChangePasswordForm() {
             placeholder="••••••••"
             className={cn(fieldClass, "pr-3.5", mismatch && "border-red-400 focus:border-red-400 focus:ring-red-400/20")}
           />
-          {mismatch && <p className="text-[12px] text-red-500 mt-1">Les mots de passe ne correspondent pas.</p>}
+          {mismatch && <p className="text-[12px] text-red-500 mt-1">{t("passwordMismatch")}</p>}
         </div>
 
         {msg && (
@@ -141,7 +140,7 @@ export function ChangePasswordForm() {
         <div className="pt-1">
           <button type="submit" disabled={loading || mismatch || !check.valid || !current}
             className="h-11 px-6 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium rounded-xl transition-colors disabled:opacity-50">
-            {loading ? "Enregistrement…" : "Mettre à jour"}
+            {loading ? t("saving") : t("update")}
           </button>
         </div>
       </form>

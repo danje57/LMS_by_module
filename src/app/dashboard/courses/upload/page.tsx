@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { UploadForm } from "@/components/courses/upload-form";
+import { getTranslations } from "next-intl/server";
 
 export default async function UploadPage() {
   const session = await auth();
@@ -23,11 +24,13 @@ export default async function UploadPage() {
       })
     : [];
 
+  const t = await getTranslations("upload");
+
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">Ajouter un cours</h1>
-        <p className="text-[15px] text-[#6E6E73] mt-0.5">Upload d&apos;un fichier H5P avec ses métadonnées</p>
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">{t("addCourse")}</h1>
+        <p className="text-[15px] text-[#6E6E73] mt-0.5">{t("uploadExistingH5p")}</p>
       </div>
       <UploadForm isAdmin={isAdmin} userId={session.user.id} creators={creators} />
     </div>

@@ -45,19 +45,23 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
           email: user.email,
           name: user.name,
           roles,
+          locale: user.locale as "fr" | "en",
         };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      if (trigger === "update" && (session as { sessionMode?: unknown })?.sessionMode !== undefined) {
-        token.sessionMode = (session as { sessionMode: "admin" | "user" | null }).sessionMode;
+      if (trigger === "update") {
+        const s = session as { sessionMode?: unknown; locale?: unknown };
+        if (s?.sessionMode !== undefined) token.sessionMode = s.sessionMode as "admin" | "user" | null;
+        if (s?.locale !== undefined) token.locale = s.locale as "fr" | "en";
       }
       if (user) {
         token.id = user.id;
         token.roles = (user as { roles?: RoleType[] }).roles ?? [];
         token.sessionMode = "user";
+        token.locale = (user as { locale?: "fr" | "en" }).locale ?? "fr";
       }
       return token;
     },
@@ -66,6 +70,7 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
         session.user.id = token.id as string;
         session.user.roles = token.roles as RoleType[];
         session.user.sessionMode = (token.sessionMode as "admin" | "user" | null) ?? null;
+        session.user.locale = (token.locale as "fr" | "en") ?? "fr";
       }
       return session;
     },

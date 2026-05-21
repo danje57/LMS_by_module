@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, FileCheck, Presentation } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const fieldClass =
   "w-full h-11 px-3.5 rounded-xl border border-[#D2D2D7] bg-white text-[15px] text-[#1D1D1F] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20";
@@ -29,12 +30,13 @@ function QuizToggle({
   passingScore: string;
   setPassingScore: (v: string) => void;
 }) {
+  const t = useTranslations("upload");
   return (
     <>
       <div className="flex items-center justify-between bg-[#F5F5F7] rounded-xl px-4 py-3">
         <div>
-          <p className="text-[14px] font-medium text-[#1D1D1F]">Ce cours contient un quiz</p>
-          <p className="text-[12px] text-[#6E6E73]">Un score de passage sera requis</p>
+          <p className="text-[14px] font-medium text-[#1D1D1F]">{t("hasQuiz")}</p>
+          <p className="text-[12px] text-[#6E6E73]">{t("passingScoreRequired")}</p>
         </div>
         <button
           type="button"
@@ -48,7 +50,7 @@ function QuizToggle({
       </div>
       {hasQuiz && (
         <div>
-          <label className={labelClass}>Score de passage (%)</label>
+          <label className={labelClass}>{t("passingScore")}</label>
           <input
             type="number"
             min="0"
@@ -76,6 +78,7 @@ function FileDropZone({
   selectedFile: File | null;
   onFileChange: (f: File | null) => void;
 }) {
+  const t = useTranslations("upload");
   return (
     <label
       htmlFor="file"
@@ -100,7 +103,7 @@ function FileDropZone({
             <Upload className="w-5 h-5 text-[#8E8E93]" />
           </div>
           <div className="text-center">
-            <p className="text-[14px] font-medium text-[#1D1D1F]">Cliquez pour sélectionner</p>
+            <p className="text-[14px] font-medium text-[#1D1D1F]">{t("clickToSelect")}</p>
             <p className="text-[12px] text-[#6E6E73] mt-0.5">{hint}</p>
           </div>
         </>
@@ -139,6 +142,7 @@ type DuplicateInfo = { existingTitle: string; existingId: string };
 
 // ─── Formulaire H5P ──────────────────────────────────────────────────────────
 function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => void; isAdmin: boolean; userId: string; creators: Creator[] }) {
+  const t = useTranslations("upload");
   const [hasQuiz, setHasQuiz] = useState(false);
   const [passingScore, setPassingScore] = useState("70");
   const [loading, setLoading] = useState(false);
@@ -150,7 +154,7 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
 
   function handleFileChange(f: File | null) {
     if (f && !f.name.endsWith(".h5p")) {
-      setError("Seuls les fichiers .h5p sont acceptés.");
+      setError(t("onlyH5p"));
       setSelectedFile(null);
       return;
     }
@@ -204,7 +208,7 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!selectedFile) { setError("Veuillez sélectionner un fichier .h5p."); return; }
+    if (!selectedFile) { setError(t("selectH5p")); return; }
     await submit(false);
   }
 
@@ -212,9 +216,9 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
       {isAdmin ? (
         <div>
-          <label className={labelClass}>Créateur du cours</label>
+          <label className={labelClass}>{t("courseCreator")}</label>
           <select name="createdById" required className={fieldClass}>
-            <option value="">— Sélectionner un manager / créateur —</option>
+            <option value="">{t("selectCreator")}</option>
             {creators.map((c) => (
               <option key={c.id} value={c.id}>{c.name ?? c.email}</option>
             ))}
@@ -224,28 +228,29 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
         <input type="hidden" name="createdById" value={userId} />
       )}
       <div>
-        <label className={labelClass}>Titre du cours</label>
-        <input name="title" required maxLength={255} placeholder="Ex : Introduction à la sécurité" className={fieldClass} />
+        <label className={labelClass}>{t("courseTitle")}</label>
+        <input name="title" required maxLength={255} placeholder={t("titlePlaceholder")} className={fieldClass} />
       </div>
       <div>
-        <label className={labelClass}>Durée (minutes)</label>
+        <label className={labelClass}>{t("duration")}</label>
         <input name="duration" type="number" min="1" required placeholder="30" className={fieldClass} />
       </div>
       <QuizToggle hasQuiz={hasQuiz} setHasQuiz={setHasQuiz} passingScore={passingScore} setPassingScore={setPassingScore} />
       <div>
-        <label className={labelClass}>Fichier H5P</label>
-        <FileDropZone accept=".h5p" label="Fichier .h5p" hint="Fichier .h5p · max 600 Mo" selectedFile={selectedFile} onFileChange={handleFileChange} />
+        <label className={labelClass}>{t("uploadFile")}</label>
+        <FileDropZone accept=".h5p" label={t("uploadFile")} hint={t("h5pFile")} selectedFile={selectedFile} onFileChange={handleFileChange} />
       </div>
-      {loading && <ProgressBar progress={progress} label="Upload en cours…" />}
+      {loading && <ProgressBar progress={progress} label={t("uploading")} />}
       {duplicate && <DuplicateWarning info={duplicate} onConfirm={() => submit(true)} onCancel={() => setDuplicate(null)} />}
       {error && <ErrorBox message={error} />}
-      <FormButtons loading={loading} label="Uploader le cours" onCancel={() => history.back()} />
+      <FormButtons loading={loading} label={t("uploadCourse")} onCancel={() => history.back()} />
     </form>
   );
 }
 
 // ─── Formulaire PPTX ─────────────────────────────────────────────────────────
 function PPTXForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => void; isAdmin: boolean; userId: string; creators: Creator[] }) {
+  const t = useTranslations("upload");
   const [hasQuiz, setHasQuiz] = useState(false);
   const [passingScore, setPassingScore] = useState("70");
   const [loading, setLoading] = useState(false);
@@ -260,7 +265,7 @@ function PPTXForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => v
 
   function handleFileChange(f: File | null) {
     if (f && !f.name.toLowerCase().endsWith(".pptx")) {
-      setError("Seuls les fichiers .pptx sont acceptés.");
+      setError(t("onlyPptx"));
       setSelectedFile(null);
       return;
     }
@@ -325,29 +330,29 @@ function PPTXForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => v
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!selectedFile) { setError("Veuillez sélectionner un fichier .pptx."); return; }
-    if (isAdmin && !createdById) { setError("Veuillez sélectionner un créateur."); return; }
+    if (!selectedFile) { setError(t("selectPptx")); return; }
+    if (isAdmin && !createdById) { setError(t("selectCreatorError")); return; }
     await submit(false);
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-        <p className="text-[13px] text-blue-700 font-medium">Conversion automatique</p>
+        <p className="text-[13px] text-blue-700 font-medium">{t("autoConversion")}</p>
         <p className="text-[12px] text-blue-600 mt-0.5">
-          Chaque slide devient une page interactive. Durée de conversion&nbsp;: ~30s/slide.
+          {t("conversionDesc")}
         </p>
       </div>
       {isAdmin && (
         <div>
-          <label className={labelClass}>Créateur du cours</label>
+          <label className={labelClass}>{t("courseCreator")}</label>
           <select
             value={createdById}
             onChange={(e) => setCreatedById(e.target.value)}
             required
             className={fieldClass}
           >
-            <option value="">— Sélectionner un manager / créateur —</option>
+            <option value="">{t("selectCreator")}</option>
             {creators.map((c) => (
               <option key={c.id} value={c.id}>{c.name ?? c.email}</option>
             ))}
@@ -355,44 +360,45 @@ function PPTXForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => v
         </div>
       )}
       <div>
-        <label className={labelClass}>Titre du cours</label>
+        <label className={labelClass}>{t("courseTitle")}</label>
         <input
           name="title"
           required
           maxLength={255}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Ex : Formation sécurité réseau"
+          placeholder={t("titlePlaceholderPptx")}
           className={fieldClass}
         />
       </div>
       <div>
-        <label className={labelClass}>Durée estimée (minutes)</label>
+        <label className={labelClass}>{t("estimatedDuration")}</label>
         <input ref={durationRef} name="duration" type="number" min="1" required placeholder="30" className={fieldClass} />
       </div>
       <QuizToggle hasQuiz={hasQuiz} setHasQuiz={setHasQuiz} passingScore={passingScore} setPassingScore={setPassingScore} />
       <div>
-        <label className={labelClass}>Fichier PowerPoint</label>
-        <FileDropZone accept=".pptx" label="Fichier .pptx" hint="Fichier .pptx · max 200 Mo" selectedFile={selectedFile} onFileChange={handleFileChange} />
+        <label className={labelClass}>{t("powerpointFile")}</label>
+        <FileDropZone accept=".pptx" label={t("powerpointFile")} hint={t("pptxFile")} selectedFile={selectedFile} onFileChange={handleFileChange} />
       </div>
       {loading && <ProgressBar progress={progress} label={status} />}
       {duplicate && <DuplicateWarning info={duplicate} onConfirm={() => submit(true)} onCancel={() => setDuplicate(null)} />}
       {error && <ErrorBox message={error} />}
-      <FormButtons loading={loading} label={loading ? "Conversion en cours…" : "Convertir et publier"} onCancel={() => history.back()} />
+      <FormButtons loading={loading} label={loading ? t("converting") : t("convertAndPublish")} onCancel={() => history.back()} />
     </form>
   );
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function DuplicateWarning({ info, onConfirm, onCancel }: { info: DuplicateInfo; onConfirm: () => void; onCancel: () => void }) {
+  const t = useTranslations("upload");
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-3">
       <div className="flex items-start gap-2">
         <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
         <div>
-          <p className="text-[13px] font-medium text-amber-800">Ce fichier a déjà été uploadé</p>
+          <p className="text-[13px] font-medium text-amber-800">{t("duplicateFile")}</p>
           <p className="text-[12px] text-amber-700 mt-0.5">
-            Il existe déjà sous le nom : <span className="font-semibold">« {info.existingTitle} »</span>
+            {t("existsAs", { title: info.existingTitle })}
           </p>
         </div>
       </div>
@@ -402,14 +408,14 @@ function DuplicateWarning({ info, onConfirm, onCancel }: { info: DuplicateInfo; 
           onClick={onConfirm}
           className="flex-1 h-9 bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-medium rounded-lg transition-colors"
         >
-          Publier quand même
+          {t("publishAnyway")}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="flex-1 h-9 border border-amber-300 text-amber-800 text-[13px] font-medium rounded-lg hover:bg-amber-100 transition-colors"
         >
-          Annuler
+          {t("cancel") ?? "Annuler"}
         </button>
       </div>
     </div>
@@ -426,6 +432,7 @@ function ErrorBox({ message }: { message: string }) {
 }
 
 function FormButtons({ loading, label, onCancel }: { loading: boolean; label: string; onCancel: () => void }) {
+  const t = useTranslations("upload");
   return (
     <div className="flex gap-3 pt-1">
       <button
@@ -441,7 +448,7 @@ function FormButtons({ loading, label, onCancel }: { loading: boolean; label: st
         disabled={loading}
         className="px-5 h-11 border border-[#D2D2D7] text-[#1D1D1F] text-[15px] font-medium rounded-xl hover:bg-[#F5F5F7] transition-colors disabled:opacity-60"
       >
-        Annuler
+        {t("cancel") ?? "Annuler"}
       </button>
     </div>
   );
@@ -449,6 +456,7 @@ function FormButtons({ loading, label, onCancel }: { loading: boolean; label: st
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 export function UploadForm({ isAdmin, userId, creators }: { isAdmin: boolean; userId: string; creators: Creator[] }) {
+  const t = useTranslations("upload");
   const router = useRouter();
   const [tab, setTab] = useState<"h5p" | "pptx">("pptx");
 
@@ -461,21 +469,21 @@ export function UploadForm({ isAdmin, userId, creators }: { isAdmin: boolean; us
     <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-[#E5E5EA]">
-        {(["pptx", "h5p"] as const).map((t) => (
+        {(["pptx", "h5p"] as const).map((tabKey) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
             className={cn(
               "flex items-center gap-2 px-6 py-4 text-[14px] font-medium transition-all border-b-2",
-              tab === t
+              tab === tabKey
                 ? "border-[#0071E3] text-[#0071E3]"
                 : "border-transparent text-[#6E6E73] hover:text-[#1D1D1F]"
             )}
           >
-            {t === "h5p" ? (
-              <><Upload className="w-4 h-4" /> Fichier H5P</>
+            {tabKey === "h5p" ? (
+              <><Upload className="w-4 h-4" /> {t("uploadFile")}</>
             ) : (
-              <><Presentation className="w-4 h-4" /> Importer un PPTX</>
+              <><Presentation className="w-4 h-4" /> {t("importPptx")}</>
             )}
           </button>
         ))}
@@ -484,8 +492,8 @@ export function UploadForm({ isAdmin, userId, creators }: { isAdmin: boolean; us
       <div className="p-7">
         <p className="text-[13px] text-[#6E6E73] mb-6">
           {tab === "h5p"
-            ? "Uploadez un fichier .h5p existant."
-            : "Convertissez un PowerPoint (.pptx) en cours interactif automatiquement."}
+            ? t("uploadExistingH5p")
+            : t("convertPptx")}
         </p>
         {tab === "h5p"
           ? <H5PForm onSuccess={onSuccess} isAdmin={isAdmin} userId={userId} creators={creators} />

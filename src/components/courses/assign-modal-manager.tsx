@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { X, Search, Users, UserPlus, Building2, CheckCheck, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 type UserRef  = { id: string; name: string | null; email: string; roles: string[] };
 type TeamInfo = { id: string; name: string; memberIds: string[] };
@@ -19,6 +20,7 @@ function label(u: { name: string | null; email: string }) {
 }
 
 export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
+  const t = useTranslations("assignment");
   const [allUsers, setAllUsers]         = useState<UserRef[]>([]);
   const [teams, setTeams]               = useState<TeamInfo[]>([]);
   const [callerTeams, setCallerTeams]   = useState<{ id: string; name: string }[]>([]);
@@ -128,7 +130,7 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
           <div>
             <div className="flex items-center gap-2.5">
               <UserPlus className="w-5 h-5 text-[#0071E3]" />
-              <p className="text-[15px] font-semibold text-[#1D1D1F]">Affecter le cours</p>
+              <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("assignCourse")}</p>
             </div>
             <p className="text-[12px] text-[#6E6E73] mt-0.5 ml-7 line-clamp-1">{courseTitle}</p>
           </div>
@@ -152,7 +154,7 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
                 className="h-9 px-3 rounded-xl border border-amber-200 bg-white text-[13px] text-[#1D1D1F] outline-none focus:border-[#0071E3] transition-all"
               >
                 <option value="">— Choisir —</option>
-                {callerTeams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                {callerTeams.map((tm) => <option key={tm.id} value={tm.id}>{tm.name}</option>)}
               </select>
             </div>
           </div>
@@ -168,7 +170,7 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
             <div className="px-6 pt-4 shrink-0">
               <div className="flex items-center gap-3 p-3 bg-[#F5F5F7] rounded-xl">
                 <CalendarDays className="w-4 h-4 text-[#6E6E73] shrink-0" />
-                <span className="text-[13px] text-[#1D1D1F] font-medium flex-1">Deadline commune</span>
+                <span className="text-[13px] text-[#1D1D1F] font-medium flex-1">{t("deadline")}</span>
                 <input
                   type="date"
                   value={commonDueDate}
@@ -190,16 +192,16 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
 
             {/* Tabs */}
             <div className="flex gap-1 px-6 pt-3 shrink-0">
-              {(["teams", "users"] as const).map((t) => (
-                <button key={t} onClick={() => setTab(t)}
+              {(["teams", "users"] as const).map((tabKey) => (
+                <button key={tabKey} onClick={() => setTab(tabKey)}
                   className={cn("px-4 py-2 rounded-xl text-[13px] font-medium transition-all",
-                    tab === t ? "bg-[#0071E3] text-white" : "text-[#6E6E73] hover:bg-[#F5F5F7]"
+                    tab === tabKey ? "bg-[#0071E3] text-white" : "text-[#6E6E73] hover:bg-[#F5F5F7]"
                   )}>
-                  {t === "teams" ? <><Users className="w-3.5 h-3.5 inline mr-1.5" />Équipes</> : "Individuel"}
+                  {tabKey === "teams" ? <><Users className="w-3.5 h-3.5 inline mr-1.5" />{t("teams")}</> : t("individual")}
                 </button>
               ))}
               <div className="flex-1" />
-              <span className="text-[12px] text-[#6E6E73] self-center">{selected.size} sélectionné{selected.size !== 1 ? "s" : ""}</span>
+              <span className="text-[12px] text-[#6E6E73] self-center">{t("selectedUsers", { count: selected.size })}</span>
             </div>
 
             {/* Search */}
@@ -208,7 +210,7 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ADADB8]" />
                 <input
                   type="text"
-                  placeholder="Rechercher…"
+                  placeholder={t("search")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full h-9 pl-9 pr-3 rounded-xl border border-[#D2D2D7] text-[13px] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all"
@@ -220,7 +222,7 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
             <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-1">
               {tab === "teams" ? (
                 teams
-                  .filter((t) => t.name.toLowerCase().includes(search.toLowerCase()))
+                  .filter((tm) => tm.name.toLowerCase().includes(search.toLowerCase()))
                   .map((team) => {
                     const teamUsers = allUsers.filter((u) => team.memberIds.includes(u.id));
                     const allIn = teamUsers.length > 0 && teamUsers.every((u) => selected.has(u.id));
@@ -298,7 +300,7 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
         <div className="flex gap-3 px-6 py-4 border-t border-[#E5E5EA] shrink-0">
           <button onClick={onClose}
             className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors">
-            Annuler
+            {t("cancel")}
           </button>
           <button
             onClick={handleSave}
@@ -306,7 +308,7 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
             title={needsContext ? "Choisissez un contexte équipe" : undefined}
             className="flex-1 h-10 rounded-xl bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium disabled:opacity-50 transition-colors"
           >
-            {saving ? "Enregistrement…" : needsContext ? "Choisir une équipe d'abord" : "Enregistrer"}
+            {saving ? t("saving") : needsContext ? "Choisir une équipe d'abord" : t("assign")}
           </button>
         </div>
       </div>

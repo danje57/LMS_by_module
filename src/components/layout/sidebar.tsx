@@ -3,19 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, BookOpen, Settings, GraduationCap, Users, UsersRound, Award, BadgeCheck, BarChart2 } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard",                    label: "Tableau de bord",    icon: LayoutDashboard, adminOnly: false, userOnly: false, managerOnly: false },
-  { href: "/dashboard/courses",            label: "Cours",              icon: BookOpen,        adminOnly: false, userOnly: false, managerOnly: false },
-  { href: "/dashboard/certificates",       label: "Certificats",        icon: Award,           adminOnly: false, userOnly: true,  managerOnly: false },
-  { href: "/dashboard/progress",           label: "Suivi",              icon: BarChart2,       adminOnly: false, userOnly: false, managerOnly: true  },
-  { href: "/dashboard/admin/users",        label: "Utilisateurs",       icon: Users,           adminOnly: true,  userOnly: false, managerOnly: false },
-  { href: "/dashboard/admin/teams",        label: "Équipes",            icon: UsersRound,      adminOnly: true,  userOnly: false, managerOnly: false },
-  { href: "/dashboard/admin/progress",     label: "Suivi",              icon: BarChart2,       adminOnly: true,  userOnly: false, managerOnly: false },
-  { href: "/dashboard/admin/certificates", label: "Gérer certificats",  icon: BadgeCheck,      adminOnly: true,  userOnly: false, managerOnly: false },
-  { href: "/dashboard/settings",           label: "Paramètres",         icon: Settings,        adminOnly: true,  userOnly: false, managerOnly: false },
+  { href: "/dashboard",                    key: "dashboard",          icon: LayoutDashboard, adminOnly: false, userOnly: false, managerOnly: false },
+  { href: "/dashboard/courses",            key: "courses",            icon: BookOpen,        adminOnly: false, userOnly: false, managerOnly: false },
+  { href: "/dashboard/certificates",       key: "certificates",       icon: Award,           adminOnly: false, userOnly: true,  managerOnly: false },
+  { href: "/dashboard/progress",           key: "progress",           icon: BarChart2,       adminOnly: false, userOnly: false, managerOnly: true  },
+  { href: "/dashboard/admin/users",        key: "users",              icon: Users,           adminOnly: true,  userOnly: false, managerOnly: false },
+  { href: "/dashboard/admin/teams",        key: "teams",              icon: UsersRound,      adminOnly: true,  userOnly: false, managerOnly: false },
+  { href: "/dashboard/admin/progress",     key: "progress",           icon: BarChart2,       adminOnly: true,  userOnly: false, managerOnly: false },
+  { href: "/dashboard/admin/certificates", key: "manageCertificates", icon: BadgeCheck,      adminOnly: true,  userOnly: false, managerOnly: false },
+  { href: "/dashboard/settings",           key: "settings",           icon: Settings,        adminOnly: true,  userOnly: false, managerOnly: false },
 ];
 
 interface SidebarProps {
@@ -27,6 +28,7 @@ interface SidebarProps {
 
 export function Sidebar({ appName, logoPath, isAdmin = false, isManager = false }: SidebarProps) {
   const pathname = usePathname();
+  const t = useTranslations("nav");
 
   return (
     <aside className="w-60 bg-white border-r border-[#E5E5EA] flex flex-col shrink-0">
@@ -70,7 +72,7 @@ export function Sidebar({ appName, logoPath, isAdmin = false, isManager = false 
               )}
             >
               <Icon className={cn("w-4 h-4 shrink-0", active ? "text-[#0071E3]" : "text-[#8E8E93]")} />
-              {item.label}
+              {t(item.key as Parameters<typeof t>[0])}
             </Link>
           );
         })}

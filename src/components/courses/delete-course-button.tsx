@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, AlertTriangle } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface DeleteCourseButtonProps {
   courseId: string;
@@ -11,6 +12,7 @@ interface DeleteCourseButtonProps {
 }
 
 export function DeleteCourseButton({ courseId, courseTitle, isManagerContext = false }: DeleteCourseButtonProps) {
+  const t = useTranslations("courses");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -31,7 +33,7 @@ export function DeleteCourseButton({ courseId, courseTitle, isManagerContext = f
       <button
         onClick={() => setOpen(true)}
         className="p-2 rounded-xl text-[#8E8E93] hover:bg-red-50 hover:text-red-500 transition-colors"
-        title="Supprimer le cours"
+        title={t("delete")}
       >
         <Trash2 className="w-4 h-4" />
       </button>
@@ -52,8 +54,8 @@ export function DeleteCourseButton({ courseId, courseTitle, isManagerContext = f
                 <AlertTriangle className="w-5 h-5 text-red-500" />
               </div>
               <div>
-                <h2 className="text-[16px] font-semibold text-[#1D1D1F]">Supprimer le cours</h2>
-                <p className="text-[13px] text-[#6E6E73]">Cette action est irréversible.</p>
+                <h2 className="text-[16px] font-semibold text-[#1D1D1F]">{t("deleteConfirmTitle")}</h2>
+                <p className="text-[13px] text-[#6E6E73]">{t("deleteConfirmDesc")}</p>
               </div>
             </div>
 
@@ -73,14 +75,14 @@ export function DeleteCourseButton({ courseId, courseTitle, isManagerContext = f
                 disabled={loading}
                 className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors disabled:opacity-50"
               >
-                Annuler
+                {t("cancel")}
               </button>
               <button
                 onClick={handleDelete}
                 disabled={loading}
                 className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium transition-colors disabled:opacity-50"
               >
-                {loading ? "Suppression…" : "Supprimer"}
+                {loading ? t("deleting") : t("delete")}
               </button>
             </div>
           </div>

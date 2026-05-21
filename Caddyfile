@@ -1,0 +1,15 @@
+{
+  # Auto-signé (remplacer par votre domaine pour Let's Encrypt automatique)
+  local_certs
+}
+
+:443 {
+  tls internal
+
+  reverse_proxy app:3000
+}
+
+# Redirection HTTP → HTTPS
+:80 {
+  redir https://{host}{uri} permanent
+}

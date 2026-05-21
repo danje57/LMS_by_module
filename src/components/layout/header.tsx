@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import type { Session } from "next-auth";
+import { useTranslations } from "next-intl";
 import { LogOut, ShieldCheck, ShieldOff, X, TriangleAlert, ShieldAlert, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ export function Header({ session }: HeaderProps) {
   const [loading, setLoading] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations("header");
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -40,8 +42,6 @@ export function Header({ session }: HeaderProps) {
   async function applyMode(mode: "admin" | "user") {
     setPendingMode(null);
     setLoading(true);
-    // Appel API classique (pas une server action) : pas de revalidation automatique
-    // de la route courante → plus de flash d'erreur sur les pages admin
     await fetch("/api/auth/session-mode", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -52,7 +52,6 @@ export function Header({ session }: HeaderProps) {
 
   return (
     <>
-      {/* Overlay plein écran pendant le changement de mode — masque tout flash de re-rendu */}
       {loading && (
         <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[200] flex items-center justify-center">
           <div className="w-8 h-8 rounded-full border-2 border-[#0071E3] border-t-transparent animate-spin" />
@@ -73,8 +72,8 @@ export function Header({ session }: HeaderProps) {
             )}
           >
             {isAdminMode
-              ? <><ShieldCheck className="w-3.5 h-3.5" />Mode admin</>
-              : <><ShieldOff className="w-3.5 h-3.5" />Mode admin</>
+              ? <><ShieldCheck className="w-3.5 h-3.5" />{t("adminMode")}</>
+              : <><ShieldOff className="w-3.5 h-3.5" />{t("adminMode")}</>
             }
           </button>
         )}
@@ -105,7 +104,7 @@ export function Header({ session }: HeaderProps) {
                 className="flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#3C3C43] hover:bg-[#F5F5F7] transition-colors"
               >
                 <User className="w-3.5 h-3.5 text-[#6E6E73]" />
-                Mon profil
+                {t("myProfile")}
               </Link>
             </div>
           )}
@@ -121,11 +120,10 @@ export function Header({ session }: HeaderProps) {
           className="flex items-center gap-1.5 text-[13px] text-[#8E8E93] hover:text-[#1D1D1F] transition-colors"
         >
           <LogOut className="w-3.5 h-3.5" />
-          Déconnexion
+          {t("logout")}
         </button>
       </header>
 
-      {/* Popup confirmation activation mode admin */}
       {pendingMode === "admin" && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
@@ -134,32 +132,29 @@ export function Header({ session }: HeaderProps) {
                 <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
                   <TriangleAlert className="w-5 h-5 text-red-500" />
                 </div>
-                <p className="text-[15px] font-semibold text-[#1D1D1F]">Activer le mode admin</p>
+                <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("activateAdmin")}</p>
               </div>
               <button onClick={() => setPendingMode(null)} className="p-1.5 rounded-lg hover:bg-[#F5F5F7] transition-colors">
                 <X className="w-4 h-4 text-[#6E6E73]" />
               </button>
             </div>
-            <p className="text-[13px] text-[#6E6E73] leading-relaxed">
-              Vous allez passer en <strong className="text-[#1D1D1F]">mode administration</strong>.
-              Vous aurez accès à toutes les fonctions de gestion de l&apos;application.
-              Toute action effectuée en mode admin est tracée.
-            </p>
+            <p className="text-[13px] text-[#6E6E73] leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: t.raw("activateAdminDesc") as string }}
+            />
             <div className="flex gap-3 pt-1">
               <button onClick={() => setPendingMode(null)}
                 className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors">
-                Annuler
+                {t("cancel")}
               </button>
               <button onClick={() => applyMode("admin")} disabled={loading}
                 className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium disabled:opacity-50 transition-colors">
-                Activer
+                {t("activate")}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Popup confirmation désactivation mode admin */}
       {pendingMode === "user" && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
@@ -168,24 +163,23 @@ export function Header({ session }: HeaderProps) {
                 <div className="w-10 h-10 rounded-xl bg-[#F5F5F7] flex items-center justify-center shrink-0">
                   <ShieldAlert className="w-5 h-5 text-[#6E6E73]" />
                 </div>
-                <p className="text-[15px] font-semibold text-[#1D1D1F]">Quitter le mode admin</p>
+                <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("exitAdmin")}</p>
               </div>
               <button onClick={() => setPendingMode(null)} className="p-1.5 rounded-lg hover:bg-[#F5F5F7] transition-colors">
                 <X className="w-4 h-4 text-[#6E6E73]" />
               </button>
             </div>
-            <p className="text-[13px] text-[#6E6E73] leading-relaxed">
-              Vous allez repasser en <strong className="text-[#1D1D1F]">mode utilisateur</strong>.
-              Vous n&apos;aurez plus accès aux fonctions d&apos;administration et serez redirigé vers votre tableau de bord.
-            </p>
+            <p className="text-[13px] text-[#6E6E73] leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: t.raw("exitAdminDesc") as string }}
+            />
             <div className="flex gap-3 pt-1">
               <button onClick={() => setPendingMode(null)}
                 className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors">
-                Annuler
+                {t("cancel")}
               </button>
               <button onClick={() => applyMode("user")} disabled={loading}
                 className="flex-1 h-10 rounded-xl bg-[#1D1D1F] hover:bg-[#3C3C43] text-white text-[14px] font-medium disabled:opacity-50 transition-colors">
-                Confirmer
+                {t("confirm")}
               </button>
             </div>
           </div>

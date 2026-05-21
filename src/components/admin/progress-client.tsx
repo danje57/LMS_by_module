@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Search, Layers, Users, BookOpen, TrendingUp, CheckCircle2, Clock, Circle, AlertTriangle, CalendarClock, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 export type CourseStatus = "not_started" | "in_progress" | "completed";
 export type DeadlineState = "overdue" | "danger" | "warning" | "normal" | null;
 
@@ -40,24 +41,6 @@ export type UserProgressRow = {
 export type CourseRef = { id: string; title: string };
 export type TeamRef   = { id: string; name: string };
 
-const STATUS_LABEL: Record<CourseStatus, string> = {
-  not_started: "Non commencé",
-  in_progress: "En cours",
-  completed: "Terminé",
-};
-
-const STATUS_STYLE: Record<CourseStatus, string> = {
-  not_started: "bg-[#F5F5F7] text-[#6E6E73]",
-  in_progress: "bg-amber-50 text-amber-600",
-  completed: "bg-emerald-50 text-emerald-600",
-};
-
-const STATUS_ICON: Record<CourseStatus, React.FC<{ className?: string }>> = {
-  not_started: Circle,
-  in_progress: Clock,
-  completed: CheckCircle2,
-};
-
 interface Props {
   courses: CourseRef[];
   teams: TeamRef[];
@@ -65,11 +48,30 @@ interface Props {
 }
 
 export function ProgressClient({ courses, teams, users }: Props) {
+  const t = useTranslations("progress");
   const [search, setSearch] = useState("");
   const [filterTeam, setFilterTeam] = useState("all");
   const [filterCourse, setFilterCourse] = useState("all");
   const [groupByTeam, setGroupByTeam] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+
+  const STATUS_LABEL: Record<CourseStatus, string> = {
+    not_started: t("assigned"),
+    in_progress: "En cours",
+    completed: t("completed"),
+  };
+
+  const STATUS_STYLE: Record<CourseStatus, string> = {
+    not_started: "bg-[#F5F5F7] text-[#6E6E73]",
+    in_progress: "bg-amber-50 text-amber-600",
+    completed: "bg-emerald-50 text-emerald-600",
+  };
+
+  const STATUS_ICON: Record<CourseStatus, React.FC<{ className?: string }>> = {
+    not_started: Circle,
+    in_progress: Clock,
+    completed: CheckCircle2,
+  };
 
   function toggleExpand(id: string) {
     setExpandedUsers((prev) => {
@@ -120,15 +122,15 @@ export function ProgressClient({ courses, teams, users }: Props) {
       if (u.teams.length === 0) {
         noTeam.push(u);
       } else {
-        for (const t of u.teams) {
-          if (!byTeam.has(t.id)) byTeam.set(t.id, []);
-          byTeam.get(t.id)!.push(u);
+        for (const tm of u.teams) {
+          if (!byTeam.has(tm.id)) byTeam.set(tm.id, []);
+          byTeam.get(tm.id)!.push(u);
         }
       }
     }
-    for (const t of teams) {
-      const members = byTeam.get(t.id);
-      if (members && members.length > 0) groups.push({ teamId: t.id, teamName: t.name, users: members });
+    for (const tm of teams) {
+      const members = byTeam.get(tm.id);
+      if (members && members.length > 0) groups.push({ teamId: tm.id, teamName: tm.name, users: members });
     }
     if (noTeam.length > 0) groups.push({ teamId: null, teamName: "Sans équipe", users: noTeam });
     return groups;
@@ -139,10 +141,10 @@ export function ProgressClient({ courses, teams, users }: Props) {
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Apprenants", value: globalStats.totalLearners, icon: Users, color: "bg-purple-50 text-purple-600" },
-          { label: "Cours actifs", value: globalStats.totalCourses, icon: BookOpen, color: "bg-blue-50 text-[#0071E3]" },
-          { label: "Taux de complétion", value: `${globalStats.rate}%`, icon: TrendingUp, color: "bg-emerald-50 text-emerald-600" },
-          { label: "Certificats délivrés", value: globalStats.completedAssignments, icon: CheckCircle2, color: "bg-amber-50 text-amber-600" },
+          { label: t("learners"), value: globalStats.totalLearners, icon: Users, color: "bg-purple-50 text-purple-600" },
+          { label: t("activeCourses"), value: globalStats.totalCourses, icon: BookOpen, color: "bg-blue-50 text-[#0071E3]" },
+          { label: t("completionRate"), value: `${globalStats.rate}%`, icon: TrendingUp, color: "bg-emerald-50 text-emerald-600" },
+          { label: t("certificatesIssued"), value: globalStats.completedAssignments, icon: CheckCircle2, color: "bg-amber-50 text-amber-600" },
         ].map((s) => {
           const Icon = s.icon;
           return (
@@ -165,7 +167,7 @@ export function ProgressClient({ courses, teams, users }: Props) {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ADADB8]" />
           <input
             type="text"
-            placeholder="Rechercher un apprenant…"
+            placeholder={t("searchLearner")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#D2D2D7] bg-white text-[14px] placeholder:text-[#ADADB8] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
@@ -179,7 +181,7 @@ export function ProgressClient({ courses, teams, users }: Props) {
         >
           <option value="all">Toutes les équipes</option>
           <option value="none">Sans équipe</option>
-          {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          {teams.map((tm) => <option key={tm.id} value={tm.id}>{tm.name}</option>)}
         </select>
 
         <select
@@ -187,7 +189,7 @@ export function ProgressClient({ courses, teams, users }: Props) {
           onChange={(e) => setFilterCourse(e.target.value)}
           className="h-10 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[13px] text-[#1D1D1F] outline-none focus:border-[#0071E3] transition-all"
         >
-          <option value="all">Tous les cours</option>
+          <option value="all">{t("allCourses")}</option>
           {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
         </select>
 
@@ -215,10 +217,10 @@ export function ProgressClient({ courses, teams, users }: Props) {
         <div className="flex items-center gap-3 text-[11px] text-[#6E6E73]">
           <span className="font-medium">Deadline :</span>
           {([
-            { label: "En retard",  dot: "bg-red-400" },
-            { label: "≤ 3 jours",  dot: "bg-orange-400" },
-            { label: "Bientôt",    dot: "bg-amber-400" },
-            { label: "OK",         dot: "bg-[#D2D2D7]" },
+            { label: t("overdue"),  dot: "bg-red-400" },
+            { label: t("soonDays"),  dot: "bg-orange-400" },
+            { label: t("soon"),    dot: "bg-amber-400" },
+            { label: t("ok"),         dot: "bg-[#D2D2D7]" },
           ] as const).map(({ label, dot }) => (
             <span key={label} className="flex items-center gap-1.5">
               <span className={cn("w-2 h-2 rounded-full shrink-0", dot)} />
@@ -234,7 +236,7 @@ export function ProgressClient({ courses, teams, users }: Props) {
           <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] flex items-center justify-center mb-4">
             <Search className="w-6 h-6 text-[#ADADB8]" />
           </div>
-          <p className="text-[15px] font-medium text-[#1D1D1F]">Aucun apprenant trouvé</p>
+          <p className="text-[15px] font-medium text-[#1D1D1F]">{t("noLearnerFound")}</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden">
@@ -243,7 +245,7 @@ export function ProgressClient({ courses, teams, users }: Props) {
               <tr className="border-b border-[#E5E5EA]">
                 <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">
                   <div className="flex items-center gap-3">
-                    <span>Apprenant</span>
+                    <span>{t("learner")}</span>
                     {!isCourseView && (
                       <button
                         onClick={() => {
@@ -254,25 +256,25 @@ export function ProgressClient({ courses, teams, users }: Props) {
                         className="inline-flex items-center gap-1 text-[11px] font-medium text-[#0071E3] hover:text-[#0077ED] transition-colors"
                       >
                         <ChevronRight className={cn("w-3 h-3 transition-transform", filtered.every((u) => expandedUsers.has(u.id)) && "rotate-90")} />
-                        {filtered.every((u) => expandedUsers.has(u.id)) ? "Tout replier" : "Tout dépiler"}
+                        {filtered.every((u) => expandedUsers.has(u.id)) ? t("collapseAll") : t("expandAll")}
                       </button>
                     )}
                   </div>
                 </th>
-                <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Équipe</th>
+                <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">{t("team")}</th>
                 {isCourseView ? (
                   <>
-                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Statut</th>
-                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Deadline</th>
-                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3 w-40">Progression</th>
+                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">{t("status")}</th>
+                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">{t("deadline")}</th>
+                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3 w-40">{t("progressLabel")}</th>
                   </>
                 ) : (
                   <>
-                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Assignés</th>
-                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Terminés</th>
+                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">{t("assigned")}</th>
+                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">{t("completed")}</th>
                     <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">En cours</th>
-                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">En retard</th>
-                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3 w-36">Progression</th>
+                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">{t("overdue")}</th>
+                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3 w-36">{t("progressLabel")}</th>
                   </>
                 )}
               </tr>
@@ -290,12 +292,14 @@ export function ProgressClient({ courses, teams, users }: Props) {
                     </tr>,
                     ...gUsers.map((u) => (
                       <UserRow key={u.id} user={u} courseId={filterCourse !== "all" ? filterCourse : null}
-                        expanded={expandedUsers.has(u.id)} onToggle={() => toggleExpand(u.id)} />
+                        expanded={expandedUsers.has(u.id)} onToggle={() => toggleExpand(u.id)}
+                        statusLabel={STATUS_LABEL} statusStyle={STATUS_STYLE} statusIcon={STATUS_ICON} />
                     )),
                   ])
                 : filtered.map((u) => (
                     <UserRow key={u.id} user={u} courseId={filterCourse !== "all" ? filterCourse : null}
-                      expanded={expandedUsers.has(u.id)} onToggle={() => toggleExpand(u.id)} />
+                      expanded={expandedUsers.has(u.id)} onToggle={() => toggleExpand(u.id)}
+                      statusLabel={STATUS_LABEL} statusStyle={STATUS_STYLE} statusIcon={STATUS_ICON} />
                   ))
               }
             </tbody>
@@ -306,11 +310,14 @@ export function ProgressClient({ courses, teams, users }: Props) {
   );
 }
 
-function UserRow({ user, courseId, expanded, onToggle }: {
+function UserRow({ user, courseId, expanded, onToggle, statusLabel, statusStyle, statusIcon }: {
   user: UserProgressRow;
   courseId: string | null;
   expanded: boolean;
   onToggle: () => void;
+  statusLabel: Record<CourseStatus, string>;
+  statusStyle: Record<CourseStatus, string>;
+  statusIcon: Record<CourseStatus, React.FC<{ className?: string }>>;
 }) {
   const isCourseView = courseId !== null;
 
@@ -350,9 +357,9 @@ function UserRow({ user, courseId, expanded, onToggle }: {
         <div className="flex flex-wrap gap-1">
           {user.teams.length === 0 ? (
             <span className="text-[12px] text-[#ADADB8] italic">—</span>
-          ) : user.teams.map((t) => (
-            <span key={t.id} className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600">
-              {t.name}
+          ) : user.teams.map((tm) => (
+            <span key={tm.id} className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600">
+              {tm.name}
             </span>
           ))}
         </div>
@@ -363,7 +370,7 @@ function UserRow({ user, courseId, expanded, onToggle }: {
           {/* Statut pour le cours filtré */}
           <td className="px-5 py-3.5">
             {assignment ? (
-              <StatusBadge status={assignment.status} />
+              <StatusBadge status={assignment.status} statusLabel={statusLabel} statusStyle={statusStyle} statusIcon={statusIcon} />
             ) : (
               <span className="text-[12px] text-[#ADADB8] italic">Non assigné</span>
             )}
@@ -433,7 +440,7 @@ function UserRow({ user, courseId, expanded, onToggle }: {
           <p className="text-[13px] font-medium text-[#1D1D1F]">{a.courseTitle}</p>
         </td>
         <td className="px-5 py-2.5">
-          <StatusBadge status={a.status} />
+          <StatusBadge status={a.status} statusLabel={statusLabel} statusStyle={statusStyle} statusIcon={statusIcon} />
         </td>
         <td className="px-5 py-2.5" colSpan={2}>
           <DeadlineEditor
@@ -453,12 +460,17 @@ function UserRow({ user, courseId, expanded, onToggle }: {
   );
 }
 
-function StatusBadge({ status }: { status: CourseStatus }) {
-  const Icon = STATUS_ICON[status];
+function StatusBadge({ status, statusLabel, statusStyle, statusIcon }: {
+  status: CourseStatus;
+  statusLabel: Record<CourseStatus, string>;
+  statusStyle: Record<CourseStatus, string>;
+  statusIcon: Record<CourseStatus, React.FC<{ className?: string }>>;
+}) {
+  const Icon = statusIcon[status];
   return (
-    <span className={cn("inline-flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1 rounded-lg", STATUS_STYLE[status])}>
+    <span className={cn("inline-flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1 rounded-lg", statusStyle[status])}>
       <Icon className="w-3 h-3" />
-      {STATUS_LABEL[status]}
+      {statusLabel[status]}
     </span>
   );
 }

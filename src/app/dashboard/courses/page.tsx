@@ -3,6 +3,7 @@ import { CourseList, type CourseProgress, type CourseMeta } from "@/components/c
 import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 async function getCourses(isAdmin: boolean, isManagerOrCreator: boolean, userId: string) {
   if (isAdmin || isManagerOrCreator) {
@@ -128,6 +129,8 @@ export default async function CoursesPage() {
   const session = await auth();
   const isAdmin = session?.user.sessionMode === "admin";
   const userId = session?.user.id ?? "";
+  const t = await getTranslations("courses");
+  const tNav = await getTranslations("nav");
 
   const roleRecord = !isAdmin && userId
     ? await prisma.userRole.findFirst({
@@ -149,13 +152,13 @@ export default async function CoursesPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">Cours</h1>
+          <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">{tNav("courses")}</h1>
           <p className="text-[15px] text-[#6E6E73] mt-0.5">
             {isManagerOrCreator
-              ? `${assignedCourseIds.length} formation${assignedCourseIds.length !== 1 ? "s" : ""} assignée${assignedCourseIds.length !== 1 ? "s" : ""}`
+              ? t("assignedTrainings", { count: assignedCourseIds.length })
               : isAdmin
-              ? `${courses.length} cours disponible${courses.length !== 1 ? "s" : ""}`
-              : `${courses.length} formation${courses.length !== 1 ? "s" : ""} assignée${courses.length !== 1 ? "s" : ""}`
+              ? t("availableCourses", { count: courses.length })
+              : t("assignedTrainings", { count: courses.length })
             }
           </p>
         </div>
@@ -165,7 +168,7 @@ export default async function CoursesPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Ajouter un cours
+            {t("addCourse")}
           </Link>
         )}
       </div>

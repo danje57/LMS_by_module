@@ -6,6 +6,7 @@ import { ExportPanel } from "./export-panel";
 import { GeneratePanel } from "./generate-panel";
 import { CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
+import { getTranslations, getLocale } from "next-intl/server";
 
 interface PageProps {
   searchParams: Promise<{ id?: string; tab?: string }>;
@@ -47,37 +48,41 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
       : { found: false };
   }
 
+  const t = await getTranslations("certificates");
+  const locale = await getLocale();
+  const dateLocale = locale === "en" ? "en-GB" : "fr-FR";
+
   const fmt = (d: Date) =>
-    new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" }).format(d);
+    new Intl.DateTimeFormat(dateLocale, { day: "numeric", month: "long", year: "numeric" }).format(d);
 
   const tabs = [
-    { key: "verify", label: "Vérifier" },
-    { key: "export", label: "Exporter" },
-    { key: "generate", label: "Générer" },
+    { key: "verify", label: t("verify") },
+    { key: "export", label: t("export") },
+    { key: "generate", label: t("generate") },
   ];
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">Certificats</h1>
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">{t("title")}</h1>
         <p className="text-[15px] text-[#6E6E73] mt-0.5">
-          Vérifiez, exportez ou générez des certificats.
+          {t("subtitle")}
         </p>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-[#F5F5F7] rounded-xl w-fit">
-        {tabs.map(t => (
+        {tabs.map(tabItem => (
           <Link
-            key={t.key}
-            href={`/dashboard/admin/certificates?tab=${t.key}`}
+            key={tabItem.key}
+            href={`/dashboard/admin/certificates?tab=${tabItem.key}`}
             className={`px-4 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
-              tab === t.key
+              tab === tabItem.key
                 ? "bg-white text-[#1D1D1F] shadow-sm"
                 : "text-[#6E6E73] hover:text-[#1D1D1F]"
             }`}
           >
-            {t.label}
+            {tabItem.label}
           </Link>
         ))}
       </div>
@@ -87,7 +92,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
         <div className="space-y-6">
           <div>
             <p className="text-[14px] text-[#6E6E73]">
-              Saisissez le numéro de certificat pour valider son authenticité.
+              {t("verifyDesc")}
             </p>
           </div>
 
@@ -98,17 +103,17 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
               <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden">
                 <div className="flex items-center gap-3 px-6 py-4 bg-emerald-50 border-b border-emerald-100">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <p className="text-[14px] font-semibold text-emerald-700">Certificat valide — émis par cette application</p>
+                  <p className="text-[14px] font-semibold text-emerald-700">{t("validCertificate")}</p>
                 </div>
                 <div className="px-6 py-5 space-y-4">
-                  <Row label="Numéro de certificat" value={query.toUpperCase()} mono />
-                  <Row label="Apprenant" value={result.learnerName ? `${result.learnerName} (${result.learnerEmail})` : result.learnerEmail!} />
-                  <Row label="Cours" value={result.courseTitle!} />
-                  <Row label="Complété le" value={fmt(result.completedAt!)} />
-                  <Row label="Certificat émis le" value={fmt(result.issuedAt!)} />
+                  <Row label={t("certificateNumber")} value={query.toUpperCase()} mono />
+                  <Row label={t("learner")} value={result.learnerName ? `${result.learnerName} (${result.learnerEmail})` : result.learnerEmail!} />
+                  <Row label={t("course")} value={result.courseTitle!} />
+                  <Row label={t("completedOn")} value={fmt(result.completedAt!)} />
+                  <Row label={t("issuedOn")} value={fmt(result.issuedAt!)} />
                   <Row
-                    label="Évaluation"
-                    value={result.hasQuiz ? "Sanctionné par une évaluation des connaissances" : "Aucune évaluation associée"}
+                    label={t("evaluation")}
+                    value={result.hasQuiz ? t("withEvaluation") : t("noEvaluation")}
                   />
                 </div>
               </div>
@@ -116,7 +121,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
               <div className="flex items-center gap-3 px-6 py-4 bg-red-50 border border-red-100 rounded-2xl">
                 <XCircle className="w-5 h-5 text-red-400 shrink-0" />
                 <p className="text-[14px] font-semibold text-red-600">
-                  Aucun certificat trouvé pour cet identifiant.
+                  {t("notFound")}
                 </p>
               </div>
             )

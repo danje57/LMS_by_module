@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { X, Upload, Download, CheckCircle2, AlertCircle, FileText, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 type CsvRow = {
   prenom: string;
@@ -58,14 +59,15 @@ function parseCsv(text: string): CsvRow[] {
   });
 }
 
-function hasError(row: CsvRow): string | null {
-  if (!row.email.trim()) return "Email manquant";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) return "Email invalide";
-  if (!ROLES.includes(row.role.toLowerCase())) return `Rôle invalide : ${row.role}`;
+function hasError(row: CsvRow, tImport: ReturnType<typeof useTranslations>): string | null {
+  if (!row.email.trim()) return tImport("emailMissing");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) return tImport("emailInvalid");
+  if (!ROLES.includes(row.role.toLowerCase())) return tImport("invalidRole", { role: row.role });
   return null;
 }
 
 export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const t = useTranslations("importCsv");
   const [rows, setRows] = useState<CsvRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -78,7 +80,7 @@ export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: 
     const reader = new FileReader();
     reader.onload = (e) => {
       const parsed = parseCsv(e.target?.result as string);
-      if (parsed.length === 0) { setParseError("Aucune ligne détectée. Vérifiez le format."); return; }
+      if (parsed.length === 0) { setParseError(t("noLinesDetected")); return; }
       setRows(parsed);
     };
     reader.readAsText(f, "utf-8");
@@ -108,7 +110,7 @@ export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: 
       setResult(data);
       if (data.created > 0 || data.updated > 0) onDone();
     } catch {
-      setParseError("Erreur lors de l'import.");
+      setParseError(t("importError"));
     } finally {
       setLoading(false);
     }
@@ -122,7 +124,7 @@ export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: 
     a.click();
   }
 
-  const errorCount = rows.filter((r) => hasError(r)).length;
+  const errorCount = rows.filter((r) => hasError(r, t)).length;
   const canImport = rows.length > 0 && errorCount === 0 && !loading;
 
   return (
@@ -136,7 +138,7 @@ export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: 
           <div className="flex items-center gap-2.5">
             <Upload className="w-5 h-5 text-[#0071E3]" />
             <p className="text-[15px] font-semibold text-[#1D1D1F]">
-              Import CSV
+              {t("title")}
               {rows.length > 0 && (
                 <span className="ml-2 text-[13px] font-normal text-[#6E6E73]">
                   — {rows.length} ligne{rows.length > 1 ? "s" : ""}
@@ -146,7 +148,7 @@ export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: 
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={downloadTemplate} title="Télécharger le modèle" className="p-1.5 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors">
+            <button onClick={downloadTemplate} title={t("downloadTemplate")} className="p-1.5 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors">
               <Download className="w-4 h-4" />
             </button>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F5F5F7] transition-colors">
@@ -166,13 +168,13 @@ export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: 
               >
                 <Download className="w-4 h-4 text-[#6E6E73] group-hover:text-[#0071E3]" />
                 <div className="text-left">
-                  <p className="text-[13px] font-medium text-[#1D1D1F]">Télécharger le modèle CSV</p>
+                  <p className="text-[13px] font-medium text-[#1D1D1F]">{t("downloadTemplateCSV")}</p>
                   <p className="text-[11px] text-[#6E6E73]">prenom ; nom ; email ; mot_de_passe ; role ; equipe</p>
                 </div>
               </button>
 
               <div className="flex flex-wrap gap-1.5 text-[11px]">
-                <span className="text-[#6E6E73]">Rôles :</span>
+                <span className="text-[#6E6E73]">{t("rolesLabel")}</span>
                 {ROLES.map((r) => (
                   <span key={r} className={cn("px-2 py-0.5 rounded-md font-medium", ROLE_COLORS[r] ?? "bg-[#F5F5F7] text-[#6E6E73]")}>{r}</span>
                 ))}
@@ -186,7 +188,9 @@ export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: 
               >
                 <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
                 <Upload className="w-8 h-8 text-[#ADADB8] mx-auto mb-2" />
-                <p className="text-[13px] text-[#6E6E73]">Glissez votre CSV ou <span className="text-[#0071E3] font-medium">parcourir</span></p>
+                <p className="text-[13px] text-[#6E6E73]">
+                  {t("dragOrBrowse")} <span className="text-[#0071E3] font-medium">{t("browse")}</span>
+                </p>
               </div>
 
               {parseError && (
@@ -204,14 +208,14 @@ export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: 
                 <table className="w-full text-[12px] border-collapse">
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-[#F5F5F7] border-b border-[#E5E5EA]">
-                      {["Prénom","Nom","Email","Mot de passe","Rôle","Équipe",""].map((h) => (
+                      {[t("firstName"), t("lastName"), "Email", t("password"), t("role"), t("team"), ""].map((h) => (
                         <th key={h} className="text-left text-[11px] font-semibold text-[#6E6E73] px-3 py-2.5 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#F5F5F7]">
                     {rows.map((row, i) => {
-                      const err = hasError(row);
+                      const err = hasError(row, t);
                       return (
                         <tr key={i} className={cn("group hover:bg-[#FAFAFA]", err && "bg-red-50/50")}>
                           {/* Prénom */}
@@ -272,7 +276,7 @@ export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: 
               <button onClick={addRow}
                 className="flex items-center gap-2 text-[13px] text-[#6E6E73] hover:text-[#0071E3] transition-colors w-fit">
                 <Plus className="w-3.5 h-3.5" />
-                Ajouter une ligne
+                {t("addLine")}
               </button>
             </>
           )}
@@ -304,7 +308,7 @@ export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: 
                 <div className="max-h-36 overflow-y-auto space-y-1">
                   {result.errors.map((e, i) => (
                     <div key={i} className="text-[12px] text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">
-                      Ligne {e.line} ({e.email || "—"}) : {e.message}
+                      {t("lineError", { line: e.line, email: e.email || "—", message: e.message })}
                     </div>
                   ))}
                 </div>
@@ -318,7 +322,7 @@ export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: 
               <button onClick={() => { setRows([]); inputRef.current && (inputRef.current.value = ""); }}
                 className="flex items-center gap-1.5 h-10 px-3 rounded-xl border border-[#D2D2D7] text-[13px] text-[#6E6E73] hover:bg-[#F5F5F7] transition-colors">
                 <FileText className="w-3.5 h-3.5" />
-                Changer de fichier
+                {t("changeFile")}
               </button>
             )}
             <div className="flex-1" />
@@ -330,7 +334,7 @@ export function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: 
               <button onClick={handleImport} disabled={!canImport}
                 title={errorCount > 0 ? "Corrigez les erreurs avant d'importer" : ""}
                 className="h-10 px-5 rounded-xl bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                {loading ? "Import en cours…" : `Importer ${rows.length} utilisateur${rows.length > 1 ? "s" : ""}`}
+                {loading ? "Import en cours…" : t("importButton", { n: rows.length })}
               </button>
             )}
           </div>

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { TeamList } from "@/components/admin/team-list";
+import { getTranslations } from "next-intl/server";
 
 async function getData() {
   const [teams, users] = await Promise.all([
@@ -35,13 +36,15 @@ export default async function AdminTeamsPage() {
   if (session?.user.sessionMode !== "admin") redirect("/dashboard");
 
   const { teams, users } = await getData();
+  const t = await getTranslations("teams");
+  const tNav = await getTranslations("nav");
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">Équipes</h1>
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">{tNav("teams")}</h1>
         <p className="text-[15px] text-[#6E6E73] mt-0.5">
-          {teams.length} équipe{teams.length !== 1 ? "s" : ""}
+          {t("memberCount", { count: teams.length })}
         </p>
       </div>
       <TeamList initialTeams={teams} allUsers={users} />

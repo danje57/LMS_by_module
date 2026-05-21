@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ProgressClient } from "@/components/admin/progress-client";
 import type { UserProgressRow, CourseStatus } from "@/components/admin/progress-client";
+import { getTranslations } from "next-intl/server";
 
 const USER_SELECT = {
   id: true,
@@ -202,33 +203,34 @@ export default async function ManagerProgressPage() {
 
   const firstName = session.user.name?.split(" ")[0] ?? "";
 
+  const t = await getTranslations("progress");
+
   if (!data) {
-    const hint = isManager
-      ? "Vous n'êtes manager d'aucune équipe et n'avez pas encore effectué d'affectations."
-      : "Vous n'avez pas encore affecté de cours à des apprenants.";
     return (
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">
-            {isManager ? "Suivi de mon équipe" : "Suivi de mes affectations"}
+            {isManager ? t("myTeamProgress") : t("myAssignmentsProgress")}
           </h1>
         </div>
         <div className="bg-white rounded-2xl border border-[#E5E5EA] p-12 flex flex-col items-center gap-3 text-center">
-          <p className="text-[14px] text-[#6E6E73]">{hint}</p>
+          <p className="text-[14px] text-[#6E6E73]">
+            {isManager ? t("noTeamNoAssignments") : t("noAssignments")}
+          </p>
         </div>
       </div>
     );
   }
 
   const subtitle = isManager
-    ? `Équipe${data.teams.length > 1 ? "s" : ""} : ${data.teams.map((t) => t.name).join(", ")}`
-    : "Progression des apprenants sur vos affectations";
+    ? t("teams", { s: data.teams.length > 1 ? "s" : "", teams: data.teams.map((t) => t.name).join(", ") })
+    : t("learnerProgressOnAssignments");
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">
-          {isManager ? "Suivi de mon équipe" : "Suivi de mes affectations"}
+          {isManager ? t("myTeamProgress") : t("myAssignmentsProgress")}
         </h1>
         <p className="text-[15px] text-[#6E6E73] mt-0.5">
           {firstName ? `${firstName} · ` : ""}{subtitle}

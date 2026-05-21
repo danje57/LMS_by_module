@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ProgressClient } from "@/components/admin/progress-client";
 import type { UserProgressRow, CourseRef, TeamRef, CourseStatus } from "@/components/admin/progress-client";
+import { getTranslations } from "next-intl/server";
 
 async function getData() {
   const [courses, teams, userRows] = await Promise.all([
@@ -66,13 +67,14 @@ export default async function ProgressPage() {
   if (session?.user.sessionMode !== "admin") redirect("/dashboard");
 
   const { courses, teams, users } = await getData();
+  const t = await getTranslations("progress");
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">Suivi de la formation</h1>
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">{t("title")}</h1>
         <p className="text-[15px] text-[#6E6E73] mt-0.5">
-          Progression des apprenants par équipe et par cours.
+          {t("subtitle")}
         </p>
       </div>
       <ProgressClient courses={courses} teams={teams} users={users} />

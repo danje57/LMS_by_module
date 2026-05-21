@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ImportModal } from "@/components/admin/import-modal";
 import { validatePassword, RULES } from "@/lib/password";
+import { useTranslations } from "next-intl";
 
 type UserRow = {
   id: string;
@@ -80,6 +81,7 @@ interface UserListProps {
 }
 
 export function UserList({ initialUsers, currentUserId, teams: initialTeams }: UserListProps) {
+  const t = useTranslations("users");
   const [users, setUsers] = useState<UserRow[]>(initialUsers);
   const [teams, setTeams] = useState<TeamRef[]>(initialTeams);
 
@@ -212,7 +214,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ADADB8]" />
           <input
             type="text"
-            placeholder="Rechercher un utilisateur…"
+            placeholder={t("search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#D2D2D7] bg-white text-[14px] placeholder:text-[#ADADB8] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
@@ -229,7 +231,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
                 filterStatus === v ? "bg-[#0071E3] text-white shadow-sm" : "text-[#6E6E73] hover:text-[#1D1D1F]"
               )}
             >
-              {v === "all" ? "Tous" : v === "active" ? "Actifs" : "Inactifs"}
+              {v === "all" ? t("all") : v === "active" ? t("active") : t("inactive")}
             </button>
           ))}
         </div>
@@ -239,7 +241,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
           onChange={(e) => setFilterRole(e.target.value as RoleType | "all")}
           className="h-10 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[13px] text-[#1D1D1F] outline-none focus:border-[#0071E3] transition-all"
         >
-          <option value="all">Tous les rôles</option>
+          <option value="all">{t("allRoles")}</option>
           {ALL_ROLES.map((r) => (
             <option key={r} value={r}>{ROLE_LABELS[r]}</option>
           ))}
@@ -250,8 +252,8 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
           onChange={(e) => setFilterTeam(e.target.value)}
           className="h-10 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[13px] text-[#1D1D1F] outline-none focus:border-[#0071E3] transition-all"
         >
-          <option value="all">Toutes les équipes</option>
-          <option value="none">Sans équipe</option>
+          <option value="all">{t("allTeams")}</option>
+          <option value="none">{t("noTeam")}</option>
           {initialTeams.map((t) => (
             <option key={t.id} value={t.id}>{t.name}</option>
           ))}
@@ -259,7 +261,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
 
         <button
           onClick={() => setGroupByTeam((v) => !v)}
-          title="Grouper par équipe"
+          title={t("group")}
           className={cn(
             "inline-flex items-center gap-2 h-10 px-4 border text-[14px] font-medium rounded-xl transition-colors whitespace-nowrap",
             groupByTeam
@@ -268,7 +270,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
           )}
         >
           <Layers className="w-4 h-4" />
-          Grouper
+          {t("group")}
         </button>
 
         <button
@@ -276,7 +278,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
           className="inline-flex items-center gap-2 h-10 px-4 bg-white border border-[#D2D2D7] hover:border-[#0071E3] hover:text-[#0071E3] text-[#1D1D1F] text-[14px] font-medium rounded-xl transition-colors whitespace-nowrap"
         >
           <Upload className="w-4 h-4" />
-          Importer
+          {t("import")}
         </button>
 
         <button
@@ -284,7 +286,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
           className="inline-flex items-center gap-2 h-10 px-4 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium rounded-xl transition-colors whitespace-nowrap"
         >
           <Plus className="w-4 h-4" />
-          Créer
+          {t("create")}
         </button>
       </div>
 
@@ -294,7 +296,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
           <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] flex items-center justify-center mb-4">
             <Search className="w-6 h-6 text-[#ADADB8]" />
           </div>
-          <p className="text-[15px] font-medium text-[#1D1D1F]">Aucun utilisateur trouvé</p>
+          <p className="text-[15px] font-medium text-[#1D1D1F]">{t("noUserFound")}</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden">
@@ -331,7 +333,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
                       const members = byTeam.get(id);
                       if (members && members.length > 0) groups.push({ teamId: id, teamName: t.name, users: members });
                     }
-                    if (noTeam.length > 0) groups.push({ teamId: null, teamName: "Sans équipe", users: noTeam });
+                    if (noTeam.length > 0) groups.push({ teamId: null, teamName: t("noTeam"), users: noTeam });
 
                     return groups.flatMap(({ teamId, teamName, users: gUsers }) => [
                       <tr key={`group-${teamId ?? "none"}`} className="bg-[#F5F5F7]">
@@ -357,7 +359,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
       {/* Modal création */}
       {modalCreate && (
         <UserModal
-          title="Créer un utilisateur"
+          title={t("createUser")}
           teams={teams}
           onClose={() => setModalCreate(false)}
           onSubmit={(data) => handleCreate(data)}
@@ -369,7 +371,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
       {/* Modal édition */}
       {modalEdit && (
         <UserModal
-          title="Modifier l'utilisateur"
+          title={t("editUser")}
           initial={modalEdit}
           initialManagedTeamId={getManagedTeamId(modalEdit.id)}
           teams={teams}
@@ -389,26 +391,26 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
                 <Trash2 className="w-5 h-5 text-red-500" />
               </div>
               <div>
-                <p className="text-[15px] font-semibold text-[#1D1D1F]">Supprimer l&apos;utilisateur</p>
+                <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("deleteUser")}</p>
                 <p className="text-[13px] text-[#6E6E73]">{deleteTarget.email}</p>
               </div>
             </div>
             <p className="text-[13px] text-[#6E6E73]">
-              Les cours créés par cet utilisateur resteront accessibles. Cette action est irréversible.
+              {t("deleteUserDesc")}
             </p>
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setDeleteTarget(null)}
                 className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors"
               >
-                Annuler
+                {t("cancel")}
               </button>
               <button
                 onClick={() => handleDelete(deleteTarget)}
                 disabled={loading}
                 className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium disabled:opacity-50 transition-colors"
               >
-                {loading ? "Suppression…" : "Supprimer"}
+                {loading ? t("saving") : t("delete")}
               </button>
             </div>
           </div>
@@ -424,13 +426,12 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
                 <KeyRound className="w-5 h-5 text-amber-500" />
               </div>
               <div>
-                <p className="text-[15px] font-semibold text-[#1D1D1F]">Réinitialiser le mot de passe</p>
+                <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("resetPassword")}</p>
                 <p className="text-[13px] text-[#6E6E73]">{resetTarget.name ?? resetTarget.email}</p>
               </div>
             </div>
             <p className="text-[13px] text-[#6E6E73]">
-              Un nouveau mot de passe fort sera généré automatiquement et envoyé par email à{" "}
-              <strong className="text-[#1D1D1F]">{resetTarget.email}</strong>.
+              {t("resetPasswordDesc", { email: resetTarget.email })}
             </p>
             <div className="flex gap-3 pt-2">
               <button
@@ -438,14 +439,14 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
                 disabled={loading}
                 className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] disabled:opacity-50 transition-colors"
               >
-                Annuler
+                {t("cancel")}
               </button>
               <button
                 onClick={() => handleResetPassword(resetTarget)}
                 disabled={loading}
                 className="flex-1 h-10 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[14px] font-medium disabled:opacity-50 transition-colors"
               >
-                {loading ? "Réinitialisation…" : "Réinitialiser"}
+                {loading ? t("resetting") : t("reset")}
               </button>
             </div>
           </div>
@@ -477,6 +478,7 @@ function ResetResultModal({
   result: { password: string; emailSent: boolean; userName: string };
   onClose: () => void;
 }) {
+  const t = useTranslations("users");
   const [copied, setCopied] = useState(false);
 
   function copy() {
@@ -493,13 +495,13 @@ function ResetResultModal({
             <KeyRound className="w-5 h-5 text-emerald-500" />
           </div>
           <div>
-            <p className="text-[15px] font-semibold text-[#1D1D1F]">Mot de passe réinitialisé</p>
+            <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("passwordReset")}</p>
             <p className="text-[13px] text-[#6E6E73]">{result.userName}</p>
           </div>
         </div>
 
         <div className="bg-[#F5F5F7] rounded-xl px-4 py-3 space-y-2">
-          <p className="text-[12px] font-medium text-[#8E8E93] uppercase tracking-wide">Nouveau mot de passe</p>
+          <p className="text-[12px] font-medium text-[#8E8E93] uppercase tracking-wide">{t("newPassword")}</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 text-[16px] font-bold text-[#1D1D1F] font-mono tracking-wider">{result.password}</code>
             <button
@@ -515,11 +517,11 @@ function ResetResultModal({
         {result.emailSent ? (
           <p className="text-[13px] text-emerald-600 flex items-center gap-1.5">
             <Check className="w-3.5 h-3.5 shrink-0" />
-            Email envoyé à l&apos;utilisateur avec ses nouveaux identifiants.
+            {t("emailSent")}
           </p>
         ) : (
           <p className="text-[13px] text-amber-600">
-            ⚠️ Email non envoyé (mail non configuré). Transmettez ce mot de passe manuellement.
+            ⚠️ {t("emailNotSent")}
           </p>
         )}
 
@@ -527,7 +529,7 @@ function ResetResultModal({
           onClick={onClose}
           className="w-full h-10 rounded-xl bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium transition-colors"
         >
-          Fermer
+          {t("close")}
         </button>
       </div>
     </div>
@@ -549,16 +551,17 @@ function UserTableRow({
   onDelete: (u: UserRow) => void;
   onReset: (u: UserRow) => void;
 }) {
+  const t = useTranslations("users");
   return (
     <tr className={cn("hover:bg-[#F9F9FB] transition-colors", !user.isActive && "opacity-60")}>
       <td className="px-5 py-3.5">
-        <p className="text-[14px] font-medium text-[#1D1D1F]">{user.name ?? <span className="italic text-[#ADADB8]">Sans nom</span>}</p>
+        <p className="text-[14px] font-medium text-[#1D1D1F]">{user.name ?? <span className="italic text-[#ADADB8]">{t("noName")}</span>}</p>
         <p className="text-[12px] text-[#6E6E73]">{user.email}</p>
       </td>
       <td className="px-5 py-3.5">
         <div className="flex flex-wrap gap-1.5">
           {user.roles.length === 0 ? (
-            <span className="text-[12px] text-[#ADADB8] italic">Aucun</span>
+            <span className="text-[12px] text-[#ADADB8] italic">{t("none")}</span>
           ) : user.roles.map((r) => (
             <span key={r} className={cn("text-[11px] font-medium px-2 py-0.5 rounded-md", ROLE_COLORS[r])}>
               {ROLE_LABELS[r]}
@@ -591,7 +594,7 @@ function UserTableRow({
           <button
             onClick={() => onToggle(user)}
             disabled={user.id === currentUserId}
-            title={user.isActive ? "Désactiver" : "Activer"}
+            title={user.isActive ? t("deactivate") : t("enable")}
             className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#1D1D1F] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             {user.isActive ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -606,7 +609,7 @@ function UserTableRow({
           <button
             onClick={() => onReset(user)}
             disabled={user.id === currentUserId}
-            title="Réinitialiser le mot de passe"
+            title={t("resetPassword")}
             className="p-2 rounded-lg text-[#6E6E73] hover:bg-amber-50 hover:text-amber-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <KeyRound className="w-3.5 h-3.5" />
@@ -614,7 +617,7 @@ function UserTableRow({
           <button
             onClick={() => onDelete(user)}
             disabled={user.id === currentUserId}
-            title="Supprimer"
+            title={t("delete")}
             className="p-2 rounded-lg text-[#6E6E73] hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -646,6 +649,7 @@ function UserModal({
   loading: boolean;
   error: string;
 }) {
+  const t = useTranslations("users");
   const [name, setName] = useState(initial?.name ?? "");
   const [email, setEmail] = useState(initial?.email ?? "");
   const [password, setPassword] = useState("");
@@ -681,18 +685,18 @@ function UserModal({
           )}
 
           <div className="space-y-1.5">
-            <label className="text-[13px] font-medium text-[#1D1D1F]">Nom</label>
+            <label className="text-[13px] font-medium text-[#1D1D1F]">{t("name")}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Prénom Nom"
+              placeholder={t("namePlaceholder")}
               className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] text-[14px] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[13px] font-medium text-[#1D1D1F]">Email <span className="text-red-500">*</span></label>
+            <label className="text-[13px] font-medium text-[#1D1D1F]">{t("email")} <span className="text-red-500">*</span></label>
             <input
               type="email"
               required
@@ -706,7 +710,7 @@ function UserModal({
             /* Édition — champ optionnel pour changer le mot de passe */
             <div className="space-y-1.5">
               <label className="text-[13px] font-medium text-[#1D1D1F]">
-                Mot de passe <span className="text-[#ADADB8] font-normal">(laisser vide pour ne pas changer)</span>
+                {t("password")} <span className="text-[#ADADB8] font-normal">(laisser vide pour ne pas changer)</span>
               </label>
               <div className="relative">
                 <input
@@ -757,7 +761,7 @@ function UserModal({
           <div className="space-y-3">
             {/* Toggle admin */}
             <div>
-              <label className="text-[13px] font-medium text-[#1D1D1F]">Accès administration</label>
+              <label className="text-[13px] font-medium text-[#1D1D1F]">{t("adminAccess")}</label>
               <div className="mt-2">
                 <button
                   type="button"
@@ -774,7 +778,7 @@ function UserModal({
 
             {/* Rôle opérationnel cascade */}
             <div>
-              <label className="text-[13px] font-medium text-[#1D1D1F]">Rôle opérationnel</label>
+              <label className="text-[13px] font-medium text-[#1D1D1F]">{t("operationalRole")}</label>
               <div className="flex flex-wrap gap-2 mt-2">
                 {(["manager", "creator", "learner"] as OperationalRole[]).map((r) => {
                   const isPrimary = r === opRole;
@@ -808,15 +812,15 @@ function UserModal({
                         : "border-[#D2D2D7] text-[#6E6E73] hover:border-[#ADADB8]"
                     )}
                   >
-                    Aucun
+                    {t("roleNone")}
                   </button>
                 )}
               </div>
               <p className="text-[11px] text-[#ADADB8] mt-1.5">
-                {opRole === "manager" && "Inclut les droits Créateur et Apprenant."}
-                {opRole === "creator" && "Inclut les droits Apprenant."}
-                {opRole === "learner" && "Suit les cours assignés."}
-                {opRole === "none" && isAdmin && "Accès admin uniquement, sans suivi de cours."}
+                {opRole === "manager" && t("roleManagerDesc")}
+                {opRole === "creator" && t("roleCreatorDesc")}
+                {opRole === "learner" && t("roleLearnerDesc")}
+                {opRole === "none" && isAdmin && t("roleAdminDesc")}
               </p>
             </div>
           </div>
@@ -826,14 +830,14 @@ function UserModal({
             <div className="space-y-1.5">
               <label className="text-[13px] font-medium text-[#1D1D1F] flex items-center gap-1.5">
                 <Crown className="w-3.5 h-3.5 text-purple-500" />
-                Manager de l&apos;équipe
+                {t("teamManager")}
               </label>
               <select
                 value={managedTeamId ?? ""}
                 onChange={(e) => setManagedTeamId(e.target.value || null)}
                 className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] text-[14px] text-[#1D1D1F] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
               >
-                <option value="">— Aucune équipe —</option>
+                <option value="">{t("noTeamOption")}</option>
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
@@ -855,7 +859,7 @@ function UserModal({
                   isActive ? "translate-x-4.5 ml-0.5" : "translate-x-0.5"
                 )} />
               </div>
-              <span className="text-[13px] font-medium text-[#1D1D1F]">Compte actif</span>
+              <span className="text-[13px] font-medium text-[#1D1D1F]">{t("activeAccount")}</span>
             </label>
           )}
 
@@ -865,14 +869,14 @@ function UserModal({
               onClick={onClose}
               className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors"
             >
-              Annuler
+              {t("cancel")}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="flex-1 h-10 rounded-xl bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium disabled:opacity-50 transition-colors"
             >
-              {loading ? "Enregistrement…" : initial ? "Enregistrer" : "Créer"}
+              {loading ? t("saving") : initial ? t("save") : t("create")}
             </button>
           </div>
         </form>

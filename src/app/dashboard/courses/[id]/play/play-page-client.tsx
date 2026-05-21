@@ -5,6 +5,7 @@ import { H5PPlayer } from "@/components/courses/h5p-player";
 import { QuizPlayer } from "@/components/courses/quiz-player";
 import { ClipboardList, BookOpen, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface Props {
   courseId: string;
@@ -19,6 +20,8 @@ interface Props {
 type Tab = "course" | "quiz";
 
 export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passingScore, userName, logoPath }: Props) {
+  const t = useTranslations("player");
+  const tQuiz = useTranslations("quiz");
   const [tab, setTab] = useState<Tab>("course");
   const [courseCompleted, setCourseCompleted] = useState(false);
   const [slideInfo, setSlideInfo] = useState<{ current: number; visited: number[]; total: number } | null>(null);
@@ -112,9 +115,9 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
           {slideInfo && slideInfo.total > 0 && (
             <div className="bg-white border border-[#E5E5EA] rounded-2xl px-4 py-3 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-[12px] font-medium text-[#6E6E73]">Progression des slides</p>
+                <p className="text-[12px] font-medium text-[#6E6E73]">{t("slideProgress")}</p>
                 <p className="text-[12px] text-[#ADADB8]">
-                  {slideInfo.visited.length} / {slideInfo.total} vues
+                  {t("slidesViewed", { n: slideInfo.visited.length, total: slideInfo.total })}
                 </p>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -124,7 +127,7 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
                   return (
                     <div
                       key={i}
-                      title={`Slide ${i + 1}${isVisited ? " — vue" : " — non vue"}`}
+                      title={isVisited ? t("slideViewed", { n: i + 1 }) : t("slideNotViewed", { n: i + 1 })}
                       className={cn(
                         "w-7 h-7 rounded-lg text-[11px] font-bold flex items-center justify-center transition-all",
                         isCurrent ? "bg-[#0071E3] text-white scale-110 shadow-sm" :
@@ -145,17 +148,17 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
             <div className="flex items-center justify-between bg-green-50 border border-green-100 rounded-xl px-4 py-3">
               {hasQuiz ? (
                 <>
-                  <p className="text-[13px] text-green-700 font-medium">Cours terminé — le quiz est maintenant disponible.</p>
+                  <p className="text-[13px] text-green-700 font-medium">{t("courseCompletedQuiz")}</p>
                   <button
                     onClick={() => setTab("quiz")}
                     className="flex items-center gap-1.5 px-4 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors"
                   >
                     <ClipboardList className="w-3.5 h-3.5" />
-                    Passer le quiz
+                    {t("takeQuiz")}
                   </button>
                 </>
               ) : (
-                <p className="text-[13px] text-green-700 font-medium">✓ Cours terminé — toutes les slides ont été consultées.</p>
+                <p className="text-[13px] text-green-700 font-medium">✓ {t("courseCompleted")}</p>
               )}
             </div>
           )}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { X, Search, UserCheck, Calendar, Users, UserPlus, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 type UserRef = { id: string; name: string | null; email: string; roles: string[] };
 type TeamRef = { id: string; name: string; members: UserRef[] };
@@ -24,6 +25,7 @@ function label(u: { name: string | null; email: string }) {
 }
 
 export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps) {
+  const t = useTranslations("assignment");
   const [allUsers, setAllUsers] = useState<UserRef[]>([]);
   const [teams, setTeams] = useState<TeamRef[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -122,7 +124,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-4 border-b border-[#E5E5EA] shrink-0">
           <div>
-            <p className="text-[15px] font-semibold text-[#1D1D1F]">Assigner le cours</p>
+            <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("assignCourse")}</p>
             <p className="text-[13px] text-[#6E6E73] mt-0.5 line-clamp-1">{courseTitle}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F5F5F7] transition-colors">
@@ -139,7 +141,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
                 tab === "teams" ? "bg-white text-[#1D1D1F] shadow-sm" : "text-[#6E6E73] hover:text-[#1D1D1F]")}
             >
               <Users className="w-3.5 h-3.5" />
-              Équipes
+              {t("teams")}
             </button>
             <button
               onClick={() => setTab("users")}
@@ -147,7 +149,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
                 tab === "users" ? "bg-white text-[#1D1D1F] shadow-sm" : "text-[#6E6E73] hover:text-[#1D1D1F]")}
             >
               <UserPlus className="w-3.5 h-3.5" />
-              Individuel
+              {t("individual")}
             </button>
           </div>
           <button
@@ -156,7 +158,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl border border-[#D2D2D7] text-[12px] font-medium text-[#6E6E73] hover:text-[#1D1D1F] hover:border-[#ADADB8] disabled:opacity-40 transition-all"
           >
             <CheckCheck className="w-3.5 h-3.5" />
-            {allSelected ? "Tout désélectionner" : "Assigner à tous"}
+            {allSelected ? t("deselectAll") : t("assignAll")}
           </button>
         </div>
 
@@ -169,7 +171,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
           ) : tab === "teams" ? (
             /* --- Onglet Équipes --- */
             teams.length === 0 ? (
-              <p className="text-[13px] text-[#ADADB8] text-center py-10">Aucune équipe créée.</p>
+              <p className="text-[13px] text-[#ADADB8] text-center py-10">{t("noTeams")}</p>
             ) : teams.map((team) => {
               const memberIds = team.members.map((m) => m.id);
               const allIn = memberIds.length > 0 && memberIds.every((id) => selected.has(id));
@@ -210,14 +212,14 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ADADB8]" />
                 <input
                   type="text"
-                  placeholder="Rechercher…"
+                  placeholder={t("search")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full h-9 pl-9 pr-3 rounded-xl border border-[#D2D2D7] text-[13px] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all"
                 />
               </div>
               {filteredUsers.length === 0 ? (
-                <p className="text-[13px] text-[#ADADB8] text-center py-8">Aucun utilisateur trouvé</p>
+                <p className="text-[13px] text-[#ADADB8] text-center py-8">{t("noUserFound")}</p>
               ) : filteredUsers.map((user) => {
                 const isSelected = selected.has(user.id);
                 return (
@@ -245,7 +247,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
                           onChange={(e) => setDueDates((prev) => ({ ...prev, [user.id]: e.target.value }))}
                           className="h-7 px-2 rounded-lg border border-[#D2D2D7] text-[12px] outline-none focus:border-[#0071E3] transition-all"
                         />
-                        <span className="text-[11px] text-[#ADADB8]">Deadline (optionnel)</span>
+                        <span className="text-[11px] text-[#ADADB8]">{t("deadline")}</span>
                         {dueDates[user.id] && (
                           <button onClick={(e) => { e.stopPropagation(); setDueDates((prev) => { const n = { ...prev }; delete n[user.id]; return n; }); }} className="text-[11px] text-[#ADADB8] hover:text-red-400">✕</button>
                         )}
@@ -261,14 +263,14 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
         {/* Footer */}
         <div className="px-6 py-4 border-t border-[#E5E5EA] flex items-center justify-between shrink-0">
           <p className="text-[13px] text-[#6E6E73]">
-            {selected.size} utilisateur{selected.size !== 1 ? "s" : ""} sélectionné{selected.size !== 1 ? "s" : ""}
+            {t("selectedUsers", { count: selected.size })}
           </p>
           <div className="flex gap-3">
             <button onClick={onClose} className="h-9 px-4 rounded-xl border border-[#D2D2D7] text-[13px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors">
-              Annuler
+              {t("cancel")}
             </button>
             <button onClick={handleSave} disabled={saving} className="h-9 px-4 rounded-xl bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium disabled:opacity-50 transition-colors">
-              {saving ? "Enregistrement…" : "Enregistrer"}
+              {saving ? t("saving") : t("assign")}
             </button>
           </div>
         </div>
