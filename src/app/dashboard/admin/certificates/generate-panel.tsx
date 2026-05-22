@@ -67,8 +67,8 @@ export function GeneratePanel() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-[20px] font-semibold text-[#1D1D1F]">Générer des certificats</h2>
-        <p className="text-[14px] text-[#6E6E73] mt-0.5">
+        <h2 className="text-[20px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Générer des certificats</h2>
+        <p className="text-[14px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">
           Marque les cours comme terminés et émet les certificats pour les apprenants sélectionnés.
           Les certificats existants ne sont pas recréés.
         </p>
@@ -76,12 +76,12 @@ export function GeneratePanel() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Users */}
-        <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden">
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] overflow-hidden">
           <button
             onClick={() => setShowUsers(v => !v)}
             className="w-full flex items-center justify-between px-5 py-4 text-left"
           >
-            <span className="text-[14px] font-semibold text-[#1D1D1F]">
+            <span className="text-[14px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
               Apprenants
               {selectedUsers.length > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#0071E3] text-[11px] font-bold text-white">
@@ -89,23 +89,23 @@ export function GeneratePanel() {
                 </span>
               )}
             </span>
-            {showUsers ? <ChevronUp className="w-4 h-4 text-[#6E6E73]" /> : <ChevronDown className="w-4 h-4 text-[#6E6E73]" />}
+            {showUsers ? <ChevronUp className="w-4 h-4 text-[#6E6E73] dark:text-[#8E8E93]" /> : <ChevronDown className="w-4 h-4 text-[#6E6E73] dark:text-[#8E8E93]" />}
           </button>
 
           {showUsers && (
-            <div className="border-t border-[#F2F2F7]">
+            <div className="border-t border-[#F2F2F7] dark:border-[#3A3A3C]">
               <div className="px-4 py-2.5">
                 <input
                   type="text"
                   placeholder="Rechercher un apprenant…"
                   value={userSearch}
                   onChange={e => setUserSearch(e.target.value)}
-                  className="w-full h-8 rounded-lg border border-[#E5E5EA] bg-[#F5F5F7] px-3 text-[12px] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/40"
+                  className="w-full h-8 rounded-lg border border-[#E5E5EA] dark:border-[#3A3A3C] bg-[#F5F5F7] dark:bg-[#2C2C2E] px-3 text-[12px] dark:text-[#F5F5F7] dark:placeholder-[#636366] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/40"
                 />
               </div>
               <div className="max-h-52 overflow-y-auto divide-y divide-[#F2F2F7]">
                 {filteredUsers.map(u => (
-                  <label key={u.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[#F5F5F7]">
+                  <label key={u.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E]">
                     <input
                       type="checkbox"
                       checked={selectedUsers.includes(u.id)}
@@ -113,13 +113,13 @@ export function GeneratePanel() {
                       className="rounded border-[#C7C7CC] text-[#0071E3] focus:ring-[#0071E3]/40"
                     />
                     <div className="min-w-0">
-                      <p className="text-[13px] font-medium text-[#1D1D1F] truncate">{u.name ?? u.email}</p>
-                      {u.name && <p className="text-[11px] text-[#6E6E73] truncate">{u.email}</p>}
+                      <p className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] truncate">{u.name ?? u.email}</p>
+                      {u.name && <p className="text-[11px] text-[#6E6E73] dark:text-[#8E8E93] truncate">{u.email}</p>}
                     </div>
                   </label>
                 ))}
                 {filteredUsers.length === 0 && (
-                  <p className="px-4 py-4 text-[13px] text-[#6E6E73] text-center">Aucun apprenant trouvé</p>
+                  <p className="px-4 py-4 text-[13px] text-[#6E6E73] dark:text-[#8E8E93] text-center">Aucun apprenant trouvé</p>
                 )}
               </div>
               {selectedUsers.length > 0 && (
@@ -140,12 +140,12 @@ export function GeneratePanel() {
         </div>
 
         {/* Courses */}
-        <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden">
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] overflow-hidden">
           <button
             onClick={() => setShowCourses(v => !v)}
             className="w-full flex items-center justify-between px-5 py-4 text-left"
           >
-            <span className="text-[14px] font-semibold text-[#1D1D1F]">
+            <span className="text-[14px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
               Cours
               {selectedCourses.length > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#0071E3] text-[11px] font-bold text-white">
@@ -153,18 +153,18 @@ export function GeneratePanel() {
                 </span>
               )}
             </span>
-            {showCourses ? <ChevronUp className="w-4 h-4 text-[#6E6E73]" /> : <ChevronDown className="w-4 h-4 text-[#6E6E73]" />}
+            {showCourses ? <ChevronUp className="w-4 h-4 text-[#6E6E73] dark:text-[#8E8E93]" /> : <ChevronDown className="w-4 h-4 text-[#6E6E73] dark:text-[#8E8E93]" />}
           </button>
 
           {showCourses && (
-            <div className="border-t border-[#F2F2F7]">
+            <div className="border-t border-[#F2F2F7] dark:border-[#3A3A3C]">
               <div className="px-4 py-2.5">
                 <input
                   type="text"
                   placeholder="Rechercher un cours…"
                   value={courseSearch}
                   onChange={e => setCourseSearch(e.target.value)}
-                  className="w-full h-8 rounded-lg border border-[#E5E5EA] bg-[#F5F5F7] px-3 text-[12px] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/40"
+                  className="w-full h-8 rounded-lg border border-[#E5E5EA] dark:border-[#3A3A3C] bg-[#F5F5F7] dark:bg-[#2C2C2E] px-3 text-[12px] dark:text-[#F5F5F7] dark:placeholder-[#636366] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/40"
                 />
               </div>
               <div className="max-h-52 overflow-y-auto divide-y divide-[#F2F2F7]">
@@ -177,15 +177,15 @@ export function GeneratePanel() {
                       className="rounded border-[#C7C7CC] text-[#0071E3] focus:ring-[#0071E3]/40"
                     />
                     <div className="min-w-0">
-                      <p className="text-[13px] font-medium text-[#1D1D1F] truncate">{c.title}</p>
-                      <p className="text-[11px] text-[#6E6E73]">
+                      <p className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] truncate">{c.title}</p>
+                      <p className="text-[11px] text-[#6E6E73] dark:text-[#8E8E93]">
                         {c.hasQuiz ? "Avec évaluation" : "Sans évaluation"}
                       </p>
                     </div>
                   </label>
                 ))}
                 {filteredCourses.length === 0 && (
-                  <p className="px-4 py-4 text-[13px] text-[#6E6E73] text-center">Aucun cours trouvé</p>
+                  <p className="px-4 py-4 text-[13px] text-[#6E6E73] dark:text-[#8E8E93] text-center">Aucun cours trouvé</p>
                 )}
               </div>
               {selectedCourses.length > 0 && (
@@ -207,16 +207,16 @@ export function GeneratePanel() {
       </div>
 
       {/* Summary + action */}
-      <div className="bg-white rounded-2xl border border-[#E5E5EA] p-5 space-y-4">
+      <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-5 space-y-4">
         {selectedUsers.length > 0 && selectedCourses.length > 0 ? (
-          <p className="text-[13px] text-[#3C3C43]">
+          <p className="text-[13px] text-[#3C3C43] dark:text-[#AEAEB2]">
             Génération de{" "}
             <strong>{selectedUsers.length * selectedCourses.length}</strong> certificat(s) max —{" "}
             <strong>{selectedUsers.length}</strong> apprenant(s) × <strong>{selectedCourses.length}</strong> cours.
             Les certificats déjà existants seront ignorés.
           </p>
         ) : (
-          <p className="text-[13px] text-[#6E6E73]">
+          <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
             Sélectionnez au moins un apprenant et un cours.
           </p>
         )}
@@ -230,7 +230,7 @@ export function GeneratePanel() {
         </button>
 
         {result && (
-          <div className="flex items-start gap-2.5 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+          <div className="flex items-start gap-2.5 p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
             <p className="text-[13px] text-emerald-700">
               <strong>{result.generated}</strong> certificat(s) généré(s).
@@ -240,7 +240,7 @@ export function GeneratePanel() {
         )}
 
         {error && (
-          <div className="flex items-center gap-2.5 p-3 bg-red-50 border border-red-100 rounded-xl">
+          <div className="flex items-center gap-2.5 p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl">
             <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
             <p className="text-[13px] text-red-600">{error}</p>
           </div>

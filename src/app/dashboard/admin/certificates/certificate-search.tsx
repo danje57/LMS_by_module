@@ -23,7 +23,7 @@ export function CertificateSearch({ defaultValue }: { defaultValue: string }) {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="Coller le numéro de certificat…"
-          className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#D2D2D7] bg-white text-[14px] text-[#1D1D1F] placeholder:text-[#ADADB8] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 font-mono transition-all"
+          className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#ADADB8] dark:placeholder:text-[#636366] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 font-mono transition-all"
         />
       </div>
       <button

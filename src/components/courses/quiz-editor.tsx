@@ -53,8 +53,8 @@ const EMPTY_FORM: FormData = {
   explanation: "",
 };
 
-const fieldCls = "w-full h-10 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[14px] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all";
-const labelCls = "block text-[12px] font-medium text-[#6E6E73] mb-1";
+const fieldCls = "w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all";
+const labelCls = "block text-[12px] font-medium text-[#6E6E73] dark:text-[#8E8E93] mb-1";
 
 function toggleLetter(current: string, letter: string): string {
   const set = new Set(current.split(",").filter(Boolean));
@@ -162,18 +162,18 @@ function QuestionForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-[#F5F5F7] rounded-2xl p-5 space-y-4 border border-[#E5E5EA]">
+    <form onSubmit={handleSubmit} className="bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-2xl p-5 space-y-4 border border-[#E5E5EA] dark:border-[#3A3A3C]">
       {/* Type */}
       <div className="flex gap-2 flex-wrap">
         {(["qcm", "vrai_faux"] as const).map((t) => (
           <button key={t} type="button" onClick={() => handleTypeChange(t)}
             className={cn("px-4 py-1.5 rounded-lg text-[13px] font-medium transition-all",
-              form.type === t ? "bg-[#0071E3] text-white" : "bg-white border border-[#D2D2D7] text-[#6E6E73] hover:text-[#1D1D1F]")}>
+              form.type === t ? "bg-[#0071E3] text-white" : "bg-white dark:bg-[#1C1C1E] border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]")}>
             {t === "qcm" ? "QCM" : "Vrai / Faux"}
           </button>
         ))}
         {form.type === "qcm" && (
-          <label className="ml-auto flex items-center gap-2 text-[13px] text-[#6E6E73] cursor-pointer select-none">
+          <label className="ml-auto flex items-center gap-2 text-[13px] text-[#6E6E73] dark:text-[#8E8E93] cursor-pointer select-none">
             <input type="checkbox" checked={form.allowMultiple} onChange={(e) => handleMultipleToggle(e.target.checked)}
               className="w-4 h-4 rounded accent-[#0071E3]" />
             Plusieurs réponses
@@ -185,7 +185,7 @@ function QuestionForm({
       <div>
         <label className={labelCls}>Question *</label>
         <textarea value={form.question} onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))} required rows={2}
-          className="w-full px-3 py-2 rounded-xl border border-[#D2D2D7] bg-white text-[14px] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 resize-none transition-all" />
+          className="w-full px-3 py-2 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 resize-none transition-all" />
       </div>
 
       {/* Choix QCM — dynamiques */}
@@ -198,7 +198,7 @@ function QuestionForm({
             return (
               <div key={i} className="flex items-center gap-2">
                 <span className={cn("w-7 h-7 rounded-lg text-[12px] font-bold flex items-center justify-center shrink-0",
-                  isCorrect ? "bg-[#0071E3] text-white" : "bg-[#E5E5EA] text-[#6E6E73]")}>
+                  isCorrect ? "bg-[#0071E3] text-white" : "bg-[#E5E5EA] dark:bg-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93]")}>
                   {letter}
                 </span>
                 <input value={val} onChange={(e) => handleChoiceChange(i, e.target.value)}
@@ -234,7 +234,7 @@ function QuestionForm({
               return (
                 <button key={l} type="button" onClick={() => handleAnswerClick(l)}
                   className={cn("w-10 h-10 rounded-xl text-[14px] font-semibold transition-all relative",
-                    isSelected ? "bg-[#0071E3] text-white shadow-sm" : "bg-white border border-[#D2D2D7] text-[#6E6E73] hover:border-[#0071E3]")}>
+                    isSelected ? "bg-[#0071E3] text-white shadow-sm" : "bg-white dark:bg-[#1C1C1E] border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:border-[#0071E3]")}>
                   {l}
                   {form.allowMultiple && isSelected && (
                     <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full flex items-center justify-center">
@@ -250,7 +250,7 @@ function QuestionForm({
             {["vrai", "faux"].map((v) => (
               <button key={v} type="button" onClick={() => setForm((f) => ({ ...f, correctAnswer: v }))}
                 className={cn("px-5 h-10 rounded-xl text-[14px] font-medium capitalize transition-all",
-                  form.correctAnswer === v ? "bg-[#0071E3] text-white shadow-sm" : "bg-white border border-[#D2D2D7] text-[#6E6E73] hover:border-[#0071E3]")}>
+                  form.correctAnswer === v ? "bg-[#0071E3] text-white shadow-sm" : "bg-white dark:bg-[#1C1C1E] border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:border-[#0071E3]")}>
                 {v}
               </button>
             ))}
@@ -266,7 +266,7 @@ function QuestionForm({
       </div>
 
       {formError && (
-        <p className="text-[13px] text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{formError}</p>
+        <p className="text-[13px] text-red-600 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl px-3 py-2">{formError}</p>
       )}
 
       <div className="flex gap-2 pt-1">
@@ -276,7 +276,7 @@ function QuestionForm({
           {saving ? "Enregistrement…" : mode === "add" ? "Ajouter la question" : "Enregistrer"}
         </button>
         <button type="button" onClick={onCancel}
-          className="flex items-center gap-1.5 px-4 h-9 border border-[#D2D2D7] text-[#6E6E73] text-[13px] font-medium rounded-xl hover:bg-[#F5F5F7] transition-colors">
+          className="flex items-center gap-1.5 px-4 h-9 border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] text-[13px] font-medium rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-[#1C1C1E] transition-colors">
           <X className="w-3.5 h-3.5" /> Annuler
         </button>
       </div>
@@ -293,7 +293,7 @@ function ThresholdBanner({ questionCount, passingScore }: { questionCount: numbe
 
   if (diff === 0) {
     return (
-      <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-100 rounded-xl text-[12px] text-green-700">
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 dark:bg-emerald-500/10 border border-green-100 dark:border-emerald-500/20 rounded-xl text-[12px] text-green-700 dark:text-emerald-400">
         <span className="font-medium">Seuil cohérent :</span>
         {minCorrect}/{questionCount} bonnes réponses requises — seuil effectif {effectiveScore}%.
       </div>
@@ -311,7 +311,7 @@ function ThresholdBanner({ questionCount, passingScore }: { questionCount: numbe
   return (
     <div className={cn(
       "px-4 py-2.5 rounded-xl border text-[12px] space-y-0.5",
-      isWarning ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-blue-50 border-blue-100 text-blue-800"
+      isWarning ? "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-400" : "bg-blue-50 dark:bg-[#0071E3]/10 border-blue-100 dark:border-[#0071E3]/20 text-blue-800 dark:text-blue-400"
     )}>
       <p>
         <span className="font-semibold">Seuil effectif : {effectiveScore}%</span>
@@ -409,23 +409,23 @@ export function QuizEditor({ courseId, passingScore = 80, onCountChange }: { cou
     <div className="space-y-5">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[13px] text-[#6E6E73]">
+        <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
           {questions.length === 0 ? "Aucune question." : `${questions.length} question(s)`}
         </p>
         <div className="flex flex-wrap gap-2">
           <button onClick={handleDownloadTemplate}
-            className="flex items-center gap-1.5 px-3 h-9 border border-[#D2D2D7] text-[#1D1D1F] text-[13px] font-medium rounded-xl hover:bg-[#F5F5F7] transition-colors"
+            className="flex items-center gap-1.5 px-3 h-9 border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#1D1D1F] dark:text-[#F5F5F7] text-[13px] font-medium rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors"
             title="Télécharger un gabarit CSV vide">
-            <Download className="w-3.5 h-3.5 text-[#6E6E73]" /> Gabarit CSV
+            <Download className="w-3.5 h-3.5 text-[#6E6E73] dark:text-[#8E8E93]" /> Gabarit CSV
           </button>
-          <label className="flex items-center gap-1.5 px-3 h-9 border border-[#D2D2D7] text-[#1D1D1F] text-[13px] font-medium rounded-xl hover:bg-[#F5F5F7] transition-colors cursor-pointer">
-            <Upload className="w-3.5 h-3.5 text-[#6E6E73]" /> Importer CSV
+          <label className="flex items-center gap-1.5 px-3 h-9 border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#1D1D1F] dark:text-[#F5F5F7] text-[13px] font-medium rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors cursor-pointer">
+            <Upload className="w-3.5 h-3.5 text-[#6E6E73] dark:text-[#8E8E93]" /> Importer CSV
             <input ref={csvInputRef} type="file" accept=".csv,.txt" className="hidden" onChange={handleImportCSV} />
           </label>
           {questions.length > 0 && (
             <button onClick={handleExportCSV}
-              className="flex items-center gap-1.5 px-3 h-9 border border-[#D2D2D7] text-[#1D1D1F] text-[13px] font-medium rounded-xl hover:bg-[#F5F5F7] transition-colors">
-              <Download className="w-3.5 h-3.5 text-[#6E6E73]" /> Exporter CSV
+              className="flex items-center gap-1.5 px-3 h-9 border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#1D1D1F] dark:text-[#F5F5F7] text-[13px] font-medium rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors">
+              <Download className="w-3.5 h-3.5 text-[#6E6E73] dark:text-[#8E8E93]" /> Exporter CSV
             </button>
           )}
           <button onClick={() => { setShowForm(true); setEditingId(null); }}
@@ -435,14 +435,14 @@ export function QuizEditor({ courseId, passingScore = 80, onCountChange }: { cou
         </div>
       </div>
 
-      {importSuccess && <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-3 text-[13px] text-green-700">{importSuccess}</div>}
-      {importError && <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-[13px] text-red-600">{importError}</div>}
+      {importSuccess && <div className="bg-green-50 dark:bg-emerald-500/10 border border-green-100 dark:border-emerald-500/20 rounded-xl px-4 py-3 text-[13px] text-green-700 dark:text-emerald-400">{importSuccess}</div>}
+      {importError && <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl px-4 py-3 text-[13px] text-red-600">{importError}</div>}
 
       <ThresholdBanner questionCount={questions.length} passingScore={passingScore} />
 
       {/* Format CSV */}
-      <details className="text-[12px] text-[#6E6E73] bg-[#F5F5F7] rounded-xl px-4 py-3">
-        <summary className="cursor-pointer font-medium text-[#1D1D1F]">Format CSV attendu</summary>
+      <details className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93] bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-xl px-4 py-3">
+        <summary className="cursor-pointer font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Format CSV attendu</summary>
         <pre className="mt-2 overflow-x-auto text-[11px] leading-relaxed">{`question;type;choiceA;choiceB;...;choiceJ;correctAnswer;explanation
 "Question 1";qcm;Opt A;Opt B;Opt C;Opt D;;;;;;B;"Explication"
 "Multi-réponse";qcm;Opt A;Opt B;Opt C;Opt D;Opt E;;;;;"A,C,E";"..."
@@ -463,7 +463,7 @@ export function QuizEditor({ courseId, passingScore = 80, onCountChange }: { cou
               .filter((c) => c.val);
 
             return (
-              <div key={q.id} className="bg-white border border-[#E5E5EA] rounded-2xl overflow-hidden">
+              <div key={q.id} className="bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#3A3A3C] rounded-2xl overflow-hidden">
                 {editingId === q.id ? (
                   <div className="p-4">
                     <QuestionForm
@@ -480,20 +480,20 @@ export function QuizEditor({ courseId, passingScore = 80, onCountChange }: { cou
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[11px] font-medium text-[#ADADB8]">#{i + 1}</span>
                         <span className={cn("text-[11px] font-medium px-2 py-0.5 rounded-md",
-                          q.type === "qcm" ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600")}>
+                          q.type === "qcm" ? "bg-blue-50 dark:bg-[#0071E3]/10 text-blue-600" : "bg-purple-50 dark:bg-purple-500/10 text-purple-600")}>
                           {q.type === "qcm" ? (q.allowMultiple ? `QCM multiple (${allChoices.length})` : `QCM (${allChoices.length})`) : "Vrai / Faux"}
                         </span>
                       </div>
-                      <p className="text-[14px] font-medium text-[#1D1D1F]">{q.question}</p>
+                      <p className="text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{q.question}</p>
                       {q.type === "qcm" && (
                         <div className="mt-2 grid grid-cols-2 gap-1.5">
                           {allChoices.map(({ letter, val }) => {
                             const isCorrect = correctLetters.has(letter);
                             return (
                               <div key={letter} className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px]",
-                                isCorrect ? "bg-green-50 text-green-700 font-medium" : "bg-[#F5F5F7] text-[#6E6E73]")}>
+                                isCorrect ? "bg-green-50 dark:bg-emerald-500/10 text-green-700 dark:text-emerald-400 font-medium" : "bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#6E6E73] dark:text-[#8E8E93]")}>
                                 <span className={cn("w-4 h-4 rounded text-[10px] font-bold flex items-center justify-center shrink-0",
-                                  isCorrect ? "bg-green-500 text-white" : "bg-[#E5E5EA] text-[#6E6E73]")}>{letter}</span>
+                                  isCorrect ? "bg-green-500 text-white" : "bg-[#E5E5EA] dark:bg-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93]")}>{letter}</span>
                                 {val}
                               </div>
                             );
@@ -501,13 +501,13 @@ export function QuizEditor({ courseId, passingScore = 80, onCountChange }: { cou
                         </div>
                       )}
                       {q.type === "vrai_faux" && (
-                        <p className="mt-1 text-[12px] text-[#6E6E73]">Réponse : <span className="font-medium text-green-600 capitalize">{q.correctAnswer}</span></p>
+                        <p className="mt-1 text-[12px] text-[#6E6E73] dark:text-[#8E8E93]">Réponse : <span className="font-medium text-green-600 capitalize">{q.correctAnswer}</span></p>
                       )}
                       {q.explanation && <p className="mt-1.5 text-[12px] text-[#ADADB8] italic">{q.explanation}</p>}
                     </div>
                     <div className="flex gap-1 shrink-0">
                       <button onClick={() => { setEditingId(q.id); setShowForm(false); }}
-                        className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors">
+                        className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-[#0071E3] transition-colors">
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => handleDelete(q.id)}
@@ -524,9 +524,9 @@ export function QuizEditor({ courseId, passingScore = 80, onCountChange }: { cou
       )}
 
       {questions.length === 0 && !showForm && (
-        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-[#E5E5EA] rounded-2xl">
-          <p className="text-[15px] font-medium text-[#1D1D1F]">Aucune question</p>
-          <p className="text-[13px] text-[#6E6E73] mt-1">Ajoutez des questions ou importez un fichier CSV.</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-[#E5E5EA] dark:border-[#3A3A3C] rounded-2xl">
+          <p className="text-[15px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Aucune question</p>
+          <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93] mt-1">Ajoutez des questions ou importez un fichier CSV.</p>
         </div>
       )}
     </div>

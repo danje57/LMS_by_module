@@ -37,7 +37,7 @@ export default async function DashboardLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
-    <div className="flex h-screen bg-[#F5F5F7]">
+    <div className="flex h-screen bg-[#F5F5F7] dark:bg-[#0A0A0F]">
       <Sidebar
         appName={branding?.appName ?? "LMS"}
         logoPath={branding?.logoPath ? `/api/assets/${branding.logoPath}` : null}

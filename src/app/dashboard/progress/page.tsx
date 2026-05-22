@@ -209,12 +209,12 @@ export default async function ManagerProgressPage() {
     return (
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
-          <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">
+          <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
             {isManager ? t("myTeamProgress") : t("myAssignmentsProgress")}
           </h1>
         </div>
-        <div className="bg-white rounded-2xl border border-[#E5E5EA] p-12 flex flex-col items-center gap-3 text-center">
-          <p className="text-[14px] text-[#6E6E73]">
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-12 flex flex-col items-center gap-3 text-center">
+          <p className="text-[14px] text-[#6E6E73] dark:text-[#8E8E93]">
             {isManager ? t("noTeamNoAssignments") : t("noAssignments")}
           </p>
         </div>
@@ -229,10 +229,10 @@ export default async function ManagerProgressPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
           {isManager ? t("myTeamProgress") : t("myAssignmentsProgress")}
         </h1>
-        <p className="text-[15px] text-[#6E6E73] mt-0.5">
+        <p className="text-[15px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">
           {firstName ? `${firstName} · ` : ""}{subtitle}
         </p>
       </div>

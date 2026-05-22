@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
 const fieldClass =
-  "w-full h-11 px-3.5 rounded-xl border border-[#D2D2D7] bg-white text-[15px] text-[#1D1D1F] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20";
-const labelClass = "block text-[13px] font-medium text-[#1D1D1F] mb-1.5";
+  "w-full h-11 px-3.5 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[15px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20";
+const labelClass = "block text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] mb-1.5";
 
 interface Creator { id: string; name: string | null; email: string }
 
@@ -33,10 +33,10 @@ function QuizToggle({
   const t = useTranslations("upload");
   return (
     <>
-      <div className="flex items-center justify-between bg-[#F5F5F7] rounded-xl px-4 py-3">
+      <div className="flex items-center justify-between bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-xl px-4 py-3">
         <div>
-          <p className="text-[14px] font-medium text-[#1D1D1F]">{t("hasQuiz")}</p>
-          <p className="text-[12px] text-[#6E6E73]">{t("passingScoreRequired")}</p>
+          <p className="text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{t("hasQuiz")}</p>
+          <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93]">{t("passingScoreRequired")}</p>
         </div>
         <button
           type="button"
@@ -85,26 +85,26 @@ function FileDropZone({
       className={cn(
         "flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-2xl p-8 cursor-pointer transition-colors",
         selectedFile
-          ? "border-[#0071E3]/40 bg-blue-50/40"
-          : "border-[#D2D2D7] hover:border-[#0071E3]/40 hover:bg-[#F5F5F7]"
+          ? "border-[#0071E3]/40 bg-blue-50/40 dark:bg-[#0071E3]/10"
+          : "border-[#D2D2D7] dark:border-[#3A3A3C] hover:border-[#0071E3]/40 hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E]"
       )}
     >
       {selectedFile ? (
         <>
           <FileCheck className="w-8 h-8 text-[#0071E3]" />
           <div className="text-center">
-            <p className="text-[14px] font-medium text-[#1D1D1F]">{selectedFile.name}</p>
-            <p className="text-[12px] text-[#6E6E73]">{(selectedFile.size / 1024 / 1024).toFixed(1)} Mo</p>
+            <p className="text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{selectedFile.name}</p>
+            <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93]">{(selectedFile.size / 1024 / 1024).toFixed(1)} Mo</p>
           </div>
         </>
       ) : (
         <>
-          <div className="w-12 h-12 rounded-2xl bg-[#F5F5F7] flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] flex items-center justify-center">
             <Upload className="w-5 h-5 text-[#8E8E93]" />
           </div>
           <div className="text-center">
-            <p className="text-[14px] font-medium text-[#1D1D1F]">{t("clickToSelect")}</p>
-            <p className="text-[12px] text-[#6E6E73] mt-0.5">{hint}</p>
+            <p className="text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{t("clickToSelect")}</p>
+            <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">{hint}</p>
           </div>
         </>
       )}
@@ -124,11 +124,11 @@ function FileDropZone({
 function ProgressBar({ progress, label }: { progress: number; label: string }) {
   return (
     <div className="space-y-2">
-      <div className="flex justify-between text-[13px] text-[#6E6E73]">
+      <div className="flex justify-between text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
         <span>{label}</span>
         <span className="font-medium text-[#0071E3]">{progress}%</span>
       </div>
-      <div className="h-1.5 bg-[#F5F5F7] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[#F5F5F7] dark:bg-[#3A3A3C] rounded-full overflow-hidden">
         <div
           className="h-full bg-[#0071E3] rounded-full transition-all duration-300"
           style={{ width: `${progress}%` }}
@@ -337,9 +337,9 @@ function PPTXForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => v
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-        <p className="text-[13px] text-blue-700 font-medium">{t("autoConversion")}</p>
-        <p className="text-[12px] text-blue-600 mt-0.5">
+      <div className="bg-blue-50 dark:bg-[#0071E3]/10 border border-blue-100 dark:border-[#0071E3]/20 rounded-xl px-4 py-3">
+        <p className="text-[13px] text-blue-700 dark:text-blue-400 font-medium">{t("autoConversion")}</p>
+        <p className="text-[12px] text-blue-600 dark:text-blue-400 mt-0.5">
           {t("conversionDesc")}
         </p>
       </div>
@@ -392,7 +392,7 @@ function PPTXForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => v
 function DuplicateWarning({ info, onConfirm, onCancel }: { info: DuplicateInfo; onConfirm: () => void; onCancel: () => void }) {
   const t = useTranslations("upload");
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-3">
+    <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 space-y-3">
       <div className="flex items-start gap-2">
         <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
         <div>
@@ -424,7 +424,7 @@ function DuplicateWarning({ info, onConfirm, onCancel }: { info: DuplicateInfo; 
 
 function ErrorBox({ message }: { message: string }) {
   return (
-    <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+    <div className="flex items-center gap-2 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl px-4 py-3">
       <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
       <p className="text-[13px] text-red-600">{message}</p>
     </div>
@@ -446,7 +446,7 @@ function FormButtons({ loading, label, onCancel }: { loading: boolean; label: st
         type="button"
         onClick={onCancel}
         disabled={loading}
-        className="px-5 h-11 border border-[#D2D2D7] text-[#1D1D1F] text-[15px] font-medium rounded-xl hover:bg-[#F5F5F7] transition-colors disabled:opacity-60"
+        className="px-5 h-11 border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#1D1D1F] dark:text-[#F5F5F7] text-[15px] font-medium rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors disabled:opacity-60"
       >
         {t("cancel") ?? "Annuler"}
       </button>
@@ -466,9 +466,9 @@ export function UploadForm({ isAdmin, userId, creators }: { isAdmin: boolean; us
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden">
+    <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] overflow-hidden">
       {/* Tabs */}
-      <div className="flex border-b border-[#E5E5EA]">
+      <div className="flex border-b border-[#E5E5EA] dark:border-[#3A3A3C]">
         {(["pptx", "h5p"] as const).map((tabKey) => (
           <button
             key={tabKey}
@@ -477,7 +477,7 @@ export function UploadForm({ isAdmin, userId, creators }: { isAdmin: boolean; us
               "flex items-center gap-2 px-6 py-4 text-[14px] font-medium transition-all border-b-2",
               tab === tabKey
                 ? "border-[#0071E3] text-[#0071E3]"
-                : "border-transparent text-[#6E6E73] hover:text-[#1D1D1F]"
+                : "border-transparent text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
             )}
           >
             {tabKey === "h5p" ? (
@@ -490,7 +490,7 @@ export function UploadForm({ isAdmin, userId, creators }: { isAdmin: boolean; us
       </div>
 
       <div className="p-7">
-        <p className="text-[13px] text-[#6E6E73] mb-6">
+        <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93] mb-6">
           {tab === "h5p"
             ? t("uploadExistingH5p")
             : t("convertPptx")}

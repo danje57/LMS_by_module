@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Layers, Users, BookOpen, TrendingUp, CheckCircle2, Clock, Circle, AlertTriangle, CalendarClock, ChevronRight } from "lucide-react";
+import { Search, Layers, Users, BookOpen, TrendingUp, CheckCircle2, Clock, Circle, AlertTriangle, CalendarClock, ChevronRight, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 export type CourseStatus = "not_started" | "in_progress" | "completed";
@@ -62,9 +62,9 @@ export function ProgressClient({ courses, teams, users }: Props) {
   };
 
   const STATUS_STYLE: Record<CourseStatus, string> = {
-    not_started: "bg-[#F5F5F7] text-[#6E6E73]",
-    in_progress: "bg-amber-50 text-amber-600",
-    completed: "bg-emerald-50 text-emerald-600",
+    not_started: "bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#6E6E73] dark:text-[#8E8E93]",
+    in_progress: "bg-amber-50 dark:bg-amber-500/10 text-amber-600",
+    completed: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600",
   };
 
   const STATUS_ICON: Record<CourseStatus, React.FC<{ className?: string }>> = {
@@ -148,13 +148,13 @@ export function ProgressClient({ courses, teams, users }: Props) {
         ].map((s) => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className="bg-white rounded-2xl border border-[#E5E5EA] p-5 flex items-center gap-4">
+            <div key={s.label} className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-5 flex items-center gap-4">
               <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", s.color)}>
                 <Icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[12px] text-[#6E6E73] font-medium">{s.label}</p>
-                <p className="text-[24px] font-semibold text-[#1D1D1F] leading-none mt-0.5">{s.value}</p>
+                <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93] font-medium">{s.label}</p>
+                <p className="text-[24px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] leading-none mt-0.5">{s.value}</p>
               </div>
             </div>
           );
@@ -170,14 +170,14 @@ export function ProgressClient({ courses, teams, users }: Props) {
             placeholder={t("searchLearner")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#D2D2D7] bg-white text-[14px] placeholder:text-[#ADADB8] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
+            className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] dark:text-[#F5F5F7] placeholder:text-[#ADADB8] dark:placeholder:text-[#636366] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
           />
         </div>
 
         <select
           value={filterTeam}
           onChange={(e) => setFilterTeam(e.target.value)}
-          className="h-10 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[13px] text-[#1D1D1F] outline-none focus:border-[#0071E3] transition-all"
+          className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all"
         >
           <option value="all">Toutes les équipes</option>
           <option value="none">Sans équipe</option>
@@ -187,7 +187,7 @@ export function ProgressClient({ courses, teams, users }: Props) {
         <select
           value={filterCourse}
           onChange={(e) => setFilterCourse(e.target.value)}
-          className="h-10 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[13px] text-[#1D1D1F] outline-none focus:border-[#0071E3] transition-all"
+          className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all"
         >
           <option value="all">{t("allCourses")}</option>
           {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
@@ -199,22 +199,31 @@ export function ProgressClient({ courses, teams, users }: Props) {
             "inline-flex items-center gap-2 h-10 px-4 border text-[14px] font-medium rounded-xl transition-colors whitespace-nowrap",
             groupByTeam
               ? "bg-[#0071E3] border-[#0071E3] text-white"
-              : "bg-white border-[#D2D2D7] text-[#1D1D1F] hover:border-[#0071E3] hover:text-[#0071E3]"
+              : "bg-white dark:bg-[#2C2C2E] border-[#D2D2D7] dark:border-[#3A3A3C] text-[#1D1D1F] dark:text-[#F5F5F7] hover:border-[#0071E3] hover:text-[#0071E3]"
           )}
         >
           <Layers className="w-4 h-4" />
           Grouper
         </button>
 
+        <a
+          href="/api/export/progress"
+          download
+          className="inline-flex items-center gap-2 h-10 px-4 border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] rounded-xl hover:border-[#0071E3] hover:text-[#0071E3] transition-colors whitespace-nowrap"
+        >
+          <Download className="w-4 h-4" />
+          Exporter CSV
+        </a>
+
       </div>
 
       {/* Count + légende deadline */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-[13px] text-[#6E6E73]">
+        <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
           {filtered.length} apprenant{filtered.length !== 1 ? "s" : ""}
-          {isCourseView && <> · cours&nbsp;: <span className="font-medium text-[#1D1D1F]">{selectedCourseTitle}</span></>}
+          {isCourseView && <> · cours&nbsp;: <span className="font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{selectedCourseTitle}</span></>}
         </p>
-        <div className="flex items-center gap-3 text-[11px] text-[#6E6E73]">
+        <div className="flex items-center gap-3 text-[11px] text-[#6E6E73] dark:text-[#8E8E93]">
           <span className="font-medium">Deadline :</span>
           {([
             { label: t("overdue"),  dot: "bg-red-400" },
@@ -233,17 +242,17 @@ export function ProgressClient({ courses, teams, users }: Props) {
       {/* Table */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] flex items-center justify-center mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] flex items-center justify-center mb-4">
             <Search className="w-6 h-6 text-[#ADADB8]" />
           </div>
-          <p className="text-[15px] font-medium text-[#1D1D1F]">{t("noLearnerFound")}</p>
+          <p className="text-[15px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{t("noLearnerFound")}</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden">
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#E5E5EA]">
-                <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">
+              <tr className="border-b border-[#E5E5EA] dark:border-[#3A3A3C]">
+                <th className="text-left text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3">
                   <div className="flex items-center gap-3">
                     <span>{t("learner")}</span>
                     {!isCourseView && (
@@ -261,30 +270,30 @@ export function ProgressClient({ courses, teams, users }: Props) {
                     )}
                   </div>
                 </th>
-                <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">{t("team")}</th>
+                <th className="text-left text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3">{t("team")}</th>
                 {isCourseView ? (
                   <>
-                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">{t("status")}</th>
-                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">{t("deadline")}</th>
-                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3 w-40">{t("progressLabel")}</th>
+                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3">{t("status")}</th>
+                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3">{t("deadline")}</th>
+                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3 w-40">{t("progressLabel")}</th>
                   </>
                 ) : (
                   <>
-                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">{t("assigned")}</th>
-                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">{t("completed")}</th>
-                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">En cours</th>
-                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] px-5 py-3">{t("overdue")}</th>
-                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3 w-36">{t("progressLabel")}</th>
+                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3">{t("assigned")}</th>
+                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3">{t("completed")}</th>
+                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3">En cours</th>
+                    <th className="text-center text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3">{t("overdue")}</th>
+                    <th className="text-left text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3 w-36">{t("progressLabel")}</th>
                   </>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F5F5F7]">
+            <tbody className="divide-y divide-[#F5F5F7] dark:divide-[#3A3A3C]">
               {groupByTeam
                 ? buildGroups(filtered).flatMap(({ teamId, teamName, users: gUsers }) => [
-                    <tr key={`g-${teamId ?? "none"}`} className="bg-[#F5F5F7]">
+                    <tr key={`g-${teamId ?? "none"}`} className="bg-[#F5F5F7] dark:bg-[#2C2C2E]">
                       <td colSpan={isCourseView ? 4 : 7} className="px-5 py-2">
-                        <span className="text-[12px] font-semibold text-[#6E6E73] uppercase tracking-wide">
+                        <span className="text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] uppercase tracking-wide">
                           {teamName}
                           <span className="ml-2 font-normal normal-case">({gUsers.length})</span>
                         </span>
@@ -334,7 +343,7 @@ function UserRow({ user, courseId, expanded, onToggle, statusLabel, statusStyle,
   return (
     <>
     <tr
-      className={cn("transition-colors", !isCourseView ? "cursor-pointer hover:bg-[#F5F5F7]" : "hover:bg-[#F9F9FB]", expanded && !isCourseView && "bg-[#F5F5F7]")}
+      className={cn("transition-colors", !isCourseView ? "cursor-pointer hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E]" : "hover:bg-[#F9F9FB] dark:hover:bg-[#2C2C2E]", expanded && !isCourseView && "bg-[#F5F5F7] dark:bg-[#2C2C2E]")}
       onClick={!isCourseView ? onToggle : undefined}
     >
       {/* Apprenant */}
@@ -344,10 +353,10 @@ function UserRow({ user, courseId, expanded, onToggle, statusLabel, statusStyle,
             <ChevronRight className={cn("w-4 h-4 text-[#ADADB8] shrink-0 transition-transform", expanded && "rotate-90")} />
           )}
           <div>
-            <p className="text-[14px] font-medium text-[#1D1D1F]">
+            <p className="text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
               {user.name ?? <span className="italic text-[#ADADB8]">Sans nom</span>}
             </p>
-            <p className="text-[12px] text-[#6E6E73]">{user.email}</p>
+            <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93]">{user.email}</p>
           </div>
         </div>
       </td>
@@ -396,7 +405,7 @@ function UserRow({ user, courseId, expanded, onToggle, statusLabel, statusStyle,
         <>
           {/* Assignés */}
           <td className="px-5 py-3.5 text-center">
-            <span className="text-[14px] font-medium text-[#1D1D1F]">{total}</span>
+            <span className="text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{total}</span>
           </td>
           {/* Terminés */}
           <td className="px-5 py-3.5 text-center">
@@ -435,9 +444,9 @@ function UserRow({ user, courseId, expanded, onToggle, statusLabel, statusStyle,
 
     {/* Sous-lignes cours (accordion, vue globale uniquement) */}
     {!isCourseView && expanded && user.assignments.map((a) => (
-      <tr key={`${user.id}-${a.courseId}`} className="bg-[#FAFAFA] border-t border-[#F0F0F5]">
+      <tr key={`${user.id}-${a.courseId}`} className="bg-[#FAFAFA] dark:bg-[#2C2C2E] border-t border-[#F0F0F5] dark:border-[#3A3A3C]">
         <td className="pl-12 pr-5 py-2.5" colSpan={2}>
-          <p className="text-[13px] font-medium text-[#1D1D1F]">{a.courseTitle}</p>
+          <p className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{a.courseTitle}</p>
         </td>
         <td className="px-5 py-2.5">
           <StatusBadge status={a.status} statusLabel={statusLabel} statusStyle={statusStyle} statusIcon={statusIcon} />
@@ -481,10 +490,10 @@ function DeadlineBadge({ dueDate, assignedAt, completed }: { dueDate: string | n
   const state = getDeadlineState(dueDate, assignedAt);
   const date = new Date(dueDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   const styles: Record<NonNullable<DeadlineState>, string> = {
-    overdue: "text-red-600 bg-red-50",
-    danger:  "text-orange-600 bg-orange-50",
-    warning: "text-amber-600 bg-amber-50",
-    normal:  "text-[#6E6E73] bg-[#F5F5F7]",
+    overdue: "text-red-600 bg-red-50 dark:bg-red-500/10",
+    danger:  "text-orange-600 bg-orange-50 dark:bg-orange-500/10",
+    warning: "text-amber-600 bg-amber-50 dark:bg-amber-500/10",
+    normal:  "text-[#6E6E73] dark:text-[#8E8E93] bg-[#F5F5F7] dark:bg-[#2C2C2E]",
   };
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-lg", styles[state ?? "normal"])}>
@@ -519,10 +528,10 @@ function DeadlineEditor({ courseId, userId, dueDate, assignedAt, completed }: {
 
   const state = getDeadlineState(value || null, assignedAt);
   const styles: Record<NonNullable<DeadlineState>, string> = {
-    overdue: "border-red-300 bg-red-50 text-red-600",
-    danger:  "border-orange-300 bg-orange-50 text-orange-600",
-    warning: "border-amber-300 bg-amber-50 text-amber-600",
-    normal:  "border-[#D2D2D7] bg-white text-[#1D1D1F]",
+    overdue: "border-red-300 bg-red-50 dark:bg-red-500/10 text-red-600",
+    danger:  "border-orange-300 bg-orange-50 dark:bg-orange-500/10 text-orange-600",
+    warning: "border-amber-300 bg-amber-50 dark:bg-amber-500/10 text-amber-600",
+    normal:  "border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-[#F5F5F7]",
   };
 
   return (
@@ -545,13 +554,13 @@ function DeadlineEditor({ courseId, userId, dueDate, assignedAt, completed }: {
 function ProgressBar({ pct }: { pct: number }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-[#F2F2F7] rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-[#F2F2F7] dark:bg-[#3A3A3C] rounded-full overflow-hidden">
         <div
           className={cn("h-full rounded-full transition-all", pct === 100 ? "bg-emerald-400" : "bg-[#0071E3]")}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-[12px] text-[#6E6E73] w-8 text-right">{pct}%</span>
+      <span className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93] w-8 text-right">{pct}%</span>
     </div>
   );
 }

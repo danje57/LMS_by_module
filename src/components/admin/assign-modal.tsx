@@ -119,26 +119,26 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
 
         {/* Header */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-[#E5E5EA] shrink-0">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-[#E5E5EA] dark:border-[#3A3A3C] shrink-0">
           <div>
-            <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("assignCourse")}</p>
-            <p className="text-[13px] text-[#6E6E73] mt-0.5 line-clamp-1">{courseTitle}</p>
+            <p className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{t("assignCourse")}</p>
+            <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5 line-clamp-1">{courseTitle}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F5F5F7] transition-colors">
-            <X className="w-4 h-4 text-[#6E6E73]" />
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors">
+            <X className="w-4 h-4 text-[#6E6E73] dark:text-[#8E8E93]" />
           </button>
         </div>
 
         {/* Barre actions rapides */}
-        <div className="px-6 py-3 border-b border-[#F5F5F7] flex items-center justify-between shrink-0">
-          <div className="flex gap-1.5 bg-[#F5F5F7] rounded-xl p-1">
+        <div className="px-6 py-3 border-b border-[#F5F5F7] dark:border-[#3A3A3C] flex items-center justify-between shrink-0">
+          <div className="flex gap-1.5 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-xl p-1">
             <button
               onClick={() => setTab("teams")}
               className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all",
-                tab === "teams" ? "bg-white text-[#1D1D1F] shadow-sm" : "text-[#6E6E73] hover:text-[#1D1D1F]")}
+                tab === "teams" ? "bg-white dark:bg-[#3A3A3C] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-sm" : "text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]")}
             >
               <Users className="w-3.5 h-3.5" />
               {t("teams")}
@@ -146,7 +146,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
             <button
               onClick={() => setTab("users")}
               className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all",
-                tab === "users" ? "bg-white text-[#1D1D1F] shadow-sm" : "text-[#6E6E73] hover:text-[#1D1D1F]")}
+                tab === "users" ? "bg-white dark:bg-[#3A3A3C] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-sm" : "text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]")}
             >
               <UserPlus className="w-3.5 h-3.5" />
               {t("individual")}
@@ -155,7 +155,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
           <button
             onClick={allSelected ? deselectAll : selectAll}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl border border-[#D2D2D7] text-[12px] font-medium text-[#6E6E73] hover:text-[#1D1D1F] hover:border-[#ADADB8] disabled:opacity-40 transition-all"
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] text-[12px] font-medium text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:border-[#ADADB8] disabled:opacity-40 transition-all"
           >
             <CheckCheck className="w-3.5 h-3.5" />
             {allSelected ? t("deselectAll") : t("assignAll")}
@@ -182,7 +182,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
                   onClick={() => toggleTeam(team)}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all",
-                    allIn ? "border-[#0071E3]/30 bg-blue-50/40" : someIn ? "border-amber-200 bg-amber-50/30" : "border-[#E5E5EA] hover:border-[#D2D2D7]"
+                    allIn ? "border-[#0071E3]/30 bg-blue-50/40 dark:bg-[#0071E3]/10" : someIn ? "border-amber-200 bg-amber-50/30 dark:bg-amber-500/10" : "border-[#E5E5EA] dark:border-[#3A3A3C] hover:border-[#D2D2D7] dark:hover:border-[#636366]"
                   )}
                 >
                   <div className={cn(
@@ -195,8 +195,8 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
                     <Users className="w-4 h-4 text-purple-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-[#1D1D1F]">{team.name}</p>
-                    <p className="text-[11px] text-[#6E6E73]">
+                    <p className="text-[13px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{team.name}</p>
+                    <p className="text-[11px] text-[#6E6E73] dark:text-[#8E8E93]">
                       {team.members.length} membre{team.members.length !== 1 ? "s" : ""}
                       {someIn && !allIn && ` · ${memberIds.filter((id) => selected.has(id)).length} sélectionné${memberIds.filter((id) => selected.has(id)).length !== 1 ? "s" : ""}`}
                     </p>
@@ -215,7 +215,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
                   placeholder={t("search")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full h-9 pl-9 pr-3 rounded-xl border border-[#D2D2D7] text-[13px] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all"
+                  className="w-full h-9 pl-9 pr-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-transparent dark:bg-[#2C2C2E] text-[13px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all"
                 />
               </div>
               {filteredUsers.length === 0 ? (
@@ -224,7 +224,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
                 const isSelected = selected.has(user.id);
                 return (
                   <div key={user.id} className={cn("rounded-xl border transition-all",
-                    isSelected ? "border-[#0071E3]/30 bg-blue-50/40" : "border-[#E5E5EA] hover:border-[#D2D2D7]"
+                    isSelected ? "border-[#0071E3]/30 bg-blue-50/40 dark:bg-[#0071E3]/10" : "border-[#E5E5EA] dark:border-[#3A3A3C] hover:border-[#D2D2D7] dark:hover:border-[#636366]"
                   )}>
                     <div className="flex items-center gap-3 px-3 py-2.5 cursor-pointer" onClick={() => toggleUser(user.id)}>
                       <div className={cn("w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all",
@@ -233,8 +233,8 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
                         {isSelected && <UserCheck className="w-3 h-3 text-white" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-medium text-[#1D1D1F] truncate">{label(user)}</p>
-                        {user.name && <p className="text-[11px] text-[#6E6E73] truncate">{user.email}</p>}
+                        <p className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] truncate">{label(user)}</p>
+                        {user.name && <p className="text-[11px] text-[#6E6E73] dark:text-[#8E8E93] truncate">{user.email}</p>}
                       </div>
                     </div>
                     {isSelected && (
@@ -245,7 +245,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
                           value={dueDates[user.id] ?? ""}
                           onClick={(e) => e.stopPropagation()}
                           onChange={(e) => setDueDates((prev) => ({ ...prev, [user.id]: e.target.value }))}
-                          className="h-7 px-2 rounded-lg border border-[#D2D2D7] text-[12px] outline-none focus:border-[#0071E3] transition-all"
+                          className="h-7 px-2 rounded-lg border border-[#D2D2D7] dark:border-[#3A3A3C] bg-transparent dark:bg-[#2C2C2E] text-[12px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all"
                         />
                         <span className="text-[11px] text-[#ADADB8]">{t("deadline")}</span>
                         {dueDates[user.id] && (
@@ -261,12 +261,12 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-[#E5E5EA] flex items-center justify-between shrink-0">
-          <p className="text-[13px] text-[#6E6E73]">
+        <div className="px-6 py-4 border-t border-[#E5E5EA] dark:border-[#3A3A3C] flex items-center justify-between shrink-0">
+          <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
             {t("selectedUsers", { count: selected.size })}
           </p>
           <div className="flex gap-3">
-            <button onClick={onClose} className="h-9 px-4 rounded-xl border border-[#D2D2D7] text-[13px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors">
+            <button onClick={onClose} className="h-9 px-4 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors">
               {t("cancel")}
             </button>
             <button onClick={handleSave} disabled={saving} className="h-9 px-4 rounded-xl bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium disabled:opacity-50 transition-colors">

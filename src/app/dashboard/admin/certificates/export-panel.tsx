@@ -40,21 +40,21 @@ export function ExportPanel() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-[20px] font-semibold text-[#1D1D1F]">Exporter les certificats</h2>
-        <p className="text-[14px] text-[#6E6E73] mt-0.5">
+        <h2 className="text-[20px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Exporter les certificats</h2>
+        <p className="text-[14px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">
           Téléchargez les certificats filtrés en CSV ou en archive ZIP avec les PDFs.
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-[#E5E5EA] p-6 space-y-5">
+      <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* User filter */}
           <div className="space-y-1.5">
-            <label className="text-[13px] font-medium text-[#3C3C43]">Apprenant</label>
+            <label className="text-[13px] font-medium text-[#3C3C43] dark:text-[#AEAEB2]">Apprenant</label>
             <select
               value={userId}
               onChange={e => { setUserId(e.target.value); if (e.target.value) setTeamId(""); }}
-              className="w-full h-9 rounded-lg border border-[#E5E5EA] bg-white px-3 text-[13px] text-[#1D1D1F] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/40"
+              className="w-full h-9 rounded-lg border border-[#E5E5EA] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] px-3 text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/40"
             >
               <option value="">Tous les apprenants</option>
               {users.map(u => (
@@ -65,11 +65,11 @@ export function ExportPanel() {
 
           {/* Team filter */}
           <div className="space-y-1.5">
-            <label className="text-[13px] font-medium text-[#3C3C43]">Département</label>
+            <label className="text-[13px] font-medium text-[#3C3C43] dark:text-[#AEAEB2]">Département</label>
             <select
               value={teamId}
               onChange={e => { setTeamId(e.target.value); if (e.target.value) setUserId(""); }}
-              className="w-full h-9 rounded-lg border border-[#E5E5EA] bg-white px-3 text-[13px] text-[#1D1D1F] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/40"
+              className="w-full h-9 rounded-lg border border-[#E5E5EA] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] px-3 text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/40"
             >
               <option value="">Tous les départements</option>
               {teams.map(t => (
@@ -80,11 +80,11 @@ export function ExportPanel() {
 
           {/* Year filter */}
           <div className="space-y-1.5">
-            <label className="text-[13px] font-medium text-[#3C3C43]">Année</label>
+            <label className="text-[13px] font-medium text-[#3C3C43] dark:text-[#AEAEB2]">Année</label>
             <select
               value={year}
               onChange={e => setYear(e.target.value)}
-              className="w-full h-9 rounded-lg border border-[#E5E5EA] bg-white px-3 text-[13px] text-[#1D1D1F] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/40"
+              className="w-full h-9 rounded-lg border border-[#E5E5EA] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] px-3 text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/40"
             >
               <option value="">Toutes les années</option>
               {years.map(y => (
@@ -98,7 +98,7 @@ export function ExportPanel() {
           <button
             onClick={() => handleDownload("csv")}
             disabled={loading}
-            className="flex items-center gap-2 h-9 px-4 rounded-lg bg-[#F5F5F7] text-[13px] font-medium text-[#1D1D1F] hover:bg-[#E5E5EA] transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 h-9 px-4 rounded-lg bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#E5E5EA] dark:hover:bg-[#3A3A3C] transition-colors disabled:opacity-50"
           >
             <FileText className="w-4 h-4" />
             Exporter CSV
@@ -116,14 +116,14 @@ export function ExportPanel() {
           {(userId || teamId || year) && (
             <button
               onClick={() => { setUserId(""); setTeamId(""); setYear(""); }}
-              className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
+              className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] transition-colors"
             >
               Réinitialiser les filtres
             </button>
           )}
         </div>
 
-        <p className="text-[12px] text-[#6E6E73]">
+        <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93]">
           <Download className="w-3.5 h-3.5 inline mr-1" />
           Le ZIP contient un PDF par certificat avec le logo de l&apos;application.
           La génération peut prendre quelques secondes.

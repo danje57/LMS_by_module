@@ -31,10 +31,10 @@ export function Sidebar({ appName, logoPath, isAdmin = false, isManager = false 
   const t = useTranslations("nav");
 
   return (
-    <aside className="w-60 bg-white border-r border-[#E5E5EA] flex flex-col shrink-0">
+    <aside className="w-60 bg-white dark:bg-[#111114] border-r border-[#E5E5EA] dark:border-[#2C2C30] flex flex-col shrink-0">
 
       {/* Logo */}
-      <Link href="/dashboard" className="px-5 py-5 border-b border-[#E5E5EA] block hover:bg-[#F5F5F7] transition-colors">
+      <Link href="/dashboard" className="px-5 py-5 border-b border-[#E5E5EA] dark:border-[#2C2C30] block hover:bg-[#F5F5F7] dark:hover:bg-[#1C1C20] transition-colors">
         {logoPath ? (
           <Image src={logoPath} alt={appName} width={100} height={32} className="object-contain" unoptimized />
         ) : (
@@ -42,7 +42,7 @@ export function Sidebar({ appName, logoPath, isAdmin = false, isManager = false 
             <div className="w-8 h-8 rounded-lg bg-[#0071E3] flex items-center justify-center shrink-0">
               <GraduationCap className="w-4.5 h-4.5 text-white" style={{ width: 18, height: 18 }} />
             </div>
-            <span className="text-[15px] font-semibold text-[#1D1D1F] tracking-tight">{appName}</span>
+            <span className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">{appName}</span>
           </div>
         )}
       </Link>
@@ -67,8 +67,8 @@ export function Sidebar({ appName, logoPath, isAdmin = false, isManager = false 
               className={cn(
                 "flex items-center gap-2.5 px-3 py-2 rounded-xl text-[14px] font-medium transition-all",
                 active
-                  ? "bg-[#0071E3]/10 text-[#0071E3]"
-                  : "text-[#3C3C43] hover:bg-[#F5F5F7] hover:text-[#1D1D1F]"
+                  ? "bg-[#0071E3]/10 dark:bg-[#0071E3]/20 text-[#0071E3]"
+                  : "text-[#3C3C43] dark:text-[#AEAEB2] hover:bg-[#F5F5F7] dark:hover:bg-[#1C1C20] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
               )}
             >
               <Icon className={cn("w-4 h-4 shrink-0", active ? "text-[#0071E3]" : "text-[#8E8E93]")} />
@@ -79,8 +79,8 @@ export function Sidebar({ appName, logoPath, isAdmin = false, isManager = false 
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-3 border-t border-[#E5E5EA]">
-        <p className="text-[11px] text-[#ADADB8] text-center">{appName} · v0.1</p>
+      <div className="px-3 py-3 border-t border-[#E5E5EA] dark:border-[#2C2C30]">
+        <p className="text-[11px] text-[#ADADB8] dark:text-[#636366] text-center">{appName} · v0.1</p>
       </div>
     </aside>
   );

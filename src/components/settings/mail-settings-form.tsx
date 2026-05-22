@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mail, Server, Cloud, CheckCircle, AlertCircle, Send, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Mail, Server, Cloud, CheckCircle, AlertCircle, Send, Eye, EyeOff, RefreshCw, Bell, Lock, Unlock, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
@@ -44,9 +44,9 @@ const EMPTY: MailSettingsData = {
   cronSecret: "",
 };
 
-const fieldClass = "w-full h-11 px-3.5 rounded-xl border border-[#D2D2D7] bg-white text-[14px] text-[#1D1D1F] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 placeholder:text-[#ADADB8]";
-const labelClass = "block text-[13px] font-medium text-[#1D1D1F] mb-1";
-const hintClass = "text-[12px] text-[#8E8E93] mt-1";
+const fieldClass = "w-full h-11 px-3.5 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 placeholder:text-[#ADADB8]";
+const labelClass = "block text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] mb-1";
+const hintClass = "text-[12px] text-[#8E8E93] dark:text-[#636366] mt-1";
 
 function PasswordInput({ id, name, placeholder, hasExisting }: {
   id: string; name: string; placeholder?: string; hasExisting?: boolean;
@@ -60,7 +60,7 @@ function PasswordInput({ id, name, placeholder, hasExisting }: {
         className={cn(fieldClass, "pr-10")}
       />
       <button type="button" onClick={() => setShow((v) => !v)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8E8E93] hover:text-[#1D1D1F] transition-colors">
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] transition-colors">
         {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
       </button>
     </div>
@@ -73,6 +73,12 @@ export function MailSettingsForm() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [cronRunning, setCronRunning] = useState(false);
+  const [cronUnlocked, setCronUnlocked] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [confirmError, setConfirmError] = useState("");
+  const [confirmLoading, setConfirmLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
@@ -120,6 +126,36 @@ export function MailSettingsForm() {
     setSaving(false);
   }
 
+  async function handleConfirmPassword() {
+    setConfirmLoading(true);
+    setConfirmError("");
+    const res = await fetch("/api/auth/confirm-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: confirmPwd }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setConfirmLoading(false);
+    if (!res.ok) { setConfirmError(d.error ?? "Mot de passe incorrect."); return; }
+    setCronUnlocked(true);
+    setShowConfirm(false);
+    setConfirmPwd("");
+    setConfirmError("");
+  }
+
+  async function handleCronTest() {
+    setCronRunning(true);
+    setMsg(null);
+    const res = await fetch("/api/admin/cron-test", { method: "POST" });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok) {
+      setMsg({ type: "success", text: `Cron exécuté — ${d.warned ?? 0} rappel(s), ${d.expired ?? 0} expiré(s)` });
+    } else {
+      setMsg({ type: "error", text: d.error ?? "Erreur cron" });
+    }
+    setCronRunning(false);
+  }
+
   async function handleTest() {
     setTesting(true);
     setMsg(null);
@@ -135,7 +171,7 @@ export function MailSettingsForm() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-[#E5E5EA] p-7 flex items-center gap-3 text-[#8E8E93]">
+      <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-7 flex items-center gap-3 text-[#8E8E93]">
         <RefreshCw className="w-4 h-4 animate-spin" />
         <span className="text-[14px]">{t("loading")}</span>
       </div>
@@ -143,14 +179,14 @@ export function MailSettingsForm() {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E5E5EA] p-7 space-y-7">
+    <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-7 space-y-7">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-[#0071E3]/10 flex items-center justify-center shrink-0">
           <Mail className="w-4 h-4 text-[#0071E3]" />
         </div>
         <div>
-          <h2 className="text-[17px] font-semibold text-[#1D1D1F]">{t("mailTitle")}</h2>
-          <p className="text-[13px] text-[#6E6E73]">{t("mailSubtitle")}</p>
+          <h2 className="text-[17px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{t("mailTitle")}</h2>
+          <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">{t("mailSubtitle")}</p>
         </div>
       </div>
 
@@ -170,12 +206,12 @@ export function MailSettingsForm() {
                 className={cn(
                   "flex-1 flex items-start gap-3 px-4 py-3.5 rounded-xl border text-left transition-all",
                   data.provider === v
-                    ? "border-[#0071E3] bg-blue-50/60 ring-2 ring-[#0071E3]/20"
-                    : "border-[#E5E5EA] hover:border-[#D2D2D7]"
+                    ? "border-[#0071E3] bg-blue-50/60 dark:bg-[#0071E3]/10 ring-2 ring-[#0071E3]/20"
+                    : "border-[#E5E5EA] dark:border-[#3A3A3C] hover:border-[#D2D2D7] dark:hover:border-[#636366]"
                 )}>
                 <Icon className={cn("w-4 h-4 mt-0.5 shrink-0", data.provider === v ? "text-[#0071E3]" : "text-[#8E8E93]")} />
                 <div>
-                  <p className={cn("text-[13px] font-semibold", data.provider === v ? "text-[#0071E3]" : "text-[#1D1D1F]")}>{label}</p>
+                  <p className={cn("text-[13px] font-semibold", data.provider === v ? "text-[#0071E3]" : "text-[#1D1D1F] dark:text-[#F5F5F7]")}>{label}</p>
                   <p className="text-[11px] text-[#8E8E93] mt-0.5">{desc}</p>
                 </div>
               </button>
@@ -183,7 +219,7 @@ export function MailSettingsForm() {
           </div>
         </div>
 
-        <div className="h-px bg-[#F5F5F7]" />
+        <div className="h-px bg-[#F5F5F7] dark:bg-[#3A3A3C]" />
 
         {/* Paramètres communs */}
         <div className="grid grid-cols-2 gap-4">
@@ -198,16 +234,16 @@ export function MailSettingsForm() {
           </div>
         </div>
 
-        <div className="h-px bg-[#F5F5F7]" />
+        <div className="h-px bg-[#F5F5F7] dark:bg-[#3A3A3C]" />
 
         {/* SMTP */}
         {data.provider === "smtp" && (
           <div className="space-y-4">
-            <p className="text-[13px] font-semibold text-[#1D1D1F] flex items-center gap-2">
+            <p className="text-[13px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-2">
               <Server className="w-3.5 h-3.5 text-[#8E8E93]" /> {t("smtpConfig")}
             </p>
 
-            <div className="bg-[#F5F5F7] rounded-xl px-4 py-3 text-[12px] text-[#6E6E73] space-y-1">
+            <div className="bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-xl px-4 py-3 text-[12px] text-[#6E6E73] dark:text-[#8E8E93] space-y-1">
               <p><strong>Gmail</strong> : smtp.gmail.com · port 587 · sécurisé : non · mot de passe d&apos;application requis</p>
               <p><strong>Exchange Online</strong> : smtp.office365.com · port 587 · sécurisé : non · SMTP AUTH doit être activé</p>
             </div>
@@ -226,7 +262,7 @@ export function MailSettingsForm() {
             <div className="flex items-center gap-3">
               <input id="smtpSecure" name="smtpSecure" type="checkbox" defaultChecked={data.smtpSecure}
                 className="w-4 h-4 rounded text-[#0071E3] accent-[#0071E3]" />
-              <label htmlFor="smtpSecure" className="text-[13px] text-[#1D1D1F]">
+              <label htmlFor="smtpSecure" className="text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]">
                 {t("secureTls")}
               </label>
             </div>
@@ -253,11 +289,11 @@ export function MailSettingsForm() {
         {/* Microsoft Graph */}
         {data.provider === "graph" && (
           <div className="space-y-4">
-            <p className="text-[13px] font-semibold text-[#1D1D1F] flex items-center gap-2">
+            <p className="text-[13px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-2">
               <Cloud className="w-3.5 h-3.5 text-[#8E8E93]" /> {t("graphApi")}
             </p>
 
-            <div className="bg-[#F5F5F7] rounded-xl px-4 py-3 text-[12px] text-[#6E6E73] space-y-1">
+            <div className="bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-xl px-4 py-3 text-[12px] text-[#6E6E73] dark:text-[#8E8E93] space-y-1">
               <p>1. Créer une app dans <strong>Azure AD (Entra ID)</strong></p>
               <p>2. Accorder l&apos;autorisation d&apos;application : <strong>Mail.Send</strong></p>
               <p>3. Créer un <strong>secret client</strong> et le coller ci-dessous</p>
@@ -289,16 +325,78 @@ export function MailSettingsForm() {
           </div>
         )}
 
-        <div className="h-px bg-[#F5F5F7]" />
+        <div className="h-px bg-[#F5F5F7] dark:bg-[#3A3A3C]" />
 
-        {/* Cron secret */}
-        <div>
-          <label htmlFor="cronSecret" className={labelClass}>{t("cronSecret")}</label>
-          <PasswordInput id="cronSecret" name="cronSecret" hasExisting={!!data.hasCronSecret}
-            placeholder="Générez un token aléatoire fort" />
-          <p className={hintClass}>
-            {t("cronSecretDesc")}
-          </p>
+        {/* Cron secret — protégé par mot de passe */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className={labelClass}>{t("cronSecret")}</label>
+              <p className={hintClass}>{t("cronSecretDesc")}</p>
+            </div>
+            {!cronUnlocked ? (
+              <button
+                type="button"
+                onClick={() => { setShowConfirm(true); setConfirmError(""); setConfirmPwd(""); }}
+                className="inline-flex items-center gap-2 h-9 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] text-[13px] font-medium text-[#3C3C43] dark:text-[#AEAEB2] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                Déverrouiller
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-emerald-600 dark:text-emerald-400">
+                <Unlock className="w-3.5 h-3.5" />
+                Déverrouillé
+              </span>
+            )}
+          </div>
+
+          {/* Modale de confirmation mot de passe */}
+          {showConfirm && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#F5F5F7] dark:bg-[#2C2C2E] flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5 text-[#0071E3]" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Confirmer votre identité</p>
+                    <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">Saisissez votre mot de passe pour continuer</p>
+                  </div>
+                </div>
+                <input
+                  autoFocus
+                  type="password"
+                  value={confirmPwd}
+                  onChange={(e) => setConfirmPwd(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleConfirmPassword(); if (e.key === "Escape") setShowConfirm(false); }}
+                  placeholder="Mot de passe"
+                  className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#ADADB8] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all"
+                />
+                {confirmError && (
+                  <p className="text-[12px] text-red-500 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />{confirmError}
+                  </p>
+                )}
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setShowConfirm(false)}
+                    className="flex-1 h-10 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors">
+                    Annuler
+                  </button>
+                  <button type="button" onClick={handleConfirmPassword} disabled={confirmLoading || !confirmPwd}
+                    className="flex-1 h-10 rounded-xl bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium disabled:opacity-50 transition-colors">
+                    {confirmLoading ? "Vérification…" : "Confirmer"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Champ visible uniquement si déverrouillé */}
+          {cronUnlocked && (
+            <PasswordInput id="cronSecret" name="cronSecret" hasExisting={!!data.hasCronSecret}
+              placeholder="Générez un token aléatoire fort" />
+          )}
         </div>
 
         {/* Messages */}
@@ -306,8 +404,8 @@ export function MailSettingsForm() {
           <div className={cn(
             "flex items-center gap-2.5 px-4 py-3 rounded-xl border text-[13px] font-medium",
             msg.type === "success"
-              ? "bg-green-50 border-green-100 text-green-700"
-              : "bg-red-50 border-red-100 text-red-600"
+              ? "bg-green-50 dark:bg-emerald-500/10 border-green-100 dark:border-emerald-500/20 text-green-700 dark:text-emerald-400"
+              : "bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-600"
           )}>
             {msg.type === "success"
               ? <CheckCircle className="w-4 h-4 shrink-0" />
@@ -323,9 +421,14 @@ export function MailSettingsForm() {
             {saving ? t("saving") : t("save")}
           </button>
           <button type="button" onClick={handleTest} disabled={testing || saving}
-            className="h-11 px-5 flex items-center gap-2 border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] rounded-xl hover:bg-[#F5F5F7] transition-colors disabled:opacity-50">
+            className="h-11 px-5 flex items-center gap-2 border border-[#D2D2D7] dark:border-[#3A3A3C] text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors disabled:opacity-50">
             <Send className="w-3.5 h-3.5" />
             {testing ? "Envoi…" : t("sendTestEmail")}
+          </button>
+          <button type="button" onClick={handleCronTest} disabled={cronRunning || saving}
+            className="h-11 px-5 flex items-center gap-2 border border-[#D2D2D7] dark:border-[#3A3A3C] text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors disabled:opacity-50">
+            <Bell className="w-3.5 h-3.5" />
+            {cronRunning ? "Exécution…" : "Tester le cron"}
           </button>
         </div>
       </form>

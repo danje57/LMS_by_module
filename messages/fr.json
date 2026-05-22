@@ -362,7 +362,13 @@
     "languageDesc": "Choisissez la langue de l'interface.",
     "french": "Français",
     "english": "English",
-    "languageSaved": "Langue mise à jour."
+    "languageSaved": "Langue mise à jour.",
+    "themeTitle": "Apparence",
+    "themeDesc": "Choisissez le thème de l'interface.",
+    "theme_light": "Clair",
+    "theme_dark": "Sombre",
+    "theme_system": "Système",
+    "themeSaved": "Thème mis à jour."
   },
   "settings": {
     "title": "Paramètres",

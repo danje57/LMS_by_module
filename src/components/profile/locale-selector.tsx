@@ -31,14 +31,14 @@ export function LocaleSelector({ currentLocale }: LocaleSelectorProps) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E5E5EA] p-7 space-y-4">
+    <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-7 space-y-4">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-[#F5F5F7] flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 rounded-xl bg-[#F5F5F7] dark:bg-[#2C2C2E] flex items-center justify-center shrink-0">
           <Globe className="w-4 h-4 text-[#8E8E93]" />
         </div>
         <div>
-          <h2 className="text-[17px] font-semibold text-[#1D1D1F]">{t("language")}</h2>
-          <p className="text-[13px] text-[#6E6E73]">{t("languageDesc")}</p>
+          <h2 className="text-[17px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{t("language")}</h2>
+          <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">{t("languageDesc")}</p>
         </div>
       </div>
 
@@ -52,7 +52,7 @@ export function LocaleSelector({ currentLocale }: LocaleSelectorProps) {
               "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-[14px] font-medium transition-all disabled:opacity-50",
               locale === l
                 ? "bg-[#0071E3] border-[#0071E3] text-white"
-                : "bg-white border-[#D2D2D7] text-[#3C3C43] hover:border-[#0071E3]/40"
+                : "bg-white dark:bg-[#2C2C2E] border-[#D2D2D7] dark:border-[#3A3A3C] text-[#3C3C43] dark:text-[#EBEBF5] hover:border-[#0071E3]/40"
             )}
           >
             <span>{l === "fr" ? "🇫🇷" : "🇬🇧"}</span>

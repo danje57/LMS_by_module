@@ -29,8 +29,8 @@ export default async function UploadPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">{t("addCourse")}</h1>
-        <p className="text-[15px] text-[#6E6E73] mt-0.5">{t("uploadExistingH5p")}</p>
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">{t("addCourse")}</h1>
+        <p className="text-[15px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">{t("uploadExistingH5p")}</p>
       </div>
       <UploadForm isAdmin={isAdmin} userId={session.user.id} creators={creators} />
     </div>

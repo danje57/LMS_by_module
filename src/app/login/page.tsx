@@ -16,7 +16,7 @@ export default async function LoginPage() {
     ? `/api/public/assets/${branding.logoPath}`
     : null;
   return (
-    <div className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#F5F5F7] dark:bg-[#000000] flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
 
         {/* Logo / App name */}
@@ -36,26 +36,26 @@ export default async function LoginPage() {
               <GraduationCap className="w-8 h-8 text-white" />
             </div>
           )}
-          <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">
+          <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
             {branding?.appName ?? "LMS"}
           </h1>
-          <p className="text-[15px] text-[#6E6E73] mt-1">
+          <p className="text-[15px] text-[#6E6E73] dark:text-[#8E8E93] mt-1">
             Connectez-vous à votre espace
           </p>
         </div>
 
         {/* Card formulaire */}
-        <div className="bg-white rounded-2xl shadow-sm border border-[#D2D2D7]/60 px-8 py-8">
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl shadow-sm border border-[#D2D2D7]/60 dark:border-[#3A3A3C] px-8 py-8">
           <LoginForm />
         </div>
 
         {branding?.loginNotice ? (
           <div className="flex gap-2.5 mt-6 px-1">
             <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#ADADB8]" />
-            <p className="text-[12px] text-[#6E6E73] leading-relaxed whitespace-pre-line">{branding.loginNotice}</p>
+            <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93] leading-relaxed whitespace-pre-line">{branding.loginNotice}</p>
           </div>
         ) : (
-          <p className="text-center text-xs text-[#6E6E73] mt-6">
+          <p className="text-center text-xs text-[#6E6E73] dark:text-[#8E8E93] mt-6">
             Accès réservé aux utilisateurs autorisés
           </p>
         )}

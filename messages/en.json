@@ -362,7 +362,13 @@
     "languageDesc": "Choose your interface language.",
     "french": "Français",
     "english": "English",
-    "languageSaved": "Language updated."
+    "languageSaved": "Language updated.",
+    "themeTitle": "Appearance",
+    "themeDesc": "Choose your interface theme.",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "theme_system": "System",
+    "themeSaved": "Theme updated."
   },
   "settings": {
     "title": "Settings",

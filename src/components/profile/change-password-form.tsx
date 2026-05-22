@@ -46,23 +46,23 @@ export function ChangePasswordForm() {
     }
   }
 
-  const fieldClass = "w-full h-11 px-3.5 pr-11 rounded-xl border border-[#D2D2D7] bg-white text-[14px] text-[#1D1D1F] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20";
+  const fieldClass = "w-full h-11 px-3.5 pr-11 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none transition-all focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20";
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E5E5EA] p-7 space-y-6">
+    <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-7 space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-[#F5F5F7] flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 rounded-xl bg-[#F5F5F7] dark:bg-[#2C2C2E] flex items-center justify-center shrink-0">
           <Lock className="w-4 h-4 text-[#8E8E93]" />
         </div>
         <div>
-          <h2 className="text-[17px] font-semibold text-[#1D1D1F]">{t("changePassword")}</h2>
-          <p className="text-[13px] text-[#6E6E73]">{t("passwordDesc")}</p>
+          <h2 className="text-[17px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{t("changePassword")}</h2>
+          <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">{t("passwordDesc")}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-[13px] font-medium text-[#1D1D1F] mb-1.5">{t("currentPassword")}</label>
+          <label className="block text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] mb-1.5">{t("currentPassword")}</label>
           <div className="relative">
             <input
               type={showCurrent ? "text" : "password"}
@@ -79,10 +79,10 @@ export function ChangePasswordForm() {
           </div>
         </div>
 
-        <div className="h-px bg-[#F5F5F7]" />
+        <div className="h-px bg-[#F5F5F7] dark:bg-[#3A3A3C]" />
 
         <div>
-          <label className="block text-[13px] font-medium text-[#1D1D1F] mb-1.5">{t("newPassword")}</label>
+          <label className="block text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] mb-1.5">{t("newPassword")}</label>
           <div className="relative">
             <input
               type={showNext ? "text" : "password"}
@@ -101,7 +101,7 @@ export function ChangePasswordForm() {
             <div className="space-y-1.5 mt-2">
               <div className="flex gap-1">
                 {RULES.map((_, i) => (
-                  <div key={i} className={cn("h-1 flex-1 rounded-full transition-all", i < passed ? colors[passed] : "bg-[#E5E5EA]")} />
+                  <div key={i} className={cn("h-1 flex-1 rounded-full transition-all", i < passed ? colors[passed] : "bg-[#E5E5EA] dark:bg-[#3A3A3C]")} />
                 ))}
               </div>
               <div className="flex items-center justify-between">
@@ -115,7 +115,7 @@ export function ChangePasswordForm() {
         </div>
 
         <div>
-          <label className="block text-[13px] font-medium text-[#1D1D1F] mb-1.5">{t("confirmPassword")}</label>
+          <label className="block text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] mb-1.5">{t("confirmPassword")}</label>
           <input
             type="password"
             value={confirm}
@@ -130,7 +130,7 @@ export function ChangePasswordForm() {
         {msg && (
           <div className={cn(
             "flex items-center gap-2.5 px-4 py-3 rounded-xl border text-[13px] font-medium",
-            msg.type === "success" ? "bg-green-50 border-green-100 text-green-700" : "bg-red-50 border-red-100 text-red-600"
+            msg.type === "success" ? "bg-green-50 dark:bg-emerald-500/10 border-green-100 dark:border-emerald-500/20 text-green-700 dark:text-emerald-400" : "bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-600"
           )}>
             {msg.type === "success" ? <CheckCircle className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
             {msg.text}

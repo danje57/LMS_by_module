@@ -10,6 +10,7 @@ declare module "next-auth" {
       roles: RoleType[];
       sessionMode: "admin" | "user" | null;
       locale: "fr" | "en";
+      theme: "light" | "dark" | "system";
     };
   }
 }
@@ -20,5 +21,6 @@ declare module "next-auth/jwt" {
     roles: RoleType[];
     sessionMode: "admin" | "user" | null;
     locale: "fr" | "en";
+    theme: "light" | "dark" | "system";
   }
 }

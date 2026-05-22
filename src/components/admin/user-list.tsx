@@ -108,11 +108,16 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
       setTeams((prev) => prev.map((t) => t.id === newTeamId ? { ...t, managerId: userId } : t));
     }
   }
+  const PAGE_SIZES = [0, 5, 10, 20, 50] as const;
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState<RoleType | "all">("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [filterTeam, setFilterTeam] = useState<string>("all");
   const [groupByTeam, setGroupByTeam] = useState(false);
+
+  function resetPage() { setPage(1); }
   const [modalImport, setModalImport] = useState(false);
 
   const [modalCreate, setModalCreate] = useState(false);
@@ -136,6 +141,9 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
       (filterTeam === "none" ? u.teams.length === 0 : u.teams.some((t) => t.id === filterTeam));
     return matchSearch && matchRole && matchStatus && matchTeam;
   });
+
+  const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginated = pageSize === 0 ? filtered : filtered.slice((page - 1) * pageSize, page * pageSize);
 
   async function handleCreate(data: {
     name: string; email: string; password: string; roles: RoleType[]; managedTeamId: string | null;
@@ -216,19 +224,19 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
             type="text"
             placeholder={t("search")}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#D2D2D7] bg-white text-[14px] placeholder:text-[#ADADB8] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
+            onChange={(e) => { setSearch(e.target.value); resetPage(); }}
+            className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] dark:text-[#F5F5F7] placeholder:text-[#ADADB8] dark:placeholder:text-[#636366] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
           />
         </div>
 
-        <div className="flex gap-1.5 bg-white border border-[#D2D2D7] rounded-xl p-1">
+        <div className="flex gap-1.5 bg-white dark:bg-[#1C1C1E] border border-[#D2D2D7] dark:border-[#3A3A3C] rounded-xl p-1">
           {(["all", "active", "inactive"] as const).map((v) => (
             <button
               key={v}
-              onClick={() => setFilterStatus(v)}
+              onClick={() => { setFilterStatus(v); resetPage(); }}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all",
-                filterStatus === v ? "bg-[#0071E3] text-white shadow-sm" : "text-[#6E6E73] hover:text-[#1D1D1F]"
+                filterStatus === v ? "bg-[#0071E3] text-white shadow-sm" : "text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
               )}
             >
               {v === "all" ? t("all") : v === "active" ? t("active") : t("inactive")}
@@ -238,8 +246,8 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
 
         <select
           value={filterRole}
-          onChange={(e) => setFilterRole(e.target.value as RoleType | "all")}
-          className="h-10 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[13px] text-[#1D1D1F] outline-none focus:border-[#0071E3] transition-all"
+          onChange={(e) => { setFilterRole(e.target.value as RoleType | "all"); resetPage(); }}
+          className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all"
         >
           <option value="all">{t("allRoles")}</option>
           {ALL_ROLES.map((r) => (
@@ -249,8 +257,8 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
 
         <select
           value={filterTeam}
-          onChange={(e) => setFilterTeam(e.target.value)}
-          className="h-10 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[13px] text-[#1D1D1F] outline-none focus:border-[#0071E3] transition-all"
+          onChange={(e) => { setFilterTeam(e.target.value); resetPage(); }}
+          className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all"
         >
           <option value="all">{t("allTeams")}</option>
           <option value="none">{t("noTeam")}</option>
@@ -266,7 +274,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
             "inline-flex items-center gap-2 h-10 px-4 border text-[14px] font-medium rounded-xl transition-colors whitespace-nowrap",
             groupByTeam
               ? "bg-[#0071E3] border-[#0071E3] text-white"
-              : "bg-white border-[#D2D2D7] text-[#1D1D1F] hover:border-[#0071E3] hover:text-[#0071E3]"
+              : "bg-white dark:bg-[#1C1C1E] border-[#D2D2D7] dark:border-[#3A3A3C] text-[#1D1D1F] dark:text-[#F5F5F7] hover:border-[#0071E3] hover:text-[#0071E3]"
           )}
         >
           <Layers className="w-4 h-4" />
@@ -275,7 +283,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
 
         <button
           onClick={() => setModalImport(true)}
-          className="inline-flex items-center gap-2 h-10 px-4 bg-white border border-[#D2D2D7] hover:border-[#0071E3] hover:text-[#0071E3] text-[#1D1D1F] text-[14px] font-medium rounded-xl transition-colors whitespace-nowrap"
+          className="inline-flex items-center gap-2 h-10 px-4 bg-white dark:bg-[#1C1C1E] border border-[#D2D2D7] dark:border-[#3A3A3C] hover:border-[#0071E3] hover:text-[#0071E3] text-[#1D1D1F] dark:text-[#F5F5F7] text-[14px] font-medium rounded-xl transition-colors whitespace-nowrap"
         >
           <Upload className="w-4 h-4" />
           {t("import")}
@@ -290,35 +298,50 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
         </button>
       </div>
 
+      {/* Barre au-dessus du tableau */}
+      <div className="flex items-center justify-between">
+        <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
+          {filtered.length} utilisateur{filtered.length !== 1 ? "s" : ""}
+        </p>
+        <select
+          value={pageSize}
+          onChange={(e) => { setPageSize(Number(e.target.value)); resetPage(); }}
+          className="h-8 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all cursor-pointer"
+        >
+          {PAGE_SIZES.map((s) => (
+            <option key={s} value={s}>{s === 0 ? "Tous" : `${s} / page`}</option>
+          ))}
+        </select>
+      </div>
+
       {/* Table */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] flex items-center justify-center mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] flex items-center justify-center mb-4">
             <Search className="w-6 h-6 text-[#ADADB8]" />
           </div>
-          <p className="text-[15px] font-medium text-[#1D1D1F]">{t("noUserFound")}</p>
+          <p className="text-[15px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{t("noUserFound")}</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden">
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#E5E5EA]">
-                <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Utilisateur</th>
-                <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Rôles</th>
-                <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Équipe</th>
-                <th className="text-left text-[12px] font-semibold text-[#6E6E73] px-5 py-3">Statut</th>
+              <tr className="border-b border-[#E5E5EA] dark:border-[#3A3A3C]">
+                <th className="text-left text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3">Utilisateur</th>
+                <th className="text-left text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3">Rôles</th>
+                <th className="text-left text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3">Équipe</th>
+                <th className="text-left text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] px-5 py-3">Statut</th>
                 <th className="px-5 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F5F5F7]">
+            <tbody className="divide-y divide-[#F5F5F7] dark:divide-[#3A3A3C]">
               {groupByTeam
                 ? (() => {
-                    // Build groups: one per team + "Sans équipe"
                     const groups: { teamId: string | null; teamName: string; users: UserRow[] }[] = [];
                     const teamOrder = initialTeams.map((t) => t.id);
                     const byTeam = new Map<string, UserRow[]>();
                     const noTeam: UserRow[] = [];
-                    for (const u of filtered) {
+                    for (const u of paginated) {
                       if (u.teams.length === 0) {
                         noTeam.push(u);
                       } else {
@@ -336,9 +359,9 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
                     if (noTeam.length > 0) groups.push({ teamId: null, teamName: t("noTeam"), users: noTeam });
 
                     return groups.flatMap(({ teamId, teamName, users: gUsers }) => [
-                      <tr key={`group-${teamId ?? "none"}`} className="bg-[#F5F5F7]">
+                      <tr key={`group-${teamId ?? "none"}`} className="bg-[#F5F5F7] dark:bg-[#2C2C2E]">
                         <td colSpan={5} className="px-5 py-2">
-                          <span className="text-[12px] font-semibold text-[#6E6E73] uppercase tracking-wide">
+                          <span className="text-[12px] font-semibold text-[#6E6E73] dark:text-[#8E8E93] uppercase tracking-wide">
                             {teamName}
                             <span className="ml-2 font-normal normal-case">({gUsers.length})</span>
                           </span>
@@ -347,12 +370,56 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
                       ...gUsers.map((user) => <UserTableRow key={user.id} user={user} currentUserId={currentUserId} onToggle={handleToggleActive} onEdit={(u) => { setModalEdit(u); setError(""); }} onDelete={setDeleteTarget} onReset={setResetTarget} />),
                     ]);
                   })()
-                : filtered.map((user) => (
+                : paginated.map((user) => (
                     <UserTableRow key={user.id} user={user} currentUserId={currentUserId} onToggle={handleToggleActive} onEdit={(u) => { setModalEdit(u); setError(""); }} onDelete={setDeleteTarget} onReset={setResetTarget} />
                   ))
               }
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {pageSize > 0 && totalPages > 1 && (
+        <div className="flex items-center justify-between pt-1">
+          <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
+            {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} sur {filtered.length}
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="h-8 w-8 rounded-lg border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] disabled:opacity-30 transition-colors flex items-center justify-center"
+            >‹</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+              .reduce<(number | "…")[]>((acc, p, i, arr) => {
+                if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, i) =>
+                p === "…" ? (
+                  <span key={`ellipsis-${i}`} className="h-8 w-8 flex items-center justify-center text-[13px] text-[#ADADB8]">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p as number)}
+                    className={cn(
+                      "h-8 w-8 rounded-lg text-[13px] font-medium transition-colors",
+                      page === p
+                        ? "bg-[#0071E3] text-white"
+                        : "border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#3C3C43] dark:text-[#AEAEB2] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E]"
+                    )}
+                  >{p}</button>
+                )
+              )}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="h-8 w-8 rounded-lg border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] disabled:opacity-30 transition-colors flex items-center justify-center"
+            >›</button>
+          </div>
         </div>
       )}
 
@@ -385,23 +452,23 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
       {/* Modal confirmation suppression */}
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
                 <Trash2 className="w-5 h-5 text-red-500" />
               </div>
               <div>
-                <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("deleteUser")}</p>
-                <p className="text-[13px] text-[#6E6E73]">{deleteTarget.email}</p>
+                <p className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{t("deleteUser")}</p>
+                <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">{deleteTarget.email}</p>
               </div>
             </div>
-            <p className="text-[13px] text-[#6E6E73]">
+            <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
               {t("deleteUserDesc")}
             </p>
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors"
+                className="flex-1 h-10 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors"
               >
                 {t("cancel")}
               </button>
@@ -420,24 +487,24 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
       {/* Modale confirmation reset mot de passe */}
       {resetTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center shrink-0">
                 <KeyRound className="w-5 h-5 text-amber-500" />
               </div>
               <div>
-                <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("resetPassword")}</p>
-                <p className="text-[13px] text-[#6E6E73]">{resetTarget.name ?? resetTarget.email}</p>
+                <p className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{t("resetPassword")}</p>
+                <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">{resetTarget.name ?? resetTarget.email}</p>
               </div>
             </div>
-            <p className="text-[13px] text-[#6E6E73]">
+            <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
               {t("resetPasswordDesc", { email: resetTarget.email })}
             </p>
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setResetTarget(null)}
                 disabled={loading}
-                className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] disabled:opacity-50 transition-colors"
+                className="flex-1 h-10 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] disabled:opacity-50 transition-colors"
               >
                 {t("cancel")}
               </button>
@@ -489,24 +556,24 @@ function ResetResultModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+      <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0">
             <KeyRound className="w-5 h-5 text-emerald-500" />
           </div>
           <div>
-            <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("passwordReset")}</p>
-            <p className="text-[13px] text-[#6E6E73]">{result.userName}</p>
+            <p className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{t("passwordReset")}</p>
+            <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">{result.userName}</p>
           </div>
         </div>
 
-        <div className="bg-[#F5F5F7] rounded-xl px-4 py-3 space-y-2">
+        <div className="bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-xl px-4 py-3 space-y-2">
           <p className="text-[12px] font-medium text-[#8E8E93] uppercase tracking-wide">{t("newPassword")}</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-[16px] font-bold text-[#1D1D1F] font-mono tracking-wider">{result.password}</code>
+            <code className="flex-1 text-[16px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7] font-mono tracking-wider">{result.password}</code>
             <button
               onClick={copy}
-              className="p-2 rounded-lg hover:bg-[#E5E5EA] transition-colors text-[#6E6E73]"
+              className="p-2 rounded-lg hover:bg-[#E5E5EA] dark:hover:bg-[#3A3A3C] transition-colors text-[#6E6E73] dark:text-[#8E8E93]"
               title="Copier"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
@@ -555,8 +622,8 @@ function UserTableRow({
   return (
     <tr className={cn("hover:bg-[#F9F9FB] transition-colors", !user.isActive && "opacity-60")}>
       <td className="px-5 py-3.5">
-        <p className="text-[14px] font-medium text-[#1D1D1F]">{user.name ?? <span className="italic text-[#ADADB8]">{t("noName")}</span>}</p>
-        <p className="text-[12px] text-[#6E6E73]">{user.email}</p>
+        <p className="text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{user.name ?? <span className="italic text-[#ADADB8]">{t("noName")}</span>}</p>
+        <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93]">{user.email}</p>
       </td>
       <td className="px-5 py-3.5">
         <div className="flex flex-wrap gap-1.5">
@@ -595,14 +662,14 @@ function UserTableRow({
             onClick={() => onToggle(user)}
             disabled={user.id === currentUserId}
             title={user.isActive ? t("deactivate") : t("enable")}
-            className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#1D1D1F] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             {user.isActive ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           </button>
           <button
             onClick={() => onEdit(user)}
             title="Modifier"
-            className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
+            className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-[#0071E3] transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
@@ -664,14 +731,14 @@ function UserModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+      <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl shadow-xl w-full max-w-md">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E5EA]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E5EA] dark:border-[#3A3A3C]">
           <div className="flex items-center gap-2.5">
             <ShieldCheck className="w-5 h-5 text-[#0071E3]" />
-            <p className="text-[15px] font-semibold text-[#1D1D1F]">{title}</p>
+            <p className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{title}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F5F5F7] transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors">
             <X className="w-4 h-4 text-[#6E6E73]" />
           </button>
         </div>
@@ -685,32 +752,32 @@ function UserModal({
           )}
 
           <div className="space-y-1.5">
-            <label className="text-[13px] font-medium text-[#1D1D1F]">{t("name")}</label>
+            <label className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{t("name")}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("namePlaceholder")}
-              className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] text-[14px] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
+              className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] dark:bg-[#2C2C2E] dark:text-[#F5F5F7] text-[14px] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[13px] font-medium text-[#1D1D1F]">{t("email")} <span className="text-red-500">*</span></label>
+            <label className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{t("email")} <span className="text-red-500">*</span></label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] text-[14px] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
+              className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] dark:bg-[#2C2C2E] dark:text-[#F5F5F7] text-[14px] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
             />
           </div>
 
           {initial ? (
             /* Édition — champ optionnel pour changer le mot de passe */
             <div className="space-y-1.5">
-              <label className="text-[13px] font-medium text-[#1D1D1F]">
-                {t("password")} <span className="text-[#ADADB8] font-normal">(laisser vide pour ne pas changer)</span>
+              <label className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
+                {t("password")} <span className="text-[#ADADB8] dark:text-[#636366] font-normal">(laisser vide pour ne pas changer)</span>
               </label>
               <div className="relative">
                 <input
@@ -718,7 +785,7 @@ function UserModal({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-10 px-3 pr-10 rounded-xl border border-[#D2D2D7] text-[14px] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
+                  className="w-full h-10 px-3 pr-10 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] dark:bg-[#2C2C2E] dark:text-[#F5F5F7] text-[14px] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
                 />
                 <button type="button" onClick={() => setShowPassword((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#ADADB8] hover:text-[#6E6E73]">
@@ -750,7 +817,7 @@ function UserModal({
             </div>
           ) : (
             /* Création — mot de passe généré automatiquement */
-            <div className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-blue-50 border border-blue-100">
+            <div className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-blue-50 dark:bg-[#0071E3]/10 border border-blue-100 dark:border-[#0071E3]/20">
               <KeyRound className="w-4 h-4 text-[#0071E3] shrink-0" />
               <p className="text-[13px] text-[#0071E3]">
                 Un mot de passe fort sera généré automatiquement et envoyé par email à l&apos;utilisateur.
@@ -761,7 +828,7 @@ function UserModal({
           <div className="space-y-3">
             {/* Toggle admin */}
             <div>
-              <label className="text-[13px] font-medium text-[#1D1D1F]">{t("adminAccess")}</label>
+              <label className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{t("adminAccess")}</label>
               <div className="mt-2">
                 <button
                   type="button"
@@ -778,7 +845,7 @@ function UserModal({
 
             {/* Rôle opérationnel cascade */}
             <div>
-              <label className="text-[13px] font-medium text-[#1D1D1F]">{t("operationalRole")}</label>
+              <label className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{t("operationalRole")}</label>
               <div className="flex flex-wrap gap-2 mt-2">
                 {(["manager", "creator", "learner"] as OperationalRole[]).map((r) => {
                   const isPrimary = r === opRole;
@@ -794,7 +861,7 @@ function UserModal({
                           ? ROLE_COLORS_ACTIVE[r as RoleType]
                           : isImplied
                             ? cn(ROLE_COLORS_IMPLIED[opRole as RoleType], "cursor-default")
-                            : "border-[#D2D2D7] text-[#6E6E73] hover:border-[#ADADB8]"
+                            : "border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:border-[#ADADB8]"
                       )}
                     >
                       {ROLE_LABELS[r as RoleType]}
@@ -808,8 +875,8 @@ function UserModal({
                     className={cn(
                       "px-3 py-1.5 rounded-lg text-[13px] font-medium border transition-all",
                       opRole === "none"
-                        ? "bg-[#1D1D1F] text-white border-[#1D1D1F]"
-                        : "border-[#D2D2D7] text-[#6E6E73] hover:border-[#ADADB8]"
+                        ? "bg-[#1D1D1F] dark:bg-[#F5F5F7] text-white dark:text-[#1D1D1F] border-[#1D1D1F] dark:border-[#F5F5F7]"
+                        : "border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:border-[#ADADB8]"
                     )}
                   >
                     {t("roleNone")}
@@ -828,14 +895,14 @@ function UserModal({
           {/* Manager de */}
           {opRole === "manager" && teams.length > 0 && (
             <div className="space-y-1.5">
-              <label className="text-[13px] font-medium text-[#1D1D1F] flex items-center gap-1.5">
+              <label className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-1.5">
                 <Crown className="w-3.5 h-3.5 text-purple-500" />
                 {t("teamManager")}
               </label>
               <select
                 value={managedTeamId ?? ""}
                 onChange={(e) => setManagedTeamId(e.target.value || null)}
-                className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] text-[14px] text-[#1D1D1F] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
+                className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] dark:bg-[#2C2C2E] dark:text-[#F5F5F7] text-[14px] text-[#1D1D1F] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
               >
                 <option value="">{t("noTeamOption")}</option>
                 {teams.map((t) => (
@@ -859,7 +926,7 @@ function UserModal({
                   isActive ? "translate-x-4.5 ml-0.5" : "translate-x-0.5"
                 )} />
               </div>
-              <span className="text-[13px] font-medium text-[#1D1D1F]">{t("activeAccount")}</span>
+              <span className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{t("activeAccount")}</span>
             </label>
           )}
 
@@ -867,7 +934,7 @@ function UserModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors"
+              className="flex-1 h-10 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors"
             >
               {t("cancel")}
             </button>

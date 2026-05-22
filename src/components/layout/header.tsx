@@ -58,7 +58,7 @@ export function Header({ session }: HeaderProps) {
         </div>
       )}
 
-      <header className="h-14 bg-white border-b border-[#E5E5EA] flex items-center justify-end px-6 gap-3 shrink-0">
+      <header className="h-14 bg-white dark:bg-[#111114] border-b border-[#E5E5EA] dark:border-[#2C2C30] flex items-center justify-end px-6 gap-3 shrink-0">
 
         {hasAdminRole && (
           <button
@@ -68,7 +68,7 @@ export function Header({ session }: HeaderProps) {
               "inline-flex items-center gap-2 h-8 px-3 rounded-xl text-[13px] font-medium border transition-all disabled:opacity-50",
               isAdminMode
                 ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
-                : "bg-[#F5F5F7] border-[#E5E5EA] text-[#6E6E73] hover:text-[#1D1D1F] hover:border-[#D2D2D7]"
+                : "bg-[#F5F5F7] dark:bg-[#1C1C20] border-[#E5E5EA] dark:border-[#2C2C30] text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:border-[#D2D2D7]"
             )}
           >
             {isAdminMode
@@ -78,12 +78,12 @@ export function Header({ session }: HeaderProps) {
           </button>
         )}
 
-        <div className="w-px h-4 bg-[#E5E5EA]" />
+        <div className="w-px h-4 bg-[#E5E5EA] dark:bg-[#2C2C30]" />
 
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen((v) => !v)}
-            className="flex items-center gap-2.5 rounded-xl px-2 py-1 hover:bg-[#F5F5F7] transition-colors"
+            className="flex items-center gap-2.5 rounded-xl px-2 py-1 hover:bg-[#F5F5F7] dark:hover:bg-[#1C1C20] transition-colors"
           >
             <div className={cn(
               "w-7 h-7 rounded-full flex items-center justify-center",
@@ -91,17 +91,17 @@ export function Header({ session }: HeaderProps) {
             )}>
               <span className="text-[11px] font-semibold text-white">{initials}</span>
             </div>
-            <span className="text-[13px] text-[#3C3C43] font-medium">
+            <span className="text-[13px] text-[#3C3C43] dark:text-[#AEAEB2] font-medium">
               {session.user.name ?? session.user.email}
             </span>
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-44 bg-white border border-[#E5E5EA] rounded-xl shadow-lg py-1 z-50">
+            <div className="absolute right-0 top-full mt-1.5 w-44 bg-white dark:bg-[#1C1C20] border border-[#E5E5EA] dark:border-[#2C2C30] rounded-xl shadow-lg py-1 z-50">
               <Link
                 href="/dashboard/profile"
                 onClick={() => setDropdownOpen(false)}
-                className="flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#3C3C43] hover:bg-[#F5F5F7] transition-colors"
+                className="flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#3C3C43] dark:text-[#AEAEB2] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C30] transition-colors"
               >
                 <User className="w-3.5 h-3.5 text-[#6E6E73]" />
                 {t("myProfile")}
@@ -110,14 +110,14 @@ export function Header({ session }: HeaderProps) {
           )}
         </div>
 
-        <div className="w-px h-4 bg-[#E5E5EA]" />
+        <div className="w-px h-4 bg-[#E5E5EA] dark:bg-[#2C2C30]" />
 
         <button
           onClick={async () => {
             await signOut({ redirect: false });
             window.location.href = "/login";
           }}
-          className="flex items-center gap-1.5 text-[13px] text-[#8E8E93] hover:text-[#1D1D1F] transition-colors"
+          className="flex items-center gap-1.5 text-[13px] text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] transition-colors"
         >
           <LogOut className="w-3.5 h-3.5" />
           {t("logout")}
@@ -126,13 +126,13 @@ export function Header({ session }: HeaderProps) {
 
       {pendingMode === "admin" && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+          <div className="bg-white dark:bg-[#1C1C20] rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
                   <TriangleAlert className="w-5 h-5 text-red-500" />
                 </div>
-                <p className="text-[15px] font-semibold text-[#1D1D1F]">{t("activateAdmin")}</p>
+                <p className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{t("activateAdmin")}</p>
               </div>
               <button onClick={() => setPendingMode(null)} className="p-1.5 rounded-lg hover:bg-[#F5F5F7] transition-colors">
                 <X className="w-4 h-4 text-[#6E6E73]" />
@@ -143,7 +143,7 @@ export function Header({ session }: HeaderProps) {
             />
             <div className="flex gap-3 pt-1">
               <button onClick={() => setPendingMode(null)}
-                className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors">
+                className="flex-1 h-10 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C30] transition-colors">
                 {t("cancel")}
               </button>
               <button onClick={() => applyMode("admin")} disabled={loading}
@@ -157,7 +157,7 @@ export function Header({ session }: HeaderProps) {
 
       {pendingMode === "user" && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+          <div className="bg-white dark:bg-[#1C1C20] rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#F5F5F7] flex items-center justify-center shrink-0">
@@ -174,7 +174,7 @@ export function Header({ session }: HeaderProps) {
             />
             <div className="flex gap-3 pt-1">
               <button onClick={() => setPendingMode(null)}
-                className="flex-1 h-10 rounded-xl border border-[#D2D2D7] text-[14px] font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors">
+                className="flex-1 h-10 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C30] transition-colors">
                 {t("cancel")}
               </button>
               <button onClick={() => applyMode("user")} disabled={loading}

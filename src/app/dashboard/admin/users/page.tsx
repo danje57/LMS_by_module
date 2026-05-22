@@ -43,8 +43,8 @@ export default async function AdminUsersPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">{tNav("users")}</h1>
-        <p className="text-[15px] text-[#6E6E73] mt-0.5">
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">{tNav("users")}</h1>
+        <p className="text-[15px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">
           {t("memberCount", { count: users.length })}
         </p>
       </div>

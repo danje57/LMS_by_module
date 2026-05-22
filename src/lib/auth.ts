@@ -46,6 +46,7 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
           name: user.name,
           roles,
           locale: user.locale as "fr" | "en",
+          theme: (user.theme ?? "system") as "light" | "dark" | "system",
         };
       },
     }),
@@ -53,15 +54,17 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (trigger === "update") {
-        const s = session as { sessionMode?: unknown; locale?: unknown };
+        const s = session as { sessionMode?: unknown; locale?: unknown; theme?: unknown };
         if (s?.sessionMode !== undefined) token.sessionMode = s.sessionMode as "admin" | "user" | null;
         if (s?.locale !== undefined) token.locale = s.locale as "fr" | "en";
+        if (s?.theme !== undefined) token.theme = s.theme as "light" | "dark" | "system";
       }
       if (user) {
         token.id = user.id;
         token.roles = (user as { roles?: RoleType[] }).roles ?? [];
         token.sessionMode = "user";
         token.locale = (user as { locale?: "fr" | "en" }).locale ?? "fr";
+        token.theme = (user as { theme?: "light" | "dark" | "system" }).theme ?? "system";
       }
       return token;
     },
@@ -71,6 +74,7 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
         session.user.roles = token.roles as RoleType[];
         session.user.sessionMode = (token.sessionMode as "admin" | "user" | null) ?? null;
         session.user.locale = (token.locale as "fr" | "en") ?? "fr";
+        session.user.theme = (token.theme as "light" | "dark" | "system") ?? "system";
       }
       return session;
     },

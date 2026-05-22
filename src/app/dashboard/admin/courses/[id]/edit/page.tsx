@@ -18,8 +18,8 @@ interface CourseData {
 
 interface Creator { id: string; name: string | null; email: string }
 
-const inputCls = "w-full h-10 px-3 rounded-xl border border-[#D2D2D7] bg-white text-[14px] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all";
-const labelCls = "block text-[12px] font-medium text-[#6E6E73] mb-1";
+const inputCls = "w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all";
+const labelCls = "block text-[12px] font-medium text-[#6E6E73] dark:text-[#8E8E93] mb-1";
 
 export default function EditCoursePage() {
   const { id } = useParams<{ id: string }>();
@@ -77,21 +77,21 @@ export default function EditCoursePage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/dashboard/courses"
-          className="p-2 rounded-xl border border-[#D2D2D7] text-[#6E6E73] hover:bg-[#F5F5F7] transition-colors">
+          className="p-2 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] text-[#ADADB8] font-medium">Édition du cours</p>
-          <h1 className="text-[18px] font-semibold text-[#1D1D1F] truncate">{course.title}</h1>
+          <p className="text-[12px] text-[#ADADB8] dark:text-[#636366] font-medium">Édition du cours</p>
+          <h1 className="text-[18px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] truncate">{course.title}</h1>
         </div>
       </div>
 
       {/* Informations + Quiz sur une seule carte */}
-      <div className="bg-white rounded-2xl border border-[#E5E5EA] divide-y divide-[#F5F5F7]">
+      <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] divide-y divide-[#F5F5F7] dark:divide-[#3A3A3C]">
 
         {/* Bloc infos */}
         <div className="p-6 space-y-4">
-          <h2 className="text-[13px] font-semibold text-[#1D1D1F]">Informations</h2>
+          <h2 className="text-[13px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Informations</h2>
           <div>
             <label className={labelCls}>Créateur du cours</label>
             <select value={createdById} onChange={(e) => setCreatedById(e.target.value)} className={inputCls}>
@@ -114,7 +114,7 @@ export default function EditCoursePage() {
           <label className="flex items-center gap-3 cursor-pointer select-none">
             <input type="checkbox" checked={hasQuiz} onChange={(e) => setHasQuiz(e.target.checked)}
               className="w-4 h-4 rounded accent-[#0071E3]" />
-            <span className="text-[14px] text-[#1D1D1F] font-medium">Ce cours contient un quiz</span>
+            <span className="text-[14px] text-[#1D1D1F] dark:text-[#F5F5F7] font-medium">Ce cours contient un quiz</span>
           </label>
 
           {hasQuiz && (
@@ -146,9 +146,9 @@ export default function EditCoursePage() {
 
         {/* Bloc quiz */}
         <div className="p-6 space-y-4">
-          <h2 className="text-[13px] font-semibold text-[#1D1D1F]">Questions du quiz</h2>
+          <h2 className="text-[13px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Questions du quiz</h2>
           <QuizEditor courseId={id} passingScore={passingScore} onCountChange={setQuestionCount} />
-          <div className="flex items-center justify-between pt-2 border-t border-[#F5F5F7] mt-4">
+          <div className="flex items-center justify-between pt-2 border-t border-[#F5F5F7] dark:border-[#3A3A3C] mt-4">
             {!quizRatioOk && (
               <p className="text-[12px] text-amber-700">
                 Corrigez le ratio questions / seuil avant d&apos;enregistrer.

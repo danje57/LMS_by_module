@@ -8,7 +8,10 @@ export default auth((req) => {
   // Routes publiques sans authentification
   if (
     pathname.startsWith("/login") ||
+    pathname.startsWith("/setup") ||
+    pathname.startsWith("/api/setup") ||
     pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/cron/") ||  // protégé par Authorization: Bearer
     pathname.startsWith("/api/public/")   // assets publics (branding)
   ) {
     if (isLoggedIn && pathname === "/login") {

@@ -86,10 +86,10 @@ function CourseCard({
 
   return (
     <div className={cn(
-      "group bg-white rounded-2xl border overflow-hidden hover:shadow-md transition-all",
+      "group bg-white dark:bg-[#1C1C1E] rounded-2xl border overflow-hidden hover:shadow-md transition-all",
       !hideDeadline && deadlineState === "overdue" ? "border-red-300 hover:border-red-400" :
       !hideDeadline && deadlineState === "danger"  ? "border-orange-300 hover:border-orange-400" :
-      "border-[#E5E5EA] hover:border-[#D2D2D7]"
+      "border-[#E5E5EA] dark:border-[#3A3A3C] hover:border-[#D2D2D7] dark:hover:border-[#636366]"
     )}>
       <div className={cn(
         "h-1.5 bg-gradient-to-r",
@@ -103,17 +103,17 @@ function CourseCard({
       )} />
 
       <div className="p-5 space-y-4">
-        <h3 className="text-[15px] font-semibold text-[#1D1D1F] leading-snug line-clamp-2">
+        <h3 className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] leading-snug line-clamp-2">
           {course.title}
         </h3>
 
         {deadlineState && meta?.dueDate && (
           <div className={cn(
             "inline-flex items-center gap-1.5 text-[12px] font-medium rounded-lg px-2.5 py-1 w-fit",
-            deadlineState === "overdue" ? "text-red-600 bg-red-50" :
-            deadlineState === "danger"  ? "text-orange-600 bg-orange-50" :
-            deadlineState === "warning" ? "text-amber-600 bg-amber-50" :
-            "text-[#6E6E73] bg-[#F5F5F7]"
+            deadlineState === "overdue" ? "text-red-600 bg-red-50 dark:bg-red-500/10" :
+            deadlineState === "danger"  ? "text-orange-600 bg-orange-50 dark:bg-orange-500/10" :
+            deadlineState === "warning" ? "text-amber-600 bg-amber-50 dark:bg-amber-500/10" :
+            "text-[#6E6E73] dark:text-[#8E8E93] bg-[#F5F5F7] dark:bg-[#2C2C2E]"
           )}>
             {deadlineState === "overdue" ? <AlertTriangle className="w-3 h-3" /> : <CalendarClock className="w-3 h-3" />}
             {deadlineState === "overdue"
@@ -124,16 +124,16 @@ function CourseCard({
         )}
 
         <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#6E6E73] bg-[#F5F5F7] rounded-lg px-2.5 py-1">
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#6E6E73] dark:text-[#8E8E93] bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-lg px-2.5 py-1">
             <Clock className="w-3 h-3" />
             {formatDuration(course.duration)}
           </span>
           {course.hasQuiz && (
             <span className={cn(
               "inline-flex items-center gap-1.5 text-[12px] font-medium rounded-lg px-2.5 py-1",
-              !isAdmin && isCompleted && prog?.quizPassed === true ? "text-emerald-600 bg-emerald-50" :
-              !isAdmin && isCompleted && prog?.quizPassed === false ? "text-red-500 bg-red-50" :
-              "text-amber-600 bg-amber-50"
+              !isAdmin && isCompleted && prog?.quizPassed === true ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10" :
+              !isAdmin && isCompleted && prog?.quizPassed === false ? "text-red-500 bg-red-50 dark:bg-red-500/10" :
+              "text-amber-600 bg-amber-50 dark:bg-amber-500/10"
             )}>
               <CircleCheck className="w-3 h-3" />
               {!isAdmin && isCompleted && prog?.quizPassed !== null
@@ -145,9 +145,9 @@ function CourseCard({
 
         {(meta?.createdByName || (isAssignedToMe && meta?.assignedByName)) && (
           <p className="text-[11px] text-[#ADADB8] leading-relaxed">
-            {meta?.createdByName && <span>{t("createdBy")} <span className="text-[#6E6E73]">{meta.createdByName}</span></span>}
+            {meta?.createdByName && <span>{t("createdBy")} <span className="text-[#6E6E73] dark:text-[#8E8E93]">{meta.createdByName}</span></span>}
             {meta?.createdByName && isAssignedToMe && meta?.assignedByName && <span> · </span>}
-            {isAssignedToMe && meta?.assignedByName && <span>{t("assignedBy")} <span className="text-[#6E6E73]">{meta.assignedByName}</span></span>}
+            {isAssignedToMe && meta?.assignedByName && <span>{t("assignedBy")} <span className="text-[#6E6E73] dark:text-[#8E8E93]">{meta.assignedByName}</span></span>}
           </p>
         )}
 
@@ -158,14 +158,14 @@ function CourseCard({
               <>
                 <button
                   onClick={() => onAssign({ id: course.id, title: course.title })}
-                  className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
+                  className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-[#0071E3] transition-colors"
                   title={t("assign")}
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                 </button>
                 <Link
                   href={`/dashboard/admin/courses/${course.id}/edit`}
-                  className="p-2 rounded-lg text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#0071E3] transition-colors"
+                  className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-[#0071E3] transition-colors"
                   title={t("edit")}
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -188,7 +188,7 @@ function CourseCard({
             {!isAdmin && !hideDeadline && isAssignedToMe && isCompleted && prog?.latestCertificateId && (
               <Link
                 href={`/dashboard/certificates/${prog.latestCertificateId}`}
-                className="inline-flex items-center gap-1.5 px-3 py-2 border border-emerald-200 text-emerald-600 hover:bg-emerald-50 text-[13px] font-medium rounded-xl transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-2 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-[13px] font-medium rounded-xl transition-colors"
                 title={t("certificate")}
               >
                 <Award className="w-3.5 h-3.5" />
@@ -211,6 +211,8 @@ function CourseCard({
   );
 }
 
+const PAGE_SIZES = [0, 5, 10, 20, 50] as const;
+
 export function CourseList({ courses, isAdmin = false, isManagerOrCreator = false, progressMap = {}, metaMap = {}, assignedCourseIds, assignableCourseIds }: CourseListProps) {
   const t = useTranslations("courses");
   const assignedSet = new Set(assignedCourseIds ?? []);
@@ -221,6 +223,10 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
   const [assignTarget, setAssignTarget] = useState<{ id: string; title: string } | null>(null);
   const [managerAssignTarget, setManagerAssignTarget] = useState<{ id: string; title: string } | null>(null);
   const [activeTab, setActiveTab] = useState<"mes-formations" | "bibliotheque">("mes-formations");
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [page, setPage] = useState(1);
+
+  function resetPage() { setPage(1); }
 
   const filtered = courses
     .filter((c) => {
@@ -234,6 +240,21 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
       return 0;
     });
 
+  const myFormations = filtered.filter((c) => assignedSet.has(c.id));
+  const libraryFiltered = assignableCourseIds
+    ? filtered.filter((c) => assignableCourseIds.has(c.id))
+    : filtered;
+
+  const activeList = isAdmin
+    ? filtered
+    : isManagerOrCreator
+      ? (activeTab === "mes-formations" ? myFormations : libraryFiltered)
+      : filtered;
+
+  const totalItems = activeList.length;
+  const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(totalItems / pageSize));
+  const paginated = pageSize === 0 ? activeList : activeList.slice((page - 1) * pageSize, page * pageSize);
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row gap-3">
@@ -243,19 +264,19 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
             type="text"
             placeholder={t("searchCourse")}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#D2D2D7] bg-white text-[14px] text-[#1D1D1F] placeholder:text-[#ADADB8] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
+            onChange={(e) => { setSearch(e.target.value); resetPage(); }}
+            className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#ADADB8] dark:placeholder:text-[#636366] outline-none focus:border-[#0071E3] focus:ring-3 focus:ring-[#0071E3]/20 transition-all"
           />
         </div>
 
-        <div className="flex gap-1.5 bg-white border border-[#D2D2D7] rounded-xl p-1">
+        <div className="flex gap-1.5 bg-white dark:bg-[#2C2C2E] border border-[#D2D2D7] dark:border-[#3A3A3C] rounded-xl p-1">
           {(["all", "yes", "no"] as const).map((v) => (
             <button
               key={v}
-              onClick={() => setFilterQuiz(v)}
+              onClick={() => { setFilterQuiz(v); resetPage(); }}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all",
-                filterQuiz === v ? "bg-[#0071E3] text-white shadow-sm" : "text-[#6E6E73] hover:text-[#1D1D1F]"
+                filterQuiz === v ? "bg-[#0071E3] text-white shadow-sm" : "text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
               )}
             >
               {v === "all" ? t("all") : v === "yes" ? t("withQuiz") : t("withoutQuiz")}
@@ -264,12 +285,12 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
         </div>
 
         <button
-          onClick={() => setDurationSort((s) => (s === "none" ? "asc" : s === "asc" ? "desc" : "none"))}
+          onClick={() => { setDurationSort((s) => (s === "none" ? "asc" : s === "asc" ? "desc" : "none")); resetPage(); }}
           className={cn(
             "inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border text-[13px] font-medium transition-all whitespace-nowrap",
             durationSort !== "none"
               ? "bg-[#0071E3] border-[#0071E3] text-white shadow-sm"
-              : "bg-white border-[#D2D2D7] text-[#6E6E73] hover:text-[#1D1D1F]"
+              : "bg-white dark:bg-[#2C2C2E] border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
           )}
         >
           <ArrowUpDown className="w-3.5 h-3.5" />
@@ -277,10 +298,22 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
           {durationSort === "asc" && <span className="text-[11px]">↑</span>}
           {durationSort === "desc" && <span className="text-[11px]">↓</span>}
         </button>
+
+        <select
+          value={pageSize}
+          onChange={(e) => { setPageSize(Number(e.target.value)); resetPage(); }}
+          className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all cursor-pointer"
+        >
+          {PAGE_SIZES.map((s) => (
+            <option key={s} value={s}>
+              {s === 0 ? "Tous" : `${s} / page`}
+            </option>
+          ))}
+        </select>
       </div>
 
       {!isAdmin && (!isManagerOrCreator || (assignedSet.size > 0 && activeTab === "mes-formations")) && (
-        <div className="flex gap-1.5 bg-white border border-[#D2D2D7] rounded-xl p-1 w-fit">
+        <div className="flex gap-1.5 bg-white dark:bg-[#2C2C2E] border border-[#D2D2D7] dark:border-[#3A3A3C] rounded-xl p-1 w-fit">
           {([
             { key: "all" as const,         labelKey: "all" as const,        dot: null },
             { key: "not_started" as const, labelKey: "notStarted" as const, dot: "bg-[#0071E3]" },
@@ -289,10 +322,10 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
           ]).map(({ key, labelKey, dot }) => (
             <button
               key={key}
-              onClick={() => setFilterStatus(key)}
+              onClick={() => { setFilterStatus(key); resetPage(); }}
               className={cn(
                 "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all",
-                filterStatus === key ? "bg-[#0071E3] text-white shadow-sm" : "text-[#6E6E73] hover:text-[#1D1D1F]"
+                filterStatus === key ? "bg-[#0071E3] text-white shadow-sm" : "text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
               )}
             >
               {dot && <span className={cn("w-2 h-2 rounded-full shrink-0", dot, filterStatus === key && "bg-white")} />}
@@ -304,40 +337,40 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
 
       {filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] flex items-center justify-center mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] flex items-center justify-center mb-4">
             <Search className="w-6 h-6 text-[#ADADB8]" />
           </div>
-          <p className="text-[15px] font-medium text-[#1D1D1F]">{t("noCourseFound")}</p>
-          <p className="text-[13px] text-[#6E6E73] mt-1">{t("adjustFilters")}</p>
+          <p className="text-[15px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{t("noCourseFound")}</p>
+          <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93] mt-1">{t("adjustFilters")}</p>
         </div>
       )}
 
       {isAdmin ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((course) => (
+          {paginated.map((course) => (
             <CourseCard key={course.id} course={course} isAdmin={true} isManagerOrCreator={false}
               progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={false} onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
           ))}
         </div>
       ) : isManagerOrCreator ? (
         <div className="space-y-6">
-          <div className="flex border-b border-[#E5E5EA]">
+          <div className="flex border-b border-[#E5E5EA] dark:border-[#3A3A3C]">
             {([
-              { key: "mes-formations" as const, label: t("myTrainings"), count: filtered.filter((c) => assignedSet.has(c.id)).length },
-              { key: "bibliotheque"   as const, label: t("library"),     count: assignableCourseIds ? filtered.filter((c) => assignableCourseIds.has(c.id)).length : filtered.length },
+              { key: "mes-formations" as const, label: t("myTrainings"), count: myFormations.length },
+              { key: "bibliotheque"   as const, label: t("library"),     count: libraryFiltered.length },
             ]).map(({ key, label, count }) => (
               <button
                 key={key}
-                onClick={() => setActiveTab(key)}
+                onClick={() => { setActiveTab(key); resetPage(); }}
                 className={cn(
                   "flex items-center gap-2 px-5 py-2.5 text-[14px] font-medium border-b-2 -mb-px transition-colors",
-                  activeTab === key ? "border-[#0071E3] text-[#0071E3]" : "border-transparent text-[#6E6E73] hover:text-[#1D1D1F]"
+                  activeTab === key ? "border-[#0071E3] text-[#0071E3]" : "border-transparent text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
                 )}
               >
                 {label}
                 <span className={cn(
                   "text-[12px] font-medium px-1.5 py-0.5 rounded-md",
-                  activeTab === key ? "bg-[#0071E3]/10 text-[#0071E3]" : "bg-[#F5F5F7] text-[#ADADB8]"
+                  activeTab === key ? "bg-[#0071E3]/10 text-[#0071E3]" : "bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#ADADB8]"
                 )}>
                   {count}
                 </span>
@@ -346,25 +379,24 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
           </div>
 
           {activeTab === "mes-formations" && (() => {
-            const myFormations = filtered.filter((c) => assignedSet.has(c.id));
             const groups = [
               { key: "not_started" as const, label: t("notStarted"), color: "bg-[#0071E3]" },
               { key: "in_progress"  as const, label: t("inProgress"), color: "bg-amber-400" },
               { key: "completed"    as const, label: t("completed"),  color: "bg-emerald-400" },
             ];
-            return myFormations.length === 0 ? (
+            return paginated.length === 0 ? (
               <p className="text-[14px] text-[#6E6E73] py-8">{t("noAssignedTraining")}</p>
             ) : (
               <div className="space-y-8">
                 {groups.map(({ key, label, color }) => {
                   if (filterStatus !== "all" && filterStatus !== key) return null;
-                  const group = myFormations.filter((c) => (progressMap[c.id]?.status ?? "not_started") === key);
+                  const group = paginated.filter((c) => (progressMap[c.id]?.status ?? "not_started") === key);
                   if (group.length === 0) return null;
                   return (
                     <div key={key}>
                       <div className="flex items-center gap-2.5 mb-3">
                         <div className={cn("w-2.5 h-2.5 rounded-full", color)} />
-                        <h3 className="text-[15px] font-semibold text-[#1D1D1F]">{label}</h3>
+                        <h3 className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{label}</h3>
                         <span className="text-[12px] text-[#ADADB8] font-medium">{group.length}</span>
                       </div>
                       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -381,30 +413,25 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
             );
           })()}
 
-          {activeTab === "bibliotheque" && (() => {
-            const libraryFiltered = assignableCourseIds
-              ? filtered.filter((c) => assignableCourseIds.has(c.id))
-              : filtered;
-            return (
-              <div className="space-y-4">
-                <p className="text-[13px] text-[#ADADB8]">
-                  {t("coursesYouCanAssign")} ({libraryFiltered.length}).
-                </p>
-                {libraryFiltered.length === 0 ? (
-                  <p className="text-[14px] text-[#6E6E73] py-8">{t("noCoursesToAssign")}</p>
-                ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {libraryFiltered.map((course) => (
-                      <CourseCard key={course.id} course={course} isAdmin={false} isManagerOrCreator={true}
-                        progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={assignedSet.has(course.id)}
-                        hideDeadline isDeletable={assignableCourseIds?.has(course.id) ?? false}
-                        onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
+          {activeTab === "bibliotheque" && (
+            <div className="space-y-4">
+              <p className="text-[13px] text-[#ADADB8]">
+                {t("coursesYouCanAssign")} ({libraryFiltered.length}).
+              </p>
+              {paginated.length === 0 ? (
+                <p className="text-[14px] text-[#6E6E73] py-8">{t("noCoursesToAssign")}</p>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {paginated.map((course) => (
+                    <CourseCard key={course.id} course={course} isAdmin={false} isManagerOrCreator={true}
+                      progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={assignedSet.has(course.id)}
+                      hideDeadline isDeletable={assignableCourseIds?.has(course.id) ?? false}
+                      onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-8">
@@ -416,13 +443,13 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
             ]
           ).map(({ key, label, color }) => {
             if (filterStatus !== "all" && filterStatus !== key) return null;
-            const group = filtered.filter((c) => (progressMap[c.id]?.status ?? "not_started") === key);
+            const group = paginated.filter((c) => (progressMap[c.id]?.status ?? "not_started") === key);
             if (group.length === 0) return null;
             return (
               <div key={key}>
                 <div className="flex items-center gap-2.5 mb-3">
                   <div className={cn("w-2.5 h-2.5 rounded-full", color)} />
-                  <h2 className="text-[15px] font-semibold text-[#1D1D1F]">{label}</h2>
+                  <h2 className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{label}</h2>
                   <span className="text-[12px] text-[#ADADB8] font-medium">{group.length}</span>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -435,6 +462,53 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
               </div>
             );
           })}
+        </div>
+      )}
+
+      {pageSize > 0 && totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2 border-t border-[#E5E5EA] dark:border-[#3A3A3C]">
+          <span className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
+            {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalItems)} sur {totalItems}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-2.5 py-1.5 rounded-lg text-[13px] font-medium text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              ‹
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+              .reduce<(number | "…")[]>((acc, p, i, arr) => {
+                if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, i) =>
+                p === "…" ? (
+                  <span key={`e${i}`} className="px-1 text-[#ADADB8] text-[13px]">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p as number)}
+                    className={cn(
+                      "min-w-[32px] px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-all",
+                      page === p ? "bg-[#0071E3] text-white shadow-sm" : "text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E]"
+                    )}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-2.5 py-1.5 rounded-lg text-[13px] font-medium text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              ›
+            </button>
+          </div>
         </div>
       )}
 

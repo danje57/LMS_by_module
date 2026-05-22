@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getTranslations } from "next-intl/server";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { LocaleSelector } from "@/components/profile/locale-selector";
+import { ThemeSelector } from "@/components/profile/theme-selector";
 import { User } from "lucide-react";
 
 export default async function ProfilePage() {
@@ -15,7 +16,7 @@ export default async function ProfilePage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { name: true, email: true, createdAt: true, roles: { include: { role: true } } },
+    select: { name: true, email: true, createdAt: true, theme: true, roles: { include: { role: true } } },
   });
   if (!user) redirect("/login");
 
@@ -26,26 +27,26 @@ export default async function ProfilePage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">{t("title")}</h1>
-        <p className="text-[15px] text-[#6E6E73] mt-0.5">{t("subtitle")}</p>
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">{t("title")}</h1>
+        <p className="text-[15px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">{t("subtitle")}</p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-[#E5E5EA] p-7 space-y-5">
+      <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-7 space-y-5">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] flex items-center justify-center shrink-0">
+          <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] flex items-center justify-center shrink-0">
             <User className="w-7 h-7 text-[#8E8E93]" />
           </div>
           <div>
-            <p className="text-[18px] font-semibold text-[#1D1D1F]">{user.name ?? "—"}</p>
-            <p className="text-[14px] text-[#6E6E73]">{user.email}</p>
+            <p className="text-[18px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{user.name ?? "—"}</p>
+            <p className="text-[14px] text-[#6E6E73] dark:text-[#8E8E93]">{user.email}</p>
           </div>
         </div>
 
-        <div className="h-px bg-[#F5F5F7]" />
+        <div className="h-px bg-[#F5F5F7] dark:bg-[#2C2C2E]" />
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-[12px] font-medium text-[#8E8E93] uppercase tracking-wide mb-1">{t("roles")}</p>
+            <p className="text-[12px] font-medium text-[#8E8E93] dark:text-[#636366] uppercase tracking-wide mb-1">{t("roles")}</p>
             <div className="flex flex-wrap gap-1.5">
               {user.roles.map((ur) => (
                 <span key={ur.role.id} className="text-[12px] font-medium px-2 py-0.5 rounded-md bg-blue-50 text-blue-600">
@@ -55,13 +56,14 @@ export default async function ProfilePage() {
             </div>
           </div>
           <div>
-            <p className="text-[12px] font-medium text-[#8E8E93] uppercase tracking-wide mb-1">{t("memberSince")}</p>
-            <p className="text-[14px] text-[#1D1D1F]">{joinedDate}</p>
+            <p className="text-[12px] font-medium text-[#8E8E93] dark:text-[#636366] uppercase tracking-wide mb-1">{t("memberSince")}</p>
+            <p className="text-[14px] text-[#1D1D1F] dark:text-[#F5F5F7]">{joinedDate}</p>
           </div>
         </div>
       </div>
 
       <LocaleSelector currentLocale={locale} />
+      <ThemeSelector currentTheme={(user.theme ?? "system") as "light" | "dark" | "system"} />
       <ChangePasswordForm />
     </div>
   );

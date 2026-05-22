@@ -21,19 +21,19 @@ export default async function CertificatesPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F]">{t("myCertificates")}</h1>
-        <p className="text-[15px] text-[#6E6E73] mt-0.5">
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">{t("myCertificates")}</h1>
+        <p className="text-[15px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">
           {t("obtained", { count: certificates.length })}
         </p>
       </div>
 
       {certificates.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] flex items-center justify-center mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] flex items-center justify-center mb-4">
             <Award className="w-6 h-6 text-[#ADADB8]" />
           </div>
-          <p className="text-[15px] font-medium text-[#1D1D1F]">{t("noCertificates")}</p>
-          <p className="text-[13px] text-[#6E6E73] mt-1">{t("completeCourse")}</p>
+          <p className="text-[15px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{t("noCertificates")}</p>
+          <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93] mt-1">{t("completeCourse")}</p>
           <Link href="/dashboard/courses" className="mt-4 inline-flex items-center gap-1.5 text-[13px] text-[#0071E3] hover:underline">
             <BookOpen className="w-4 h-4" />
             {t("viewMyCourses")}
