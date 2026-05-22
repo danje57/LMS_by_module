@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { auditLog } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -32,11 +33,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "visitedSlides doit être un tableau" }, { status: 400 });
   }
 
+  const existing = await prisma.userCourseProgress.findUnique({
+    where: { userId_courseId: { userId: session.user.id, courseId: id } },
+    select: { userId: true },
+  });
+
   await prisma.userCourseProgress.upsert({
     where: { userId_courseId: { userId: session.user.id, courseId: id } },
     update: { visitedSlides, lastAccessAt: new Date() },
     create: { userId: session.user.id, courseId: id, visitedSlides },
   });
+
+  if (!existing) {
+    const course = await prisma.course.findUnique({ where: { id }, select: { title: true } });
+    void auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "course.start", targetId: id, targetLabel: course?.title ?? null });
+  }
 
   return NextResponse.json({ ok: true });
 }
@@ -80,6 +91,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         },
       });
     }
+    void auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "course.complete", targetId: id, targetLabel: course?.title ?? null });
   }
 
   return NextResponse.json({ completed: true, completedAt: progress.completedAt });

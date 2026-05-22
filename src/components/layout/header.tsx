@@ -114,6 +114,7 @@ export function Header({ session }: HeaderProps) {
 
         <button
           onClick={async () => {
+            await fetch("/api/auth/audit-logout", { method: "POST" });
             await signOut({ redirect: false });
             window.location.href = "/login";
           }}

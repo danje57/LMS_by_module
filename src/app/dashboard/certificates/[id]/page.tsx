@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { CertificateView } from "@/components/courses/certificate-view";
+import { auditLog } from "@/lib/audit";
 
 export default async function CertificatePage({
   params,
@@ -22,6 +23,8 @@ export default async function CertificatePage({
 
   // Only the owner can view their certificate
   if (!cert || cert.userId !== session.user.id) notFound();
+
+  void auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "certificate.download", targetId: cert.id, targetLabel: cert.courseTitle });
 
   return (
     <CertificateView

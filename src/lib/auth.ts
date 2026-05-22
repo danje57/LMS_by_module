@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { auditLog } from "@/lib/audit";
 import { RoleType } from "@prisma/client";
 
 export const { handlers, signIn, signOut, auth, unstable_update: updateSession } = NextAuth({
@@ -30,16 +31,23 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
           },
         });
 
-        if (!user || !user.passwordHash || !user.isActive) return null;
+        if (!user || !user.passwordHash || !user.isActive) {
+          void auditLog({ actor: { email: credentials.email as string }, action: "auth.login_failed", details: { reason: !user ? "user_not_found" : !user.isActive ? "account_inactive" : "invalid_password" } });
+          return null;
+        }
 
         const valid = await bcrypt.compare(
           credentials.password as string,
           user.passwordHash
         );
-        if (!valid) return null;
+        if (!valid) {
+          void auditLog({ actor: { id: user.id, name: user.name, email: user.email }, action: "auth.login_failed", details: { reason: "invalid_password" } });
+          return null;
+        }
 
         const roles = user.roles.map((ur) => ur.role.name);
 
+        void auditLog({ actor: { id: user.id, name: user.name, email: user.email }, action: "auth.login" });
         return {
           id: user.id,
           email: user.email,

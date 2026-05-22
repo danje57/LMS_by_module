@@ -15,10 +15,17 @@ export type AuditEntry = {
 };
 
 const ACTION_LABELS: Record<string, { label: string; color: string }> = {
+  "auth.login":           { label: "Connexion",             color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400" },
+  "auth.logout":          { label: "Déconnexion",           color: "bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400" },
+  "auth.login_failed":    { label: "Échec connexion",       color: "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400" },
   "course.upload":        { label: "Cours créé",            color: "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" },
   "course.edit":          { label: "Cours modifié",         color: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400" },
   "course.delete":        { label: "Cours supprimé",        color: "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400" },
   "course.assign":        { label: "Cours affecté",         color: "bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400" },
+  "course.start":         { label: "Cours démarré",         color: "bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400" },
+  "course.complete":      { label: "Cours terminé",         color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400" },
+  "quiz.submit":          { label: "Quiz soumis",           color: "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400" },
+  "certificate.download": { label: "Certificat consulté",   color: "bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400" },
   "user.create":          { label: "Utilisateur créé",      color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400" },
   "user.edit":            { label: "Utilisateur modifié",   color: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400" },
   "user.delete":          { label: "Utilisateur supprimé",  color: "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400" },
@@ -41,10 +48,12 @@ const ACTION_LABELS: Record<string, { label: string; color: string }> = {
 const PAGE_SIZE = 25;
 
 const ACTION_GROUPS = [
-  { label: "Cours", actions: ["course.upload", "course.edit", "course.delete", "course.assign"] },
+  { label: "Authentification", actions: ["auth.login", "auth.logout", "auth.login_failed"] },
+  { label: "Cours", actions: ["course.upload", "course.edit", "course.delete", "course.assign", "course.start", "course.complete"] },
+  { label: "Quiz & Certificats", actions: ["quiz.submit", "certificate.download", "certificate.generate"] },
   { label: "Utilisateurs", actions: ["user.create", "user.edit", "user.delete", "user.activate", "user.deactivate", "user.reset_password", "user.import"] },
   { label: "Équipes", actions: ["team.create", "team.edit", "team.delete", "team.member.add", "team.member.remove", "team.import"] },
-  { label: "Paramètres", actions: ["settings.branding", "settings.mail"] },
+  { label: "Paramètres", actions: ["settings.branding", "settings.mail", "setup.init"] },
 ];
 
 export function AuditClient({ entries }: { entries: AuditEntry[] }) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { auditLog } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -70,5 +71,6 @@ export async function POST(req: NextRequest, { params }: Params) {
     });
   }
 
+  void auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "quiz.submit", targetId: id, targetLabel: course.title, details: { attempt, score, passingScore, passed } });
   return NextResponse.json({ ...result, certificateId, certificateCompletedAt }, { status: 201 });
 }
