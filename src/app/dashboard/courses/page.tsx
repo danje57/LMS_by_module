@@ -15,39 +15,49 @@ async function getCourses(isAdmin: boolean, isManagerOrCreator: boolean, userId:
   });
 }
 
-// Cours que le manager/creator est autorisé à affecter :
-// - manager : ses propres cours + ceux des creators membres de ses équipes
-// - creator  : uniquement ses propres cours
-async function getAssignableCourseIds(userId: string): Promise<Set<string>> {
-  const isManager = await prisma.userRole.findFirst({
-    where: { userId, role: { name: "manager" } },
-  });
-
-  if (!isManager) {
-    const own = await prisma.course.findMany({ where: { createdById: userId, isActive: true }, select: { id: true } });
-    return new Set(own.map((c) => c.id));
-  }
-
-  // Manager : récupère les creators membres de ses équipes managées
+// Cours qu'un manager est autorisé à affecter (ses cours + ceux des créateurs de ses équipes)
+async function getManagerAssignableIds(managerId: string): Promise<Set<string>> {
   const managedTeams = await prisma.team.findMany({
-    where: { managerId: userId },
+    where: { managerId },
     include: { members: { select: { userId: true } } },
   });
   const teamMemberIds = managedTeams.flatMap((t) => t.members.map((m) => m.userId));
-
   const creatorMembers = teamMemberIds.length
     ? await prisma.userRole.findMany({
         where: { userId: { in: teamMemberIds }, role: { name: "creator" } },
         select: { userId: true },
       })
     : [];
-  const authorizedCreatorIds = new Set([userId, ...creatorMembers.map((r) => r.userId)]);
-
+  const authorizedIds = new Set([managerId, ...creatorMembers.map((r) => r.userId)]);
   const assignable = await prisma.course.findMany({
-    where: { isActive: true, createdById: { in: [...authorizedCreatorIds] } },
+    where: { isActive: true, createdById: { in: [...authorizedIds] } },
     select: { id: true },
   });
   return new Set(assignable.map((c) => c.id));
+}
+
+// Cours que le manager/creator est autorisé à affecter :
+// - manager : ses propres cours + ceux des creators membres de ses équipes
+// - creator  : ses propres cours + ceux du/des manager(s) de ses équipes (même périmètre)
+async function getAssignableCourseIds(userId: string): Promise<Set<string>> {
+  const isManager = await prisma.userRole.findFirst({
+    where: { userId, role: { name: "manager" } },
+  });
+
+  if (isManager) return getManagerAssignableIds(userId);
+
+  // Créateur : ses cours + scope de son/ses manager(s)
+  const [own, creatorTeams] = await Promise.all([
+    prisma.course.findMany({ where: { createdById: userId, isActive: true }, select: { id: true } }),
+    prisma.userTeam.findMany({ where: { userId }, include: { team: { select: { managerId: true } } } }),
+  ]);
+  const result = new Set(own.map((c) => c.id));
+  const managerIds = [...new Set(creatorTeams.map((ut) => ut.team.managerId).filter(Boolean) as string[])];
+  await Promise.all(managerIds.map(async (mId) => {
+    const ids = await getManagerAssignableIds(mId);
+    ids.forEach((id) => result.add(id));
+  }));
+  return result;
 }
 
 async function getCourseMeta(

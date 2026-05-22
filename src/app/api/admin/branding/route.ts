@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
 import { revalidatePath } from "next/cache";
+import { auditLog } from "@/lib/audit";
 import path from "path";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
-  // Invalider le cache des pages qui affichent le branding
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "settings.branding", details: { appName } });
   revalidatePath("/login");
   revalidatePath("/dashboard", "layout");
 

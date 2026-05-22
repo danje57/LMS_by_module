@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { auditLog } from "@/lib/audit";
 import { createWriteStream, mkdirSync } from "fs";
 import { readFile, rename, rm } from "fs/promises";
 import path from "path";
@@ -109,10 +110,11 @@ export async function POST(req: NextRequest) {
 
     const relPath = path.join("courses", courseHash, safeName);
 
-    await prisma.course.create({
+    const course = await prisma.course.create({
       data: { title, duration, hasQuiz, passingScore, filePath: relPath, originalFileName: file.originalName, fileSize: BigInt(file.size), fileHash, createdById },
     });
 
+    await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "course.upload", targetId: course.id, targetLabel: title });
     return NextResponse.json({ ok: true });
 
   } catch (err) {

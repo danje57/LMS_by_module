@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { auditLog } from "@/lib/audit";
 
 export async function PATCH(
   req: NextRequest,
@@ -51,6 +52,7 @@ export async function PATCH(
     }
   }
 
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "team.edit", targetId: id, targetLabel: team.name, details: { name, managerId } });
   return NextResponse.json({
     id: team.id,
     name: team.name,
@@ -68,6 +70,8 @@ export async function DELETE(
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
 
   const { id } = await params;
+  const team = await prisma.team.findUnique({ where: { id }, select: { name: true } });
   await prisma.team.delete({ where: { id } });
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "team.delete", targetId: id, targetLabel: team?.name });
   return NextResponse.json({ ok: true });
 }

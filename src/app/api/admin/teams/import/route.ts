@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { auditLog } from "@/lib/audit";
 
 type CsvRow = { team: string; email: string; role: "manager" | "membre" };
 
@@ -57,5 +58,6 @@ export async function POST(req: Request) {
     }
   }
 
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "team.import", details: { teamsCreated, teamsUpdated, membersAdded, rows: rows.length } });
   return NextResponse.json({ teamsCreated, teamsUpdated, membersAdded });
 }

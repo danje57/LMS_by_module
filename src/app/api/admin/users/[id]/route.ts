@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { RoleType } from "@prisma/client";
+import { auditLog } from "@/lib/audit";
 import { sendMail, isMailConfigured } from "@/lib/mail";
 import { getMailConfig } from "@/lib/mail-config";
 import { templateAccountSuspended, templateAccountReactivated, templateAccountDeleted } from "@/lib/mail-templates";
@@ -67,6 +68,10 @@ export async function PATCH(
     await sendMail({ to: user.email, subject, html }).catch(() => null);
   }
 
+  const action = isActive !== undefined && before?.isActive !== isActive
+    ? (isActive ? "user.activate" : "user.deactivate")
+    : "user.edit";
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action, targetId: id, targetLabel: user.email, details: { name, email, roles, isActive } });
   return NextResponse.json({
     id: user.id,
     name: user.name,
@@ -93,6 +98,7 @@ export async function DELETE(
   // Capture les infos avant suppression pour l'email
   const target = await prisma.user.findUnique({ where: { id }, select: { name: true, email: true } });
 
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "user.delete", targetId: id, targetLabel: target?.email });
   await prisma.user.delete({ where: { id } });
 
   // Email de suppression (best-effort, envoyé après suppression)

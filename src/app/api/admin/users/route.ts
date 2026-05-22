@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { RoleType } from "@prisma/client";
+import { auditLog } from "@/lib/audit";
 import { sendMail, isMailConfigured } from "@/lib/mail";
 import { getMailConfig } from "@/lib/mail-config";
 import { templateAccountCreated } from "@/lib/mail-templates";
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
     await sendMail({ to: user.email, subject, html }).catch(() => null);
   }
 
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "user.create", targetId: user.id, targetLabel: user.email, details: { name: user.name, roles } });
   return NextResponse.json(
     {
       id: user.id,

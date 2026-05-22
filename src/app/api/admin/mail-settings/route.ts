@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { auditLog } from "@/lib/audit";
 
 export async function GET() {
   const session = await auth();
@@ -78,5 +79,6 @@ export async function POST(req: NextRequest) {
     ? await prisma.mailSetting.update({ where: { id: existing.id }, data })
     : await prisma.mailSetting.create({ data });
 
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "settings.mail", details: { provider: data.provider } });
   return NextResponse.json({ ok: true, id: setting.id });
 }

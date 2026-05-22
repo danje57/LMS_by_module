@@ -7,7 +7,8 @@
     "users": "Users",
     "teams": "Teams",
     "manageCertificates": "Manage Certificates",
-    "settings": "Settings"
+    "settings": "Settings",
+    "audit": "Audit log"
   },
   "header": {
     "adminMode": "Admin mode",
@@ -257,7 +258,12 @@
     "myAssignmentsProgress": "My assignments progress",
     "learnerProgressOnAssignments": "Learner progress on your assignments",
     "noTeamNoAssignments": "You are not a manager of any team and have not yet made any assignments.",
-    "noAssignments": "You have not yet assigned courses to learners."
+    "noAssignments": "You have not yet assigned courses to learners.",
+    "tabMine": "My progress",
+    "tabGeneral": "General progress",
+    "start": "Start",
+    "review": "Review",
+    "resume": "Resume"
   },
   "certificates": {
     "myCertificates": "My certificates",

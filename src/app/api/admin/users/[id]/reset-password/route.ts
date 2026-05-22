@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { auditLog } from "@/lib/audit";
 import bcrypt from "bcryptjs";
 import { generateStrongPassword } from "@/lib/password";
 import { sendMail, isMailConfigured } from "@/lib/mail";
@@ -44,5 +45,6 @@ export async function POST(
       .catch(() => false);
   }
 
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "user.reset_password", targetId: id, targetLabel: user.email });
   return NextResponse.json({ ok: true, password: newPassword, emailSent });
 }

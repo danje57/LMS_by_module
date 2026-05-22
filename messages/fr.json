@@ -7,7 +7,8 @@
     "users": "Utilisateurs",
     "teams": "Équipes",
     "manageCertificates": "Gérer certificats",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "audit": "Journal d'audit"
   },
   "header": {
     "adminMode": "Mode admin",
@@ -257,7 +258,12 @@
     "myAssignmentsProgress": "Suivi de mes affectations",
     "learnerProgressOnAssignments": "Progression des apprenants sur vos affectations",
     "noTeamNoAssignments": "Vous n'êtes manager d'aucune équipe et n'avez pas encore effectué d'affectations.",
-    "noAssignments": "Vous n'avez pas encore affecté de cours à des apprenants."
+    "noAssignments": "Vous n'avez pas encore affecté de cours à des apprenants.",
+    "tabMine": "Mon suivi",
+    "tabGeneral": "Suivi général",
+    "start": "Commencer",
+    "review": "Revoir",
+    "resume": "Reprendre"
   },
   "certificates": {
     "myCertificates": "Mes certificats",

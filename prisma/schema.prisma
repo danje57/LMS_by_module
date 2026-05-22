@@ -268,6 +268,24 @@ model BackupRecord {
   @@map("backup_records")
 }
 
+model AuditLog {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  actorId     String?
+  actorName   String?
+  actorEmail  String?
+  action      String
+  targetId    String?
+  targetLabel String?
+  details     Json?
+
+  @@index([createdAt(sort: Desc)])
+  @@index([actorId])
+  @@index([action])
+
+  @@map("audit_logs")
+}
+
 enum RoleType {
   admin
   manager

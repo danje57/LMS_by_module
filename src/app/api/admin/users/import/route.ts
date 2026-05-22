@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { RoleType } from "@prisma/client";
+import { auditLog } from "@/lib/audit";
 import { validatePassword } from "@/lib/password";
 import { sendMail, isMailConfigured } from "@/lib/mail";
 import { getMailConfig } from "@/lib/mail-config";
@@ -153,5 +154,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "user.import", details: { created, updated, errors: errors.length, total: created + updated + errors.length } });
   return NextResponse.json({ created, updated, errors });
 }

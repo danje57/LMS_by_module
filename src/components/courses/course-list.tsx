@@ -174,7 +174,16 @@ function CourseCard({
               </>
             )}
             {isManagerOrCreator && isDeletable && (
-              <DeleteCourseButton courseId={course.id} courseTitle={course.title} isManagerContext />
+              <>
+                <Link
+                  href={`/dashboard/admin/courses/${course.id}/edit`}
+                  className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-[#0071E3] transition-colors"
+                  title={t("edit")}
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </Link>
+                <DeleteCourseButton courseId={course.id} courseTitle={course.title} isManagerContext />
+              </>
             )}
             {isManagerOrCreator && (
               <button

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { auditLog } from "@/lib/audit";
 import { sendMail, isMailConfigured } from "@/lib/mail";
 import { getMailConfig } from "@/lib/mail-config";
 import { templateAssignment } from "@/lib/mail-templates";
@@ -192,6 +193,8 @@ export async function PUT(
     );
   }
 
+  const course = await prisma.course.findUnique({ where: { id: courseId }, select: { title: true } });
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "course.assign", targetId: courseId, targetLabel: course?.title, details: { added: toAdd.length, removed: toRemove.length } });
   return NextResponse.json({ ok: true });
 }
 

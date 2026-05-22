@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { validatePassword } from "@/lib/password";
+import { auditLog } from "@/lib/audit";
 
 async function adminExists() {
   const role = await prisma.role.findUnique({ where: { name: "admin" }, include: { users: { take: 1 } } });
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
     adminRole = await prisma.role.create({ data: { name: "admin", description: "Administrateur" } });
   }
 
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       name: name?.trim() || null,
       email: email.trim().toLowerCase(),
@@ -46,5 +47,6 @@ export async function POST(req: Request) {
     },
   });
 
+  await auditLog({ actor: { id: user.id, name: user.name, email: user.email }, action: "setup.init", targetLabel: user.email });
   return NextResponse.json({ ok: true });
 }

@@ -2,7 +2,8 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ProgressClient } from "@/components/admin/progress-client";
-import type { UserProgressRow, CourseStatus } from "@/components/admin/progress-client";
+import { ProgressTabs } from "@/components/progress/progress-tabs";
+import type { UserProgressRow, CourseStatus, AssignmentRow } from "@/components/admin/progress-client";
 import { getTranslations } from "next-intl/server";
 
 const USER_SELECT = {
@@ -102,78 +103,107 @@ async function getManagerData(userId: string) {
   return { courses, teams, users };
 }
 
-async function getCreatorData(userId: string) {
-  // Un créateur voit uniquement les affectations qu'il a personnellement créées
+async function getMyProgress(userId: string): Promise<AssignmentRow[]> {
   const assignments = await prisma.courseAssignment.findMany({
-    where: { assignedById: userId },
+    where: { userId },
     include: {
-      user: {
-        select: {
-          id: true, name: true, email: true,
-          teams: { include: { team: { select: { id: true, name: true } } } },
-          courseProgress: { select: { courseId: true, progress: true } },
-          certificates: { select: { courseId: true } },
-        },
-      },
       course: { select: { id: true, title: true } },
     },
   });
+  if (assignments.length === 0) return [];
 
+  const courseIds = assignments.map((a) => a.courseId);
+  const [progressRows, certRows] = await Promise.all([
+    prisma.userCourseProgress.findMany({ where: { userId, courseId: { in: courseIds } }, select: { courseId: true, progress: true } }),
+    prisma.certificate.findMany({ where: { userId, courseId: { in: courseIds } }, select: { courseId: true } }),
+  ]);
+  const progressMap = new Map(progressRows.map((p) => [p.courseId, p.progress]));
+  const certSet = new Set(certRows.map((c) => c.courseId).filter(Boolean) as string[]);
+
+  return assignments.map((a) => {
+    const isDone = certSet.has(a.courseId);
+    const prog = progressMap.get(a.courseId) ?? 0;
+    const status: CourseStatus = isDone ? "completed" : prog > 0 ? "in_progress" : "not_started";
+    return {
+      courseId: a.courseId,
+      courseTitle: a.course.title,
+      status,
+      progress: isDone ? 100 : prog,
+      dueDate: a.dueDate?.toISOString() ?? null,
+      assignedAt: a.assignedAt?.toISOString() ?? null,
+    };
+  });
+}
+
+async function getCreatorData(userId: string) {
+  // Un créateur voit ses propres affectations + le scope de son/ses manager(s)
+  const creatorTeams = await prisma.userTeam.findMany({
+    where: { userId },
+    include: { team: { select: { managerId: true } } },
+  });
+  const managerIds = [...new Set(
+    creatorTeams.map((ut) => ut.team.managerId).filter(Boolean) as string[]
+  )];
+
+  // Données des managers (scope équipe)
+  if (managerIds.length > 0) {
+    const managerDataList = await Promise.all(managerIds.map((mId) => getManagerData(mId)));
+    const validData = managerDataList.filter(Boolean) as NonNullable<Awaited<ReturnType<typeof getManagerData>>>[];
+
+    if (validData.length > 0) {
+      // Fusionner les données de tous les managers
+      const courseMap = new Map<string, string>();
+      const teamMap = new Map<string, string>();
+      const userMap = new Map<string, UserProgressRow>();
+
+      for (const d of validData) {
+        d.courses.forEach((c) => courseMap.set(c.id, c.title));
+        d.teams.forEach((t) => teamMap.set(t.id, t.name));
+        d.users.forEach((u) => { if (!userMap.has(u.id)) userMap.set(u.id, u); });
+      }
+
+      // Ajouter aussi les affectations directes du créateur non encore présentes
+      const directAssignments = await prisma.courseAssignment.findMany({
+        where: { assignedById: userId },
+        include: { user: { select: USER_SELECT }, course: { select: { id: true, title: true } } },
+      });
+      for (const a of directAssignments) {
+        courseMap.set(a.courseId, a.course.title);
+        if (!userMap.has(a.user.id)) userMap.set(a.user.id, buildUserRow(a.user));
+      }
+
+      const courses = [...courseMap.entries()].map(([id, title]) => ({ id, title })).sort((a, b) => a.title.localeCompare(b.title));
+      const teams   = [...teamMap.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+      const users   = [...userMap.values()].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+      return { courses, teams, users };
+    }
+  }
+
+  // Pas de manager : fallback sur les affectations directes du créateur uniquement
+  const assignments = await prisma.courseAssignment.findMany({
+    where: { assignedById: userId },
+    include: {
+      user: { select: USER_SELECT },
+      course: { select: { id: true, title: true } },
+    },
+  });
   if (assignments.length === 0) return null;
 
-  // Cours visibles
   const courseMap = new Map(assignments.map((a) => [a.courseId, a.course.title]));
-  const courses = [...courseMap.entries()]
-    .map(([id, title]) => ({ id, title }))
-    .sort((a, b) => a.title.localeCompare(b.title));
+  const courses = [...courseMap.entries()].map(([id, title]) => ({ id, title })).sort((a, b) => a.title.localeCompare(b.title));
 
-  // Teams présentes parmi les apprenants assignés
   const teamMap = new Map<string, string>();
   for (const a of assignments) {
     for (const ut of a.user.teams) teamMap.set(ut.team.id, ut.team.name);
   }
   const teams = [...teamMap.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
 
-  // Dédupliquer les apprenants
   const seenIds = new Set<string>();
-  const rawUsers: typeof assignments[number]["user"][] = [];
+  const users: UserProgressRow[] = [];
   for (const a of assignments) {
-    if (!seenIds.has(a.user.id)) { seenIds.add(a.user.id); rawUsers.push(a.user); }
+    if (!seenIds.has(a.user.id)) { seenIds.add(a.user.id); users.push(buildUserRow(a.user)); }
   }
-
-  // Pour chaque apprenant, ne garder que les cours que ce créateur lui a assignés
-  const assignedByCourseMap = new Map<string, Set<string>>(); // userId → courseIds
-  for (const a of assignments) {
-    if (!assignedByCourseMap.has(a.userId)) assignedByCourseMap.set(a.userId, new Set());
-    assignedByCourseMap.get(a.userId)!.add(a.courseId);
-  }
-
-  const users: UserProgressRow[] = rawUsers
-    .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""))
-    .map((u) => {
-      const progressMap = new Map(u.courseProgress.map((p) => [p.courseId, p.progress]));
-      const certSet = new Set(u.certificates.map((c) => c.courseId).filter(Boolean) as string[]);
-      const myCourseIds = assignedByCourseMap.get(u.id) ?? new Set();
-      return {
-        id: u.id, name: u.name, email: u.email,
-        teams: u.teams.map((ut) => ({ id: ut.team.id, name: ut.team.name })),
-        assignments: [...myCourseIds].map((courseId) => {
-          const isDone = certSet.has(courseId);
-          const prog = progressMap.get(courseId) ?? 0;
-          const status: CourseStatus = isDone ? "completed" : prog > 0 ? "in_progress" : "not_started";
-          // dueDate from the creator's own assignment record
-        const assignmentRecord = assignments.find((a) => a.userId === u.id && a.courseId === courseId);
-        return {
-          courseId,
-          courseTitle: courseMap.get(courseId) ?? courseId,
-          status,
-          progress: isDone ? 100 : prog,
-          dueDate: assignmentRecord?.dueDate?.toISOString() ?? null,
-          assignedAt: assignmentRecord?.assignedAt?.toISOString() ?? null,
-        };
-        }),
-      };
-    });
+  users.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
 
   return { courses, teams, users };
 }
@@ -197,46 +227,31 @@ export default async function ManagerProgressPage() {
 
   // Manager → scope équipe (via assigningTeamId) + ses propres affectations directes
   // Créateur → scope ses propres affectations uniquement
-  const data = isManager
-    ? await getManagerData(session.user.id)
-    : await getCreatorData(session.user.id);
+  const [data, myAssignments] = await Promise.all([
+    isManager ? getManagerData(session.user.id) : getCreatorData(session.user.id),
+    getMyProgress(session.user.id),
+  ]);
 
   const firstName = session.user.name?.split(" ")[0] ?? "";
-
   const t = await getTranslations("progress");
 
-  if (!data) {
-    return (
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-            {isManager ? t("myTeamProgress") : t("myAssignmentsProgress")}
-          </h1>
-        </div>
-        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-12 flex flex-col items-center gap-3 text-center">
-          <p className="text-[14px] text-[#6E6E73] dark:text-[#8E8E93]">
-            {isManager ? t("noTeamNoAssignments") : t("noAssignments")}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const subtitle = isManager
-    ? t("teams", { s: data.teams.length > 1 ? "s" : "", teams: data.teams.map((t) => t.name).join(", ") })
-    : t("learnerProgressOnAssignments");
+  const title = isManager ? t("myTeamProgress") : t("myAssignmentsProgress");
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-          {isManager ? t("myTeamProgress") : t("myAssignmentsProgress")}
-        </h1>
-        <p className="text-[15px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">
-          {firstName ? `${firstName} · ` : ""}{subtitle}
-        </p>
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">{title}</h1>
+        {firstName && (
+          <p className="text-[15px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">{firstName}</p>
+        )}
       </div>
-      <ProgressClient courses={data.courses} teams={data.teams} users={data.users} />
+      <ProgressTabs
+        myAssignments={myAssignments}
+        generalData={data}
+        isManager={isManager}
+        labelMine={t("tabMine")}
+        labelGeneral={t("tabGeneral")}
+      />
     </div>
   );
 }

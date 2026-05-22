@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { auditLog } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -56,5 +57,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "certificate.generate", details: { generated, skipped, userIds: userIds.length, courseIds: courseIds.length } });
   return NextResponse.json({ generated, skipped });
 }

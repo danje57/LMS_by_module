@@ -3,8 +3,44 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rm } from "fs/promises";
 import path from "path";
+import { auditLog } from "@/lib/audit";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
+
+// Vérifie si un utilisateur non-admin a le droit de modifier/supprimer un cours
+// Règles : propre cours OU cours d'un créateur dans son équipe (manager)
+//          OU cours accessible via le manager de son équipe (créateur)
+async function hasRightsOnCourse(userId: string, courseCreatedById: string | null): Promise<boolean> {
+  if (courseCreatedById === userId) return true;
+
+  const isManager = await prisma.userRole.findFirst({
+    where: { userId, role: { name: "manager" } },
+  });
+
+  if (isManager) {
+    if (!courseCreatedById) return false;
+    const creatorInTeam = await prisma.userTeam.findFirst({
+      where: { userId: courseCreatedById, team: { managerId: userId } },
+    });
+    return !!creatorInTeam;
+  }
+
+  // Créateur : vérifier via son/ses manager(s)
+  if (!courseCreatedById) return false;
+  const creatorTeams = await prisma.userTeam.findMany({
+    where: { userId },
+    include: { team: { select: { managerId: true } } },
+  });
+  const managerIds = creatorTeams.map((ut) => ut.team.managerId).filter(Boolean) as string[];
+  for (const managerId of managerIds) {
+    if (courseCreatedById === managerId) return true;
+    const creatorInTeam = await prisma.userTeam.findFirst({
+      where: { userId: courseCreatedById, team: { managerId } },
+    });
+    if (creatorInTeam) return true;
+  }
+  return false;
+}
 
 export async function GET(
   _req: NextRequest,
@@ -24,9 +60,18 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  if (session?.user.sessionMode !== "admin") return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
   const { id } = await params;
+  const isAdmin = session.user.sessionMode === "admin";
+
+  if (!isAdmin) {
+    const course = await prisma.course.findUnique({ where: { id } });
+    if (!course) return NextResponse.json({ error: "Cours introuvable" }, { status: 404 });
+    const ok = await hasRightsOnCourse(session.user.id, course.createdById);
+    if (!ok) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  }
+
   const { title, duration, hasQuiz, passingScore, createdById } = await req.json();
 
   const updated = await prisma.course.update({
@@ -36,9 +81,11 @@ export async function PATCH(
       ...(duration !== undefined ? { duration: Number(duration) } : {}),
       ...(hasQuiz !== undefined ? { hasQuiz: !!hasQuiz } : {}),
       ...(passingScore !== undefined ? { passingScore: passingScore !== null ? Number(passingScore) : null } : {}),
-      ...(createdById !== undefined ? { createdById: createdById || null } : {}),
+      // createdById modifiable uniquement par l'admin
+      ...(isAdmin && createdById !== undefined ? { createdById: createdById || null } : {}),
     },
   });
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "course.edit", targetId: id, targetLabel: updated.title, details: { title, duration, hasQuiz, passingScore } });
   return NextResponse.json({ ...updated, fileSize: updated.fileSize.toString() });
 }
 
@@ -59,22 +106,8 @@ export async function DELETE(
 
   // Vérification droits pour manager/creator
   if (!isAdmin) {
-    const isOwn = course.createdById === session.user.id;
-    if (!isOwn) {
-      // Manager : vérifier si le créateur du cours est membre d'une de ses équipes
-      const isManager = await prisma.userRole.findFirst({
-        where: { userId: session.user.id, role: { name: "manager" } },
-      });
-      if (!isManager) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
-      if (course.createdById) {
-        const creatorInTeam = await prisma.userTeam.findFirst({
-          where: { userId: course.createdById, team: { managerId: session.user.id } },
-        });
-        if (!creatorInTeam) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
-      } else {
-        return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
-      }
-    }
+    const ok = await hasRightsOnCourse(session.user.id, course.createdById);
+    if (!ok) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 
   // Vérifier AVANT suppression si un autre cours partage le même dossier (même fileHash)
@@ -95,5 +128,6 @@ export async function DELETE(
     }
   }
 
+  await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "course.delete", targetId: id, targetLabel: course.title });
   return NextResponse.json({ ok: true });
 }
