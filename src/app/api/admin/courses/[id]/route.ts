@@ -72,12 +72,13 @@ export async function PATCH(
     if (!ok) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 
-  const { title, duration, hasQuiz, passingScore, createdById } = await req.json();
+  const { title, category, duration, hasQuiz, passingScore, createdById } = await req.json();
 
   const updated = await prisma.course.update({
     where: { id },
     data: {
       ...(title !== undefined ? { title: title.trim() } : {}),
+      ...(category !== undefined ? { category: category?.trim() || null } : {}),
       ...(duration !== undefined ? { duration: Number(duration) } : {}),
       ...(hasQuiz !== undefined ? { hasQuiz: !!hasQuiz } : {}),
       ...(passingScore !== undefined ? { passingScore: passingScore !== null ? Number(passingScore) : null } : {}),

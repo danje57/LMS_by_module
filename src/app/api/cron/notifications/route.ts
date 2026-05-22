@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendMail, isMailConfigured } from "@/lib/mail";
 import { getMailConfig } from "@/lib/mail-config";
+import { createNotification } from "@/lib/notifications";
 import {
   templateDeadlineWarning,
   templateDeadlineExpired,
@@ -111,6 +112,13 @@ export async function GET(req: NextRequest) {
         await prisma.courseAssignment.update({
           where: { id: a.id },
           data: { notifiedWarningAt: now },
+        });
+        void createNotification({
+          userId:  a.userId,
+          type:    "deadline_warning",
+          title:   "Échéance proche",
+          message: `"${a.course.title}" doit être terminé dans ${days} jour${days > 1 ? "s" : ""}.`,
+          link:    "/dashboard/courses",
         });
         warned++;
       }

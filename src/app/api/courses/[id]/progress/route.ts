@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
+import { createNotification } from "@/lib/notifications";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -92,6 +93,15 @@ export async function POST(req: NextRequest, { params }: Params) {
       });
     }
     void auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "course.complete", targetId: id, targetLabel: course?.title ?? null });
+    if (course) {
+      void createNotification({
+        userId:  session.user.id,
+        type:    "course_completed",
+        title:   "Cours terminé 🎉",
+        message: `Félicitations ! Vous avez complété "${course.title}".${!course.hasQuiz ? " Votre certificat est disponible." : " Passez le quiz pour obtenir votre certificat."}`,
+        link:    "/dashboard/courses",
+      });
+    }
   }
 
   return NextResponse.json({ completed: true, completedAt: progress.completedAt });

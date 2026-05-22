@@ -7,6 +7,7 @@ import type { Session } from "next-auth";
 import { useTranslations } from "next-intl";
 import { LogOut, ShieldCheck, ShieldOff, X, TriangleAlert, ShieldAlert, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/layout/notification-bell";
 
 interface HeaderProps {
   session: Session;
@@ -77,6 +78,8 @@ export function Header({ session }: HeaderProps) {
             }
           </button>
         )}
+
+        <NotificationBell />
 
         <div className="w-px h-4 bg-[#E5E5EA] dark:bg-[#2C2C30]" />
 

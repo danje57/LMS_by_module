@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
 
     tmpPath = file.tmpPath;
     const title = fields.title?.trim();
+    const category = fields.category?.trim() || null;
     const duration = parseInt(fields.duration ?? "", 10);
     const hasQuiz = fields.hasQuiz === "on";
     const passingScore = hasQuiz ? Math.max(0, Math.min(100, parseInt(fields.passingScore ?? "70", 10))) : null;
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
     const relPath = path.join("courses", courseHash, safeName);
 
     const course = await prisma.course.create({
-      data: { title, duration, hasQuiz, passingScore, filePath: relPath, originalFileName: file.originalName, fileSize: BigInt(file.size), fileHash, createdById },
+      data: { title, category, duration, hasQuiz, passingScore, filePath: relPath, originalFileName: file.originalName, fileSize: BigInt(file.size), fileHash, createdById },
     });
 
     await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "course.upload", targetId: course.id, targetLabel: title });

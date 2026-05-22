@@ -27,6 +27,7 @@ model User {
   teams          UserTeam[]
   managedTeams   Team[]               @relation("ManagedTeams")
   createdCourses Course[]             @relation("CreatedCourses")
+  notifications  Notification[]
 
   @@map("users")
 }
@@ -100,6 +101,7 @@ model Course {
   originalFileName String
   fileSize         BigInt
   fileHash         String?
+  category         String?
   isActive         Boolean              @default(true)
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
@@ -266,6 +268,22 @@ model BackupRecord {
   notes     String?
 
   @@map("backup_records")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
 }
 
 model AuditLog {

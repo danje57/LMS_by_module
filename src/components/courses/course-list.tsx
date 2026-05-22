@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Course } from "@prisma/client";
 import { formatDuration, formatFileSize } from "@/lib/utils";
-import { Search, Clock, CircleCheck, Play, Pencil, ArrowUpDown, UserPlus, Award, CalendarClock, AlertTriangle } from "lucide-react";
+import { Search, Clock, CircleCheck, Play, Pencil, ArrowUpDown, UserPlus, Award, CalendarClock, AlertTriangle, Tag } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useTranslations, useLocale } from "next-intl";
@@ -106,6 +106,13 @@ function CourseCard({
         <h3 className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] leading-snug line-clamp-2">
           {course.title}
         </h3>
+
+        {course.category && (
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#0071E3] bg-blue-50 dark:bg-[#0071E3]/10 rounded-lg px-2 py-0.5 w-fit">
+            <Tag className="w-3 h-3" />
+            {course.category}
+          </span>
+        )}
 
         {deadlineState && meta?.dueDate && (
           <div className={cn(
@@ -227,6 +234,7 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
   const assignedSet = new Set(assignedCourseIds ?? []);
   const [search, setSearch] = useState("");
   const [filterQuiz, setFilterQuiz] = useState<"all" | "yes" | "no">("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "not_started" | "in_progress" | "completed">("all");
   const [durationSort, setDurationSort] = useState<"none" | "asc" | "desc">("none");
   const [assignTarget, setAssignTarget] = useState<{ id: string; title: string } | null>(null);
@@ -237,11 +245,14 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
 
   function resetPage() { setPage(1); }
 
+  const allCategories = [...new Set(courses.map((c) => c.category).filter(Boolean) as string[])].sort();
+
   const filtered = courses
     .filter((c) => {
       const matchSearch = c.title.toLowerCase().includes(search.toLowerCase());
       const matchQuiz = filterQuiz === "all" || (filterQuiz === "yes" ? c.hasQuiz : !c.hasQuiz);
-      return matchSearch && matchQuiz;
+      const matchCategory = filterCategory === "all" || c.category === filterCategory;
+      return matchSearch && matchQuiz && matchCategory;
     })
     .sort((a, b) => {
       if (durationSort === "asc") return a.duration - b.duration;
@@ -307,6 +318,17 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
           {durationSort === "asc" && <span className="text-[11px]">↑</span>}
           {durationSort === "desc" && <span className="text-[11px]">↓</span>}
         </button>
+
+        {allCategories.length > 0 && (
+          <select
+            value={filterCategory}
+            onChange={(e) => { setFilterCategory(e.target.value); resetPage(); }}
+            className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all cursor-pointer"
+          >
+            <option value="all">Tous les départements</option>
+            {allCategories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+          </select>
+        )}
 
         <select
           value={pageSize}
