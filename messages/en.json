@@ -176,7 +176,8 @@
     "noTeamOption": "— No team —",
     "cancel": "Cancel",
     "delete": "Delete",
-    "deleteQuestion": "Delete this question?"
+    "deleteQuestion": "Delete this question?",
+    "viewProfile": "View learner profile"
   },
   "importCsv": {
     "title": "CSV Import",
@@ -447,6 +448,34 @@
     "noOneOnlineDesc": "No active learner in the last 15 minutes.",
     "refreshInfo": "Auto-refresh every 30s",
     "refreshNow": "Refresh"
+  },
+  "courseStats": {
+    "assignedLearners": "Assigned learners",
+    "completionRate": "Completion rate",
+    "avgQuizScore": "Avg quiz score",
+    "certificates": "Certificates issued",
+    "quizAttempts": "Quiz attempts"
+  },
+  "learnerProfile": {
+    "subtitle": "Learner profile",
+    "active": "Active",
+    "inactive": "Inactive",
+    "assignedCourses": "Assigned courses",
+    "completed": "Completed",
+    "completionRate": "Completion rate",
+    "certificates": "Certificates",
+    "roles": "Roles",
+    "teams": "Teams",
+    "memberSince": "Member since",
+    "lastLogin": "Last login",
+    "never": "Never",
+    "assignedCoursesTitle": "Assigned trainings",
+    "noCourses": "No training assigned.",
+    "assignedOn": "Assigned on",
+    "dueDate": "Due date",
+    "completedOn": "Completed on",
+    "viewCertificate": "View certificate",
+    "viewProfile": "View profile"
   },
   "common": {
     "cancel": "Cancel",

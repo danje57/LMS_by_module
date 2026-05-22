@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { QuizEditor } from "@/components/courses/quiz-editor";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Users, CircleCheck, BarChart2, Award, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface CourseData {
   id: string;
@@ -22,8 +23,18 @@ interface Creator { id: string; name: string | null; email: string }
 const inputCls = "w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all";
 const labelCls = "block text-[12px] font-medium text-[#6E6E73] dark:text-[#8E8E93] mb-1";
 
+type CourseStats = {
+  assignedCount: number;
+  completedCount: number;
+  completionRate: number;
+  avgQuizScore: number | null;
+  quizAttempts: number;
+  certCount: number;
+};
+
 export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
   const { id } = useParams<{ id: string }>();
+  const t = useTranslations("courseStats");
   const [course, setCourse] = useState<CourseData | null>(null);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
@@ -35,6 +46,7 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
+  const [stats, setStats] = useState<CourseStats | null>(null);
 
   useEffect(() => {
     fetch(`/api/admin/courses/${id}`)
@@ -54,6 +66,11 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
         .then((r) => r.json())
         .then((data: Creator[]) => setCreators(data));
     }
+
+    fetch(`/api/admin/courses/${id}/stats`)
+      .then((r) => r.json())
+      .then((data: CourseStats) => setStats(data))
+      .catch(() => {});
   }, [id, isAdmin]);
 
   async function handleSave() {
@@ -89,6 +106,28 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
           <h1 className="text-[18px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] truncate">{course.title}</h1>
         </div>
       </div>
+
+      {/* Stats panel */}
+      {stats && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: t("assignedLearners"), value: stats.assignedCount, icon: Users, color: "text-[#0071E3]", bg: "bg-blue-50 dark:bg-[#0071E3]/10" },
+            { label: t("completionRate"), value: `${stats.completionRate}%`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
+            { label: t("avgQuizScore"), value: stats.avgQuizScore !== null ? `${stats.avgQuizScore}%` : "—", icon: BarChart2, color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-500/10" },
+            { label: t("certificates"), value: stats.certCount, icon: Award, color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-500/10" },
+          ].map((kpi) => (
+            <div key={kpi.label} className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-4 flex items-center gap-3">
+              <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0", kpi.bg)}>
+                <kpi.icon className={cn("w-4 h-4", kpi.color)} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[20px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] leading-none">{kpi.value}</p>
+                <p className="text-[11px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5 leading-tight">{kpi.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] divide-y divide-[#F5F5F7] dark:divide-[#3A3A3C]">
         <div className="p-6 space-y-4">

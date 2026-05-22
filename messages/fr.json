@@ -176,7 +176,8 @@
     "noTeamOption": "— Aucune équipe —",
     "cancel": "Annuler",
     "delete": "Supprimer",
-    "deleteQuestion": "Supprimer cette question ?"
+    "deleteQuestion": "Supprimer cette question ?",
+    "viewProfile": "Voir la fiche apprenant"
   },
   "importCsv": {
     "title": "Import CSV",
@@ -447,6 +448,34 @@
     "noOneOnlineDesc": "Aucun apprenant actif dans les 15 dernières minutes.",
     "refreshInfo": "Rafraîchissement auto toutes les 30s",
     "refreshNow": "Rafraîchir"
+  },
+  "courseStats": {
+    "assignedLearners": "Apprenants assignés",
+    "completionRate": "Taux de complétion",
+    "avgQuizScore": "Score quiz moyen",
+    "certificates": "Certificats délivrés",
+    "quizAttempts": "Tentatives quiz"
+  },
+  "learnerProfile": {
+    "subtitle": "Fiche apprenant",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "assignedCourses": "Cours assignés",
+    "completed": "Terminés",
+    "completionRate": "Taux de complétion",
+    "certificates": "Certificats",
+    "roles": "Rôles",
+    "teams": "Équipes",
+    "memberSince": "Membre depuis",
+    "lastLogin": "Dernière connexion",
+    "never": "Jamais",
+    "assignedCoursesTitle": "Formations assignées",
+    "noCourses": "Aucune formation assignée.",
+    "assignedOn": "Assigné le",
+    "dueDate": "Échéance",
+    "completedOn": "Terminé le",
+    "viewCertificate": "Voir le certificat",
+    "viewProfile": "Voir la fiche"
   },
   "common": {
     "cancel": "Annuler",

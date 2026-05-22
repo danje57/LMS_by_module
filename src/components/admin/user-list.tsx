@@ -4,8 +4,9 @@ import { useState } from "react";
 import { RoleType } from "@prisma/client";
 import {
   Search, Plus, Pencil, Trash2, ShieldCheck,
-  UserCheck, UserX, X, Eye, EyeOff, Crown, Upload, Layers, KeyRound, Copy, Check,
+  UserCheck, UserX, X, Eye, EyeOff, Crown, Upload, Layers, KeyRound, Copy, Check, BarChart2,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ImportModal } from "@/components/admin/import-modal";
 import { validatePassword, RULES } from "@/lib/password";
@@ -666,6 +667,13 @@ function UserTableRow({
           >
             {user.isActive ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           </button>
+          <Link
+            href={`/dashboard/admin/users/${user.id}`}
+            title={t("viewProfile")}
+            className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-purple-500 transition-colors"
+          >
+            <BarChart2 className="w-3.5 h-3.5" />
+          </Link>
           <button
             onClick={() => onEdit(user)}
             title="Modifier"
