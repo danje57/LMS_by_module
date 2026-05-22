@@ -76,7 +76,6 @@ export async function POST(req: NextRequest) {
 
     tmpPath = file.tmpPath;
     const title = fields.title?.trim();
-    const category = fields.category?.trim() || null;
     const duration = parseInt(fields.duration ?? "", 10);
     const hasQuiz = fields.hasQuiz === "on";
     const passingScore = hasQuiz ? Math.max(0, Math.min(100, parseInt(fields.passingScore ?? "70", 10))) : null;
@@ -110,6 +109,18 @@ export async function POST(req: NextRequest) {
     tmpPath = null;
 
     const relPath = path.join("courses", courseHash, safeName);
+
+    // Catégorie = nom de l'équipe du créateur (managed team en priorité, sinon première équipe)
+    let category: string | null = null;
+    if (createdById) {
+      const managedTeam = await prisma.team.findFirst({ where: { managerId: createdById }, select: { name: true } });
+      if (managedTeam) {
+        category = managedTeam.name;
+      } else {
+        const userTeam = await prisma.userTeam.findFirst({ where: { userId: createdById }, include: { team: { select: { name: true } } } });
+        category = userTeam?.team.name ?? null;
+      }
+    }
 
     const course = await prisma.course.create({
       data: { title, category, duration, hasQuiz, passingScore, filePath: relPath, originalFileName: file.originalName, fileSize: BigInt(file.size), fileHash, createdById },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { QuizEditor } from "@/components/courses/quiz-editor";
 import { ArrowLeft, Save } from "lucide-react";
@@ -32,11 +32,9 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
   const [passingScore, setPassingScore] = useState(80);
   const [createdById, setCreatedById] = useState<string>("");
   const [creators, setCreators] = useState<Creator[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
-  const catListId = useRef(`cat-list-${Math.random().toString(36).slice(2)}`).current;
 
   useEffect(() => {
     fetch(`/api/admin/courses/${id}`)
@@ -56,10 +54,6 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
         .then((r) => r.json())
         .then((data: Creator[]) => setCreators(data));
     }
-    fetch("/api/admin/courses/categories")
-      .then((r) => r.json())
-      .then((data: string[]) => setCategories(data))
-      .catch(() => {});
   }, [id, isAdmin]);
 
   async function handleSave() {
@@ -67,7 +61,7 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
     await fetch(`/api/admin/courses/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, category: category.trim() || null, duration, hasQuiz, passingScore: hasQuiz ? passingScore : null, createdById }),
+      body: JSON.stringify({ title, duration, hasQuiz, passingScore: hasQuiz ? passingScore : null, createdById }),
     });
     setSaving(false);
     setSaved(true);
@@ -114,14 +108,14 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
             <label className={labelCls}>Titre</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
           </div>
-          <div>
-            <label className={labelCls}>Département / Catégorie <span className="text-[#ADADB8] font-normal">(facultatif)</span></label>
-            <input value={category} onChange={(e) => setCategory(e.target.value)} list={catListId}
-              placeholder="ex: RH, IT, Sécurité…" className={inputCls} />
-            <datalist id={catListId}>
-              {categories.map((c) => <option key={c} value={c} />)}
-            </datalist>
-          </div>
+          {category && (
+            <div>
+              <label className={labelCls}>Département</label>
+              <p className="text-[14px] text-[#1D1D1F] dark:text-[#F5F5F7] h-10 flex items-center px-3 rounded-xl bg-[#F5F5F7] dark:bg-[#2C2C2E]">
+                {category}
+              </p>
+            </div>
+          )}
           <div>
             <label className={labelCls}>Durée (minutes)</label>
             <input type="number" min={1} value={duration}

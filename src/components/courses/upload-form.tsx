@@ -150,12 +150,7 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
   const formRef = React.useRef<HTMLFormElement>(null);
-
-  React.useEffect(() => {
-    fetch("/api/admin/courses/categories").then((r) => r.json()).then(setCategories).catch(() => {});
-  }, []);
 
   function handleFileChange(f: File | null) {
     if (f && !f.name.endsWith(".h5p")) {
@@ -235,13 +230,6 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
       <div>
         <label className={labelClass}>{t("courseTitle")}</label>
         <input name="title" required maxLength={255} placeholder={t("titlePlaceholder")} className={fieldClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Département / Catégorie <span className="text-[#ADADB8] font-normal">(facultatif)</span></label>
-        <input name="category" list="categories-list" placeholder="ex: RH, IT, Sécurité, Conformité…" className={fieldClass} />
-        <datalist id="categories-list">
-          {categories.map((c) => <option key={c} value={c} />)}
-        </datalist>
       </div>
       <div>
         <label className={labelClass}>{t("duration")}</label>
