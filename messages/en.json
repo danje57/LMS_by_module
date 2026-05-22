@@ -48,7 +48,12 @@
     "accountsRolesTeams": "Accounts, roles, teams",
     "quickAccess": "Quick access",
     "myCourses": "My courses",
-    "accessAssignedTrainings": "Access my assigned trainings"
+    "accessAssignedTrainings": "Access my assigned trainings",
+    "completionRate": "Completion rate",
+    "certificates": "Certificates issued",
+    "activeThisWeek": "Active this week",
+    "recentActivity": "Recent activity",
+    "viewAll": "View all"
   },
   "courses": {
     "addCourse": "Add a course",

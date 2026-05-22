@@ -48,7 +48,12 @@
     "accountsRolesTeams": "Comptes, rôles, équipes",
     "quickAccess": "Accès rapide",
     "myCourses": "Mes cours",
-    "accessAssignedTrainings": "Accéder à mes formations assignées"
+    "accessAssignedTrainings": "Accéder à mes formations assignées",
+    "completionRate": "Taux de complétion",
+    "certificates": "Certificats émis",
+    "activeThisWeek": "Actifs cette semaine",
+    "recentActivity": "Dernières activités",
+    "viewAll": "Voir tout"
   },
   "courses": {
     "addCourse": "Ajouter un cours",
