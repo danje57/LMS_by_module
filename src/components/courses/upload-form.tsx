@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, FileCheck, Presentation, ExternalLink } from "lucide-react";
+import { Upload, FileCheck, Presentation, ExternalLink, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
@@ -483,49 +483,117 @@ function FormButtons({ loading, label, onCancel }: { loading: boolean; label: st
 }
 
 // ─── Composant principal ──────────────────────────────────────────────────────
+function NativeVideoForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: (courseId: string) => void; isAdmin: boolean; userId: string; creators: Creator[] }) {
+  const t = useTranslations("upload");
+  const tCT = useTranslations("courseType");
+  const [title, setTitle] = useState("");
+  const [duration, setDuration] = useState("30");
+  const [passingScore, setPassingScore] = useState("80");
+  const [createdById, setCreatedById] = useState(userId);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    const res = await fetch("/api/admin/courses/create-native-video", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, duration, passingScore, createdById }),
+    });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) { setError(data.error ?? "Erreur"); return; }
+    onSuccess(data.courseId);
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 px-4 py-3 text-[13px] text-blue-700 dark:text-blue-300">
+        {t("nativeVideoHint")}
+      </div>
+      {isAdmin && (
+        <div>
+          <label className={labelClass}>{t("creator")}</label>
+          <select value={createdById} onChange={e => setCreatedById(e.target.value)} className={fieldClass}>
+            {creators.map(c => <option key={c.id} value={c.id}>{c.name ?? c.email}</option>)}
+          </select>
+        </div>
+      )}
+      <div>
+        <label className={labelClass}>{t("courseTitle")}</label>
+        <input required value={title} onChange={e => setTitle(e.target.value)} className={fieldClass} placeholder={t("courseTitlePlaceholder")} />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={labelClass}>{t("duration")}</label>
+          <input type="number" min={1} required value={duration} onChange={e => setDuration(e.target.value)} className={fieldClass} />
+        </div>
+        <div>
+          <label className={labelClass}>{t("h5pPassingScore")}</label>
+          <input type="number" min={0} max={100} value={passingScore} onChange={e => setPassingScore(e.target.value)} className={fieldClass} />
+          <p className="text-[11px] text-[#ADADB8] mt-1">{t("h5pPassingScoreHint")}</p>
+        </div>
+      </div>
+      {error && <p className="text-[13px] text-red-600">{error}</p>}
+      <button type="submit" disabled={loading}
+        className="flex items-center gap-2 px-5 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] disabled:opacity-50 text-white text-[14px] font-medium rounded-xl transition-colors">
+        {loading ? t("creating") : t("createAndEdit")}
+      </button>
+      <p className="text-[11px] text-[#ADADB8]">{tCT("native_video")}</p>
+    </form>
+  );
+}
+
 export function UploadForm({ isAdmin, userId, creators }: { isAdmin: boolean; userId: string; creators: Creator[] }) {
   const t = useTranslations("upload");
   const router = useRouter();
-  const [tab, setTab] = useState<"h5p" | "pptx">("pptx");
+  const [tab, setTab] = useState<"h5p" | "pptx" | "native_video">("pptx");
 
   function onSuccess() {
     router.push("/dashboard/courses");
     router.refresh();
   }
 
+  function onNativeSuccess(courseId: string) {
+    router.push(`/dashboard/admin/courses/${courseId}/edit`);
+    router.refresh();
+  }
+
+  const tabs = [
+    { key: "pptx" as const, label: t("importPptx"), icon: <Presentation className="w-4 h-4" /> },
+    { key: "h5p" as const, label: t("uploadFile"), icon: <Upload className="w-4 h-4" /> },
+    { key: "native_video" as const, label: t("nativeVideo"), icon: <Video className="w-4 h-4" /> },
+  ];
+
   return (
     <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-[#E5E5EA] dark:border-[#3A3A3C]">
-        {(["pptx", "h5p"] as const).map((tabKey) => (
+        {tabs.map(({ key, label, icon }) => (
           <button
-            key={tabKey}
-            onClick={() => setTab(tabKey)}
+            key={key}
+            onClick={() => setTab(key)}
             className={cn(
               "flex items-center gap-2 px-6 py-4 text-[14px] font-medium transition-all border-b-2",
-              tab === tabKey
+              tab === key
                 ? "border-[#0071E3] text-[#0071E3]"
                 : "border-transparent text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
             )}
           >
-            {tabKey === "h5p" ? (
-              <><Upload className="w-4 h-4" /> {t("uploadFile")}</>
-            ) : (
-              <><Presentation className="w-4 h-4" /> {t("importPptx")}</>
-            )}
+            {icon} {label}
           </button>
         ))}
       </div>
 
       <div className="p-7">
         <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93] mb-6">
-          {tab === "h5p"
-            ? t("uploadExistingH5p")
-            : t("convertPptx")}
+          {tab === "h5p" ? t("uploadExistingH5p") : tab === "pptx" ? t("convertPptx") : t("nativeVideoDesc")}
         </p>
-        {tab === "h5p"
-          ? <H5PForm onSuccess={onSuccess} isAdmin={isAdmin} userId={userId} creators={creators} />
-          : <PPTXForm onSuccess={onSuccess} isAdmin={isAdmin} userId={userId} creators={creators} />}
+        {tab === "h5p" && <H5PForm onSuccess={onSuccess} isAdmin={isAdmin} userId={userId} creators={creators} />}
+        {tab === "pptx" && <PPTXForm onSuccess={onSuccess} isAdmin={isAdmin} userId={userId} creators={creators} />}
+        {tab === "native_video" && <NativeVideoForm onSuccess={onNativeSuccess} isAdmin={isAdmin} userId={userId} creators={creators} />}
       </div>
     </div>
   );

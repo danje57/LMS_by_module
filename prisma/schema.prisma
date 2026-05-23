@@ -98,12 +98,13 @@ model Course {
   duration         Int
   hasQuiz          Boolean              @default(false)
   passingScore     Int?
-  filePath         String
-  originalFileName String
-  fileSize         BigInt
+  filePath         String               @default("")
+  originalFileName String               @default("")
+  fileSize         BigInt               @default(0)
   fileHash         String?
   category         String?
   isActive         Boolean              @default(true)
+  courseType       CourseType           @default(h5p)
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
   createdById      String?
@@ -114,8 +115,35 @@ model Course {
   quizResults      UserQuizResult[]
   certificates     Certificate[]
   questions        QuizQuestion[]
+  nativeVideo      NativeVideo?
 
   @@map("courses")
+}
+
+model NativeVideo {
+  id        String                @id @default(cuid())
+  courseId  String                @unique
+  course    Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  videoPath String
+  duration  Float?
+  questions NativeVideoQuestion[]
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@map("native_videos")
+}
+
+model NativeVideoQuestion {
+  id        String      @id @default(cuid())
+  videoId   String
+  video     NativeVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  timestamp Float
+  question  String
+  choices   Json
+  order     Int         @default(0)
+  createdAt DateTime    @default(now())
+
+  @@map("native_video_questions")
 }
 
 model QuizQuestion {
@@ -316,4 +344,9 @@ enum RoleType {
 enum QuestionType {
   qcm
   vrai_faux
+}
+
+enum CourseType {
+  h5p
+  native_video
 }

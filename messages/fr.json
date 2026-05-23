@@ -133,7 +133,14 @@
     "selectH5p": "Veuillez sélectionner un fichier .h5p.",
     "selectPptx": "Veuillez sélectionner un fichier .pptx.",
     "selectCreatorError": "Veuillez sélectionner un créateur.",
-    "titlePlaceholderPptx": "Ex : Formation sécurité réseau"
+    "titlePlaceholderPptx": "Ex : Formation sécurité réseau",
+    "nativeVideo": "Vidéo Interactive",
+    "nativeVideoDesc": "Créez un cours vidéo avec des questions à des moments précis de la vidéo.",
+    "nativeVideoHint": "Vous serez redirigé vers l'éditeur après la création pour uploader votre vidéo et ajouter des questions.",
+    "creator": "Créateur du cours",
+    "courseTitlePlaceholder": "Ex : Formation sécurité réseau",
+    "creating": "Création en cours…",
+    "createAndEdit": "Créer et éditer"
   },
   "users": {
     "search": "Rechercher un utilisateur…",
@@ -547,5 +554,31 @@
     "successDelete": "Backup supprimé.",
     "errorCreate": "Erreur lors de la création du backup.",
     "errorDelete": "Erreur lors de la suppression du backup."
+  },
+  "nativeVideo": {
+    "correct": "Bonne réponse !",
+    "wrong": "Mauvaise réponse, réessayez.",
+    "retry": "Réessayer",
+    "validate": "Valider"
+  },
+  "nativeVideoEditor": {
+    "uploadVideo": "Cliquez pour uploader une vidéo (mp4, webm, mov)",
+    "replaceVideo": "Remplacer la vidéo",
+    "questions": "{count, plural, =0 {Aucune question} one {1 question} other {# questions}}",
+    "addQuestion": "Ajouter une question ici",
+    "emptyQuestion": "Question sans titre",
+    "at": "à",
+    "questionPlaceholder": "Entrez votre question…",
+    "choices": "Réponses",
+    "markCorrect": "Marquer comme correcte",
+    "choice": "Réponse",
+    "addChoice": "Ajouter une réponse",
+    "save": "Enregistrer les questions",
+    "saving": "Enregistrement…",
+    "saved": "Questions enregistrées !"
+  },
+  "courseType": {
+    "h5p": "Fichier H5P",
+    "native_video": "Vidéo Interactive"
   }
 }

@@ -2,10 +2,18 @@
 
 import { useState, useEffect, useRef } from "react";
 import { H5PPlayer } from "@/components/courses/h5p-player";
+import { NativeVideoPlayer } from "@/components/courses/native-video-player";
 import { QuizPlayer } from "@/components/courses/quiz-player";
 import { ClipboardList, BookOpen, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
+
+interface NativeVideoData {
+  id: string;
+  videoPath: string;
+  duration: number | null;
+  questions: { id: string; timestamp: number; question: string; choices: { id: string; text: string; correct: boolean }[]; order: number }[];
+}
 
 interface Props {
   courseId: string;
@@ -15,11 +23,13 @@ interface Props {
   passingScore: number;
   userName: string;
   logoPath: string | null;
+  courseType?: string;
+  nativeVideo?: NativeVideoData | null;
 }
 
 type Tab = "course" | "quiz";
 
-export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passingScore, userName, logoPath }: Props) {
+export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passingScore, userName, logoPath, courseType, nativeVideo }: Props) {
   const t = useTranslations("player");
   const tQuiz = useTranslations("quiz");
   const [tab, setTab] = useState<Tab>("course");
@@ -137,7 +147,30 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
         </div>
       )}
 
-      {tab === "course" && (
+      {tab === "course" && courseType === "native_video" && nativeVideo && (
+        <>
+          <NativeVideoPlayer
+            courseId={courseId}
+            videoData={nativeVideo}
+            onComplete={() => {
+              void fetch(`/api/courses/${courseId}/progress`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ visitedSlides: [], h5pScore: null }),
+              }).then(r => r.json()).then(result => {
+                if (result.passed !== false) setCourseCompleted(true);
+              });
+            }}
+          />
+          {courseCompleted && (
+            <div className="flex items-center justify-between bg-green-50 border border-green-100 rounded-xl px-4 py-3">
+              <p className="text-[13px] text-green-700 font-medium">✓ {t("courseCompleted")}</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === "course" && courseType !== "native_video" && (
         <>
           <H5PPlayer courseId={courseId} filePath={filePath} visitedSlides={savedVisited} />
 

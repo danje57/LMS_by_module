@@ -20,6 +20,13 @@ export default async function PlayCoursePage({ params }: Props) {
   ]);
   if (!course) notFound();
 
+  const nativeVideo = course.courseType === "native_video"
+    ? await prisma.nativeVideo.findUnique({
+        where: { courseId: id },
+        include: { questions: { orderBy: { timestamp: "asc" } } },
+      })
+    : null;
+
   const userName = session?.user?.name ?? session?.user?.email ?? "Apprenant";
   const logoPath = branding?.logoPath ? `/api/assets/${branding.logoPath}` : null;
 
@@ -42,6 +49,19 @@ export default async function PlayCoursePage({ params }: Props) {
         passingScore={course.passingScore ?? 80}
         userName={userName}
         logoPath={logoPath}
+        courseType={course.courseType}
+        nativeVideo={nativeVideo ? {
+          id: nativeVideo.id,
+          videoPath: nativeVideo.videoPath,
+          duration: nativeVideo.duration,
+          questions: nativeVideo.questions.map(q => ({
+            id: q.id,
+            timestamp: q.timestamp,
+            question: q.question,
+            choices: q.choices as { id: string; text: string; correct: boolean }[],
+            order: q.order,
+          })),
+        } : null}
       />
     </div>
   );

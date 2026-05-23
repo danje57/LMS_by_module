@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { QuizEditor } from "@/components/courses/quiz-editor";
+import { NativeVideoEditor } from "@/components/courses/native-video-editor";
 import { ArrowLeft, Save, Users, CircleCheck, BarChart2, Award, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,15 @@ interface CourseData {
   duration: number;
   passingScore: number | null;
   hasQuiz: boolean;
+  courseType: string;
   createdById: string | null;
+}
+
+interface NativeVideoData {
+  id: string;
+  videoPath: string;
+  duration: number | null;
+  questions: { id: string; timestamp: number; question: string; choices: { id: string; text: string; correct: boolean }[]; order: number }[];
 }
 
 interface Creator { id: string; name: string | null; email: string }
@@ -47,6 +56,7 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
   const [saved, setSaved] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
   const [stats, setStats] = useState<CourseStats | null>(null);
+  const [nativeVideo, setNativeVideo] = useState<NativeVideoData | null>(null);
 
   useEffect(() => {
     fetch(`/api/admin/courses/${id}`)
@@ -59,6 +69,11 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
         setHasQuiz(data.hasQuiz);
         setPassingScore(data.passingScore ?? 80);
         setCreatedById(data.createdById ?? "");
+        if (data.courseType === "native_video") {
+          fetch(`/api/courses/${id}/native-video`)
+            .then(r => r.json())
+            .then(d => setNativeVideo(d));
+        }
       });
 
     if (isAdmin) {
@@ -194,28 +209,42 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
           </div>
         </div>
 
-        <div className="p-6 space-y-4">
-          <h2 className="text-[13px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Questions du quiz</h2>
-          <QuizEditor courseId={id} passingScore={passingScore} onCountChange={setQuestionCount} />
-          <div className="flex items-center justify-between pt-2 border-t border-[#F5F5F7] dark:border-[#3A3A3C] mt-4">
-            {!quizRatioOk && (
-              <p className="text-[12px] text-amber-700">
-                Corrigez le ratio questions / seuil avant d&apos;enregistrer.
-              </p>
-            )}
-            <div className="ml-auto">
-              <button onClick={handleSave} disabled={saving || !quizRatioOk}
-                title={!quizRatioOk ? `Seuil effectif ${effectiveScore}% ≠ seuil configuré ${passingScore}%` : undefined}
-                className={cn(
-                  "flex items-center gap-1.5 px-5 h-9 text-[13px] font-medium rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
-                  saved ? "bg-green-500 text-white" : "bg-[#0071E3] hover:bg-[#0077ED] text-white"
-                )}>
-                <Save className="w-3.5 h-3.5" />
-                {saving ? "Enregistrement…" : saved ? "Enregistré !" : "Enregistrer"}
-              </button>
+        {course.courseType === "native_video" && (
+          <div className="p-6 space-y-4">
+            <h2 className="text-[13px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Vidéo &amp; Questions</h2>
+            <NativeVideoEditor
+              courseId={id}
+              initialVideoId={nativeVideo?.id}
+              initialQuestions={nativeVideo?.questions ?? []}
+              onSaved={() => { setSaved(true); setTimeout(() => setSaved(false), 2500); }}
+            />
+          </div>
+        )}
+
+        {course.courseType !== "native_video" && (
+          <div className="p-6 space-y-4">
+            <h2 className="text-[13px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Questions du quiz</h2>
+            <QuizEditor courseId={id} passingScore={passingScore} onCountChange={setQuestionCount} />
+            <div className="flex items-center justify-between pt-2 border-t border-[#F5F5F7] dark:border-[#3A3A3C] mt-4">
+              {!quizRatioOk && (
+                <p className="text-[12px] text-amber-700">
+                  Corrigez le ratio questions / seuil avant d&apos;enregistrer.
+                </p>
+              )}
+              <div className="ml-auto">
+                <button onClick={handleSave} disabled={saving || !quizRatioOk}
+                  title={!quizRatioOk ? `Seuil effectif ${effectiveScore}% ≠ seuil configuré ${passingScore}%` : undefined}
+                  className={cn(
+                    "flex items-center gap-1.5 px-5 h-9 text-[13px] font-medium rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
+                    saved ? "bg-green-500 text-white" : "bg-[#0071E3] hover:bg-[#0077ED] text-white"
+                  )}>
+                  <Save className="w-3.5 h-3.5" />
+                  {saving ? "Enregistrement…" : saved ? "Enregistré !" : "Enregistrer"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
