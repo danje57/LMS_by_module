@@ -7,9 +7,18 @@ type Params = { params: Promise<{ id: string }> };
 // Format CSV : question;type;choiceA;choiceB;choiceC;choiceD;correctAnswer;explanation
 // type : qcm | vrai_faux
 // correctAnswer QCM : A|B|C|D   vrai_faux : vrai|faux
+async function canEditQuestions(userId: string | undefined, isAdmin: boolean) {
+  if (!userId) return false;
+  if (isAdmin) return true;
+  const role = await prisma.userRole.findFirst({
+    where: { userId, role: { name: { in: ["manager", "creator"] } } },
+  });
+  return role !== null;
+}
+
 export async function POST(req: NextRequest, { params }: Params) {
   const session = await auth();
-  if (session?.user.sessionMode !== "admin") return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  if (!await canEditQuestions(session?.user?.id, session?.user?.sessionMode === "admin")) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
 
   const { id } = await params;
   const text = await req.text();

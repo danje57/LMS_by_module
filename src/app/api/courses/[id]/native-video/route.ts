@@ -9,6 +9,7 @@ import { Readable } from "stream";
 import Busboy from "busboy";
 
 const MAX_VIDEO_SIZE = 600 * 1024 * 1024;
+const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -39,7 +40,7 @@ function parseVideoUpload(req: NextRequest): Promise<{
       }
 
       const tmpId = crypto.randomBytes(8).toString("hex");
-      const tmpDir = path.join(process.cwd(), "uploads", "tmp");
+      const tmpDir = path.join(UPLOAD_DIR, "tmp");
       mkdirSync(tmpDir, { recursive: true });
       const tmpPath = path.join(tmpDir, `${tmpId}${ext}`);
 
@@ -66,7 +67,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const { id } = await params;
   const nativeVideo = await prisma.nativeVideo.findUnique({
     where: { courseId: id },
-    include: { questions: { orderBy: { timestamp: "asc" } } },
+    include: { questions: { orderBy: [{ timestamp: "asc" }, { order: "asc" }] } },
   });
 
   return NextResponse.json(nativeVideo ?? null);
@@ -115,7 +116,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     // Déplacer vers le dossier final
     const slug = crypto.randomBytes(8).toString("hex");
     const filename = `${slug}${ext}`;
-    const uploadDir = path.join(process.cwd(), "uploads", "videos");
+    const uploadDir = path.join(UPLOAD_DIR, "videos");
     mkdirSync(uploadDir, { recursive: true });
     const finalPath = path.join(uploadDir, filename);
     const { rename } = await import("fs/promises");
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     // Supprimer l'ancienne vidéo si elle existe
     const existing = await prisma.nativeVideo.findUnique({ where: { courseId: id } });
     if (existing) {
-      try { await unlink(path.join(process.cwd(), "uploads", "videos", path.basename(existing.videoPath))); } catch { /* ignore */ }
+      try { await unlink(path.join(UPLOAD_DIR, existing.videoPath)); } catch { /* ignore */ }
       await prisma.nativeVideo.delete({ where: { courseId: id } });
     }
 
@@ -163,12 +164,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   if (Array.isArray(questions) && questions.length > 0) {
     await prisma.nativeVideoQuestion.createMany({
-      data: questions.map((q: { timestamp: number; question: string; choices: { id: string; text: string; correct: boolean }[]; order: number }) => ({
+      data: questions.map((q: { timestamp: number; question: string; choices: { id: string; text: string; correct: boolean }[]; order: number; type?: string; allowMultiple?: boolean; explanation?: string | null }, index: number) => ({
         videoId: nativeVideo.id,
         timestamp: q.timestamp,
         question: q.question,
         choices: q.choices as object[],
-        order: q.order ?? 0,
+        order: index,
+        type: (q.type === "vrai_faux" ? "vrai_faux" : "qcm") as "qcm" | "vrai_faux",
+        allowMultiple: q.allowMultiple ?? false,
+        explanation: q.explanation ?? null,
       })),
     });
   }

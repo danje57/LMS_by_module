@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { X, Search, Users, UserPlus, Building2, CheckCheck, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -21,6 +22,7 @@ function label(u: { name: string | null; email: string }) {
 
 export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
   const t = useTranslations("assignment");
+  const router = useRouter();
   const [allUsers, setAllUsers]         = useState<UserRef[]>([]);
   const [teams, setTeams]               = useState<TeamInfo[]>([]);
   const [callerTeams, setCallerTeams]   = useState<{ id: string; name: string }[]>([]);
@@ -111,6 +113,7 @@ export function AssignModalManager({ courseId, courseTitle, onClose }: Props) {
       }),
     });
     setSaving(false);
+    router.refresh();
     onClose();
   }
 

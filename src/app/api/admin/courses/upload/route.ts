@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
     });
 
     await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "course.upload", targetId: course.id, targetLabel: title });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, courseId: course.id });
 
   } catch (err) {
     if (tmpPath) rm(tmpPath, { force: true }).catch(() => {});

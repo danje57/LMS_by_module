@@ -12,7 +12,7 @@ interface NativeVideoData {
   id: string;
   videoPath: string;
   duration: number | null;
-  questions: { id: string; timestamp: number; question: string; choices: { id: string; text: string; correct: boolean }[]; order: number }[];
+  questions: { id: string; timestamp: number; question: string; choices: { id: string; text: string; correct: boolean }[]; order: number; type?: "qcm" | "vrai_faux"; allowMultiple?: boolean; explanation?: string | null }[];
 }
 
 interface Props {

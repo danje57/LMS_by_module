@@ -169,7 +169,7 @@ export function QuizPlayer({ courseId, courseTitle, passingScore, userName, logo
                     ? "border-[#0071E3] bg-[#0071E3]/5 dark:bg-[#0071E3]/10 text-[#1D1D1F] dark:text-[#F5F5F7]"
                     : "border-[#E5E5EA] dark:border-[#3A3A3C] bg-white dark:bg-[#1C1C1E] text-[#1D1D1F] dark:text-[#F5F5F7] hover:border-[#D2D2D7] dark:hover:border-[#636366]")}>
                 <span className={cn("w-7 h-7 rounded-lg text-[13px] font-bold flex items-center justify-center shrink-0 transition-all",
-                  isSelected ? "bg-[#0071E3] text-white" : "bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#6E6E73] dark:text-[#8E8E93]")}>{letter}</span>
+                  isSelected ? "bg-[#0071E3] text-white" : "bg-[#E5E5EA] dark:bg-[#3A3A3C] text-[#3A3A3C] dark:text-[#E5E5EA]")}>{letter}</span>
                 <span className="text-[14px]">{value}</span>
               </button>
             );

@@ -5,6 +5,8 @@ import { createReadStream, statSync } from "fs";
 import { Readable } from "stream";
 import path from "path";
 
+const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
+
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, { params }: Params) {
@@ -15,7 +17,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const nativeVideo = await prisma.nativeVideo.findUnique({ where: { id } });
   if (!nativeVideo) return NextResponse.json({ error: "Vidéo introuvable" }, { status: 404 });
 
-  const filePath = path.join(process.cwd(), "uploads", nativeVideo.videoPath);
+  const filePath = path.join(UPLOAD_DIR, nativeVideo.videoPath);
   let stat: ReturnType<typeof statSync>;
   try { stat = statSync(filePath); } catch {
     return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 });

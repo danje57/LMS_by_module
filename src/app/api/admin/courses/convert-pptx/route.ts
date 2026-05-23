@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
     const relPath = `courses/${courseHash}/${h5pFilename}`;
 
     // Créer l'enregistrement en base
-    await prisma.course.create({
+    const course = await prisma.course.create({
       data: {
         title,
         filePath: relPath,
@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, slides: (meta as { slideCount: number }).slideCount });
+    return NextResponse.json({ success: true, courseId: course.id, slides: (meta as { slideCount: number }).slideCount });
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Erreur inconnue";

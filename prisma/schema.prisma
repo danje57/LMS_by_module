@@ -135,14 +135,17 @@ model NativeVideo {
 }
 
 model NativeVideoQuestion {
-  id        String      @id @default(cuid())
-  videoId   String
-  video     NativeVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  timestamp Float
-  question  String
-  choices   Json
-  order     Int         @default(0)
-  createdAt DateTime    @default(now())
+  id            String       @id @default(cuid())
+  videoId       String
+  video         NativeVideo  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  timestamp     Float
+  question      String
+  choices       Json
+  order         Int          @default(0)
+  type          QuestionType @default(qcm)
+  allowMultiple Boolean      @default(false)
+  explanation   String?
+  createdAt     DateTime     @default(now())
 
   @@map("native_video_questions")
 }

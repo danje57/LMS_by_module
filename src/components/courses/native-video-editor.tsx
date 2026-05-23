@@ -1,19 +1,40 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
-import { Plus, Trash2, GripVertical, Clock, Upload, Loader2 } from "lucide-react";
+import { useRef, useState, useCallback, forwardRef, useImperativeHandle } from "react";
+import { Plus, Trash2, GripVertical, Clock, Upload, Loader2, Check, PlusCircle, MinusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
+type QuestionType = "qcm" | "vrai_faux";
+const LETTERS = ["A","B","C","D","E","F","G","H","I","J"] as const;
+
 interface Choice { id: string; text: string; correct: boolean; }
-interface Question { id: string; timestamp: number; question: string; choices: Choice[]; order: number; }
+interface Question {
+  id: string;
+  timestamp: number;
+  question: string;
+  choices: Choice[];
+  order: number;
+  type: QuestionType;
+  allowMultiple: boolean;
+  explanation: string | null;
+}
+
+type PartialQuestion = Omit<Question, "type" | "allowMultiple" | "explanation"> & {
+  type?: QuestionType;
+  allowMultiple?: boolean;
+  explanation?: string | null;
+};
 
 interface Props {
   courseId: string;
   initialVideoId?: string;
-  initialQuestions?: Question[];
+  initialQuestions?: PartialQuestion[];
   onSaved?: () => void;
 }
+
+const fieldCls = "w-full text-[13px] border border-[#E5E5EA] dark:border-[#3A3A3C] rounded-xl px-3 py-2 bg-white dark:bg-[#2C2C2E] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0071E3] transition-colors";
+const labelCls = "block text-[11px] font-medium text-[#6E6E73] dark:text-[#8E8E93] uppercase tracking-wide mb-1";
 
 function formatTime(s: number) {
   const m = Math.floor(s / 60);
@@ -34,10 +55,17 @@ function newQuestion(timestamp: number, order: number): Question {
     question: "",
     choices: [newChoice(), newChoice(), newChoice(), newChoice()],
     order,
+    type: "qcm",
+    allowMultiple: false,
+    explanation: null,
   };
 }
 
-export function NativeVideoEditor({ courseId, initialVideoId, initialQuestions = [], onSaved }: Props) {
+export interface NativeVideoEditorHandle {
+  save: () => Promise<boolean>;
+}
+
+export const NativeVideoEditor = forwardRef<NativeVideoEditorHandle, Props>(function NativeVideoEditor({ courseId, initialVideoId, initialQuestions, onSaved }, ref) {
   const t = useTranslations("nativeVideoEditor");
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoSrc, setVideoSrc] = useState<string | null>(
@@ -45,12 +73,19 @@ export function NativeVideoEditor({ courseId, initialVideoId, initialQuestions =
   );
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [questions, setQuestions] = useState<Question[]>(initialQuestions);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [questions, setQuestions] = useState<Question[]>(
+    (initialQuestions ?? []).map(q => ({
+      ...q,
+      type: q.type ?? "qcm",
+      allowMultiple: q.allowMultiple ?? false,
+      explanation: q.explanation ?? null,
+    }))
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const activeQ = questions.find(q => q.id === activeId) ?? null;
 
-  // Upload vidéo
   const handleVideoUpload = useCallback(async (file: File) => {
     setUploading(true);
     const form = new FormData();
@@ -63,10 +98,9 @@ export function NativeVideoEditor({ courseId, initialVideoId, initialQuestions =
     setUploading(false);
   }, [courseId]);
 
-  // Ajouter une question au timestamp courant
   function addQuestion() {
-    const t = videoRef.current?.currentTime ?? 0;
-    const q = newQuestion(t, questions.length);
+    const ts = videoRef.current?.currentTime ?? 0;
+    const q = newQuestion(ts, questions.length);
     setQuestions(prev => [...prev, q].sort((a, b) => a.timestamp - b.timestamp));
     setActiveId(q.id);
   }
@@ -80,6 +114,34 @@ export function NativeVideoEditor({ courseId, initialVideoId, initialQuestions =
     setQuestions(prev => prev.map(q => q.id === id ? { ...q, ...patch } : q));
   }
 
+  function changeType(qId: string, type: QuestionType) {
+    setQuestions(prev => prev.map(q => {
+      if (q.id !== qId) return q;
+      if (type === "vrai_faux") {
+        return { ...q, type, allowMultiple: false, choices: [newChoice("Vrai"), newChoice("Faux")] };
+      }
+      const wasVraiFaux = q.choices.length === 2 && q.choices.every(c => c.text === "Vrai" || c.text === "Faux");
+      return { ...q, type, choices: wasVraiFaux ? [newChoice(), newChoice(), newChoice(), newChoice()] : q.choices };
+    }));
+  }
+
+  function toggleCorrect(qId: string, cId: string, allowMultiple: boolean) {
+    setQuestions(prev => prev.map(q => {
+      if (q.id !== qId) return q;
+      if (allowMultiple) {
+        return { ...q, choices: q.choices.map(c => c.id === cId ? { ...c, correct: !c.correct } : c) };
+      }
+      return { ...q, choices: q.choices.map(c => ({ ...c, correct: c.id === cId })) };
+    }));
+  }
+
+  function setVraiFauxCorrect(qId: string, cId: string) {
+    setQuestions(prev => prev.map(q => {
+      if (q.id !== qId) return q;
+      return { ...q, choices: q.choices.map(c => ({ ...c, correct: c.id === cId })) };
+    }));
+  }
+
   function updateChoice(qId: string, cId: string, patch: Partial<Choice>) {
     setQuestions(prev => prev.map(q => {
       if (q.id !== qId) return q;
@@ -87,16 +149,9 @@ export function NativeVideoEditor({ courseId, initialVideoId, initialQuestions =
     }));
   }
 
-  function setCorrect(qId: string, cId: string) {
-    setQuestions(prev => prev.map(q => {
-      if (q.id !== qId) return q;
-      return { ...q, choices: q.choices.map(c => ({ ...c, correct: c.id === cId })) };
-    }));
-  }
-
   function addChoice(qId: string) {
     setQuestions(prev => prev.map(q => {
-      if (q.id !== qId || q.choices.length >= 6) return q;
+      if (q.id !== qId || q.choices.length >= 10) return q;
       return { ...q, choices: [...q.choices, newChoice()] };
     }));
   }
@@ -108,7 +163,25 @@ export function NativeVideoEditor({ courseId, initialVideoId, initialQuestions =
     }));
   }
 
-  async function save() {
+  function validate(): string | null {
+    for (const q of questions) {
+      if (!q.question.trim()) return `Question à ${formatTime(q.timestamp)} : le texte est vide.`;
+      if (q.type === "qcm") {
+        if (q.choices.some(c => !c.text.trim())) return `Question à ${formatTime(q.timestamp)} : tous les choix doivent être remplis.`;
+        if (!q.choices.some(c => c.correct)) return `Question à ${formatTime(q.timestamp)} : aucune bonne réponse sélectionnée.`;
+      }
+      if (q.type === "vrai_faux") {
+        if (!q.choices.some(c => c.correct)) return `Question à ${formatTime(q.timestamp)} : sélectionnez Vrai ou Faux comme bonne réponse.`;
+      }
+    }
+    return null;
+  }
+
+  async function save(): Promise<boolean> {
+    if (questions.length === 0) return true;
+    const err = validate();
+    if (err) { setSaveError(err); return false; }
+    setSaveError(null);
     setSaving(true);
     const duration = videoRef.current?.duration ?? null;
     await fetch(`/api/courses/${courseId}/native-video`, {
@@ -118,7 +191,10 @@ export function NativeVideoEditor({ courseId, initialVideoId, initialQuestions =
     });
     setSaving(false);
     onSaved?.();
+    return true;
   }
+
+  useImperativeHandle(ref, () => ({ save }));
 
   return (
     <div className="space-y-4">
@@ -145,7 +221,7 @@ export function NativeVideoEditor({ courseId, initialVideoId, initialQuestions =
 
       {/* Remplacer vidéo */}
       {videoSrc && (
-        <label className="flex items-center gap-2 text-[12px] text-[#6E6E73] hover:text-[#1D1D1F] cursor-pointer w-fit">
+        <label className="flex items-center gap-2 text-[12px] text-[#6E6E73] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] cursor-pointer w-fit">
           <Upload className="w-3.5 h-3.5" />
           {t("replaceVideo")}
           <input
@@ -158,7 +234,7 @@ export function NativeVideoEditor({ courseId, initialVideoId, initialQuestions =
       {/* Barre questions */}
       {videoSrc && (
         <div className="flex items-center justify-between">
-          <h3 className="text-[13px] font-semibold text-[#1D1D1F]">
+          <h3 className="text-[13px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
             {t("questions", { count: questions.length })}
           </h3>
           <button
@@ -181,14 +257,20 @@ export function NativeVideoEditor({ courseId, initialVideoId, initialQuestions =
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all border",
                 activeId === q.id
-                  ? "bg-blue-50 border-[#0071E3]/30"
-                  : "bg-white border-[#E5E5EA] hover:border-[#ADADB8]"
+                  ? "bg-blue-50 dark:bg-[#0071E3]/10 border-[#0071E3]/30"
+                  : "bg-white dark:bg-[#1C1C1E] border-[#E5E5EA] dark:border-[#3A3A3C] hover:border-[#ADADB8]"
               )}
             >
               <GripVertical className="w-3.5 h-3.5 text-[#ADADB8] shrink-0" />
               <Clock className="w-3.5 h-3.5 text-[#6E6E73] shrink-0" />
               <span className="text-[12px] text-[#6E6E73] font-mono shrink-0">{formatTime(q.timestamp)}</span>
-              <span className="text-[13px] text-[#1D1D1F] truncate flex-1">
+              <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0",
+                q.type === "qcm"
+                  ? "bg-blue-50 dark:bg-[#0071E3]/10 text-blue-600"
+                  : "bg-purple-50 dark:bg-purple-500/10 text-purple-600")}>
+                {q.type === "qcm" ? (q.allowMultiple ? "QCM multi" : "QCM") : "V/F"}
+              </span>
+              <span className="text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] truncate flex-1">
                 {q.question || <span className="italic text-[#ADADB8]">{t("emptyQuestion")}</span>}
               </span>
               <button
@@ -204,61 +286,136 @@ export function NativeVideoEditor({ courseId, initialVideoId, initialQuestions =
 
       {/* Éditeur question active */}
       {activeQ && (
-        <div className="bg-white border border-[#E5E5EA] rounded-2xl p-4 space-y-4">
-          <div className="flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5 text-[#6E6E73]" />
-            <span className="text-[12px] text-[#6E6E73]">{t("at")} {formatTime(activeQ.timestamp)}</span>
+        <div className="bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-[#E5E5EA] dark:border-[#3A3A3C] rounded-2xl p-5 space-y-4">
+          {/* Timestamp */}
+          <div className="flex items-center gap-2 text-[12px] text-[#6E6E73]">
+            <Clock className="w-3.5 h-3.5" />
+            {t("at")} {formatTime(activeQ.timestamp)}
           </div>
 
-          <textarea
-            value={activeQ.question}
-            onChange={e => updateQuestion(activeQ.id, { question: e.target.value })}
-            placeholder={t("questionPlaceholder")}
-            rows={2}
-            className="w-full text-[13px] border border-[#E5E5EA] rounded-xl px-3 py-2 resize-none focus:outline-none focus:border-[#0071E3] transition-colors"
-          />
-
-          <div className="space-y-2">
-            <p className="text-[11px] text-[#6E6E73] font-medium uppercase tracking-wide">{t("choices")}</p>
-            {activeQ.choices.map((c, i) => (
-              <div key={c.id} className="flex items-center gap-2">
-                <input
-                  type="radio" name={`correct-${activeQ.id}`} checked={c.correct}
-                  onChange={() => setCorrect(activeQ.id, c.id)}
-                  className="accent-[#0071E3] shrink-0"
-                  title={t("markCorrect")}
-                />
-                <input
-                  value={c.text}
-                  onChange={e => updateChoice(activeQ.id, c.id, { text: e.target.value })}
-                  placeholder={`${t("choice")} ${i + 1}`}
-                  className="flex-1 text-[13px] border border-[#E5E5EA] rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#0071E3] transition-colors"
-                />
-                {activeQ.choices.length > 2 && (
-                  <button onClick={() => removeChoice(activeQ.id, c.id)} className="text-[#ADADB8] hover:text-red-500">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            ))}
-            {activeQ.choices.length < 6 && (
-              <button
-                onClick={() => addChoice(activeQ.id)}
-                className="text-[12px] text-[#0071E3] hover:underline flex items-center gap-1"
-              >
-                <Plus className="w-3 h-3" /> {t("addChoice")}
+          {/* Sélecteur type */}
+          <div className="flex gap-2 flex-wrap">
+            {(["qcm", "vrai_faux"] as const).map(type => (
+              <button key={type} type="button" onClick={() => changeType(activeQ.id, type)}
+                className={cn("px-4 py-1.5 rounded-lg text-[13px] font-medium transition-all",
+                  activeQ.type === type
+                    ? "bg-[#0071E3] text-white"
+                    : "bg-white dark:bg-[#1C1C1E] border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]")}>
+                {type === "qcm" ? "QCM" : "Vrai / Faux"}
               </button>
+            ))}
+            {activeQ.type === "qcm" && (
+              <label className="ml-auto flex items-center gap-2 text-[13px] text-[#6E6E73] dark:text-[#8E8E93] cursor-pointer select-none">
+                <input type="checkbox" checked={activeQ.allowMultiple}
+                  onChange={e => updateQuestion(activeQ.id, { allowMultiple: e.target.checked })}
+                  className="w-4 h-4 rounded accent-[#0071E3]" />
+                Plusieurs réponses
+              </label>
             )}
+          </div>
+
+          {/* Texte question */}
+          <div>
+            <label className={labelCls}>Question *</label>
+            <textarea
+              value={activeQ.question}
+              onChange={e => updateQuestion(activeQ.id, { question: e.target.value })}
+              placeholder={t("questionPlaceholder")}
+              rows={2}
+              className="w-full text-[13px] border border-[#D2D2D7] dark:border-[#3A3A3C] rounded-xl px-3 py-2 bg-white dark:bg-[#1C1C1E] dark:text-[#F5F5F7] resize-none focus:outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-colors"
+            />
+          </div>
+
+          {/* Choix QCM */}
+          {activeQ.type === "qcm" && (
+            <div className="space-y-2">
+              <label className={labelCls}>
+                Choix ({activeQ.choices.length} / 10) — {activeQ.allowMultiple ? "cliquez les badges pour sélectionner les bonnes réponses" : "cliquez le badge pour marquer la bonne réponse"}
+              </label>
+              {activeQ.choices.map((c, i) => (
+                <div key={c.id} className="flex items-center gap-2">
+                  <button type="button"
+                    onClick={() => toggleCorrect(activeQ.id, c.id, activeQ.allowMultiple)}
+                    className={cn(
+                      "w-7 h-7 rounded-lg text-[12px] font-bold flex items-center justify-center shrink-0 transition-all relative",
+                      c.correct ? "bg-[#0071E3] text-white" : "bg-[#E5E5EA] dark:bg-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#D2D2D7]"
+                    )}>
+                    {LETTERS[i]}
+                    {activeQ.allowMultiple && c.correct && (
+                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full flex items-center justify-center">
+                        <Check className="w-2 h-2 text-white" />
+                      </span>
+                    )}
+                  </button>
+                  <input
+                    value={c.text}
+                    onChange={e => updateChoice(activeQ.id, c.id, { text: e.target.value })}
+                    placeholder={`Option ${LETTERS[i]}`}
+                    className={fieldCls}
+                  />
+                  {activeQ.choices.length > 2 && (
+                    <button type="button" onClick={() => removeChoice(activeQ.id, c.id)}
+                      className="p-1.5 rounded-lg text-[#ADADB8] hover:text-red-500 hover:bg-red-50 transition-colors shrink-0">
+                      <MinusCircle className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {activeQ.choices.length < 10 && (
+                <button type="button" onClick={() => addChoice(activeQ.id)}
+                  className="flex items-center gap-1.5 text-[13px] text-[#0071E3] hover:text-[#0077ED] font-medium transition-colors mt-1">
+                  <PlusCircle className="w-4 h-4" /> Ajouter un choix
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Vrai / Faux */}
+          {activeQ.type === "vrai_faux" && (
+            <div>
+              <label className={labelCls}>Bonne réponse</label>
+              <div className="flex gap-2">
+                {activeQ.choices.map(c => (
+                  <button key={c.id} type="button" onClick={() => setVraiFauxCorrect(activeQ.id, c.id)}
+                    className={cn(
+                      "px-6 py-2 rounded-xl text-[14px] font-medium transition-all",
+                      c.correct
+                        ? "bg-[#0071E3] text-white shadow-sm"
+                        : "bg-white dark:bg-[#1C1C1E] border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:border-[#0071E3]"
+                    )}>
+                    {c.text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Explication */}
+          <div>
+            <label className={labelCls}>Explication (optionnelle)</label>
+            <input
+              value={activeQ.explanation ?? ""}
+              onChange={e => updateQuestion(activeQ.id, { explanation: e.target.value || null })}
+              placeholder="Affichée après la bonne réponse…"
+              className={fieldCls}
+            />
           </div>
         </div>
       )}
 
       {/* Bouton sauvegarder */}
+      {saveError && (
+        <p className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl px-3 py-2">
+          {saveError}
+        </p>
+      )}
+
       {videoSrc && (
         <button
           onClick={save}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-[#1D1D1F] hover:bg-[#333] disabled:opacity-50 text-white text-[13px] font-medium rounded-xl transition-colors"
+          disabled={saving || questions.length === 0}
+          title={questions.length === 0 ? "Ajoutez au moins une question avant d'enregistrer" : undefined}
+          className="flex items-center gap-2 px-4 py-2 bg-[#1D1D1F] dark:bg-[#F5F5F7] hover:bg-[#333] dark:hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed text-white dark:text-[#1D1D1F] text-[13px] font-medium rounded-xl transition-colors"
         >
           {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           {saving ? t("saving") : t("save")}
@@ -266,4 +423,5 @@ export function NativeVideoEditor({ courseId, initialVideoId, initialQuestions =
       )}
     </div>
   );
-}
+});
+

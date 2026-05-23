@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { X, Search, UserCheck, Calendar, Users, UserPlus, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -26,6 +27,7 @@ function label(u: { name: string | null; email: string }) {
 
 export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps) {
   const t = useTranslations("assignment");
+  const router = useRouter();
   const [allUsers, setAllUsers] = useState<UserRef[]>([]);
   const [teams, setTeams] = useState<TeamRef[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -107,6 +109,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
       }),
     });
     setSaving(false);
+    router.refresh();
     onClose();
   }
 

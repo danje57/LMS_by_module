@@ -141,7 +141,7 @@ function ProgressBar({ progress, label }: { progress: number; label: string }) {
 type DuplicateInfo = { existingTitle: string; existingId: string };
 
 // ─── Formulaire H5P ──────────────────────────────────────────────────────────
-function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => void; isAdmin: boolean; userId: string; creators: Creator[] }) {
+function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: (courseId: string) => void; isAdmin: boolean; userId: string; creators: Creator[] }) {
   const t = useTranslations("upload");
   const [hasQuiz, setHasQuiz] = useState(false);
   const [passingScore, setPassingScore] = useState("70");
@@ -177,7 +177,7 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
     if (force) form.set("force", "true");
 
     try {
-      await new Promise<void>((resolve, reject) => {
+      const courseId = await new Promise<string>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener("progress", (ev) => {
           if (ev.lengthComputable) setProgress(Math.round((ev.loaded / ev.total) * 100));
@@ -190,7 +190,7 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
               setLoading(false);
               reject(null);
             } else {
-              resolve();
+              resolve(data.courseId as string);
             }
           } else {
             try { reject(new Error(JSON.parse(xhr.responseText).error ?? "Erreur serveur")); }
@@ -201,7 +201,7 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
         xhr.open("POST", "/api/admin/courses/upload");
         xhr.send(form);
       });
-      onSuccess();
+      onSuccess(courseId);
     } catch (err) {
       if (err !== null) { setError(err instanceof Error ? err.message : "Erreur inconnue"); setLoading(false); }
     }
@@ -277,7 +277,7 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
 }
 
 // ─── Formulaire PPTX ─────────────────────────────────────────────────────────
-function PPTXForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => void; isAdmin: boolean; userId: string; creators: Creator[] }) {
+function PPTXForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: (courseId: string) => void; isAdmin: boolean; userId: string; creators: Creator[] }) {
   const t = useTranslations("upload");
   const [hasQuiz, setHasQuiz] = useState(false);
   const [passingScore, setPassingScore] = useState("70");
@@ -321,7 +321,7 @@ function PPTXForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => v
     if (force) form.append("force", "true");
 
     try {
-      await new Promise<void>((resolve, reject) => {
+      const courseId = await new Promise<string>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener("progress", (ev) => {
           if (ev.lengthComputable) {
@@ -339,7 +339,7 @@ function PPTXForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => v
               reject(null);
             } else {
               setProgress(100);
-              resolve();
+              resolve(data.courseId as string);
             }
           } else {
             try { reject(new Error(JSON.parse(xhr.responseText).error ?? "Erreur serveur")); }
@@ -350,7 +350,7 @@ function PPTXForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => v
         xhr.open("POST", "/api/admin/courses/convert-pptx");
         xhr.send(form);
       });
-      onSuccess();
+      onSuccess(courseId);
     } catch (err) {
       if (err !== null) { setError(err instanceof Error ? err.message : "Erreur inconnue"); setLoading(false); }
     }
@@ -588,12 +588,7 @@ export function UploadForm({ isAdmin, userId, creators }: { isAdmin: boolean; us
   const router = useRouter();
   const [tab, setTab] = useState<"h5p" | "pptx" | "native_video">("pptx");
 
-  function onSuccess() {
-    router.push("/dashboard/courses");
-    router.refresh();
-  }
-
-  function onNativeSuccess(courseId: string) {
+  function onSuccess(courseId: string) {
     router.push(`/dashboard/admin/courses/${courseId}/edit`);
     router.refresh();
   }
@@ -630,7 +625,7 @@ export function UploadForm({ isAdmin, userId, creators }: { isAdmin: boolean; us
         </p>
         {tab === "h5p" && <H5PForm onSuccess={onSuccess} isAdmin={isAdmin} userId={userId} creators={creators} />}
         {tab === "pptx" && <PPTXForm onSuccess={onSuccess} isAdmin={isAdmin} userId={userId} creators={creators} />}
-        {tab === "native_video" && <NativeVideoForm onSuccess={onNativeSuccess} isAdmin={isAdmin} userId={userId} creators={creators} />}
+        {tab === "native_video" && <NativeVideoForm onSuccess={onSuccess} isAdmin={isAdmin} userId={userId} creators={creators} />}
       </div>
     </div>
   );
