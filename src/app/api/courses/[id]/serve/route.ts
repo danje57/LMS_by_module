@@ -86,6 +86,7 @@ export async function GET(
       var visitedSlides = new Set(${JSON.stringify(savedVisited)});
       var isInteractiveVideo = ${isInteractiveVideo ? "true" : "false"};
       var videoDuration = 0;
+      var ivStarted = false;
 
       function notifyCompleted() {
         window.parent.postMessage({
@@ -114,6 +115,11 @@ export async function GET(
             if (attempts > 120) { clearInterval(interval); return; }
             if (window.H5P && window.H5P.externalDispatcher) {
               clearInterval(interval);
+              // Pour Interactive Video : marquer comme démarré dès le chargement du player
+              if (isInteractiveVideo && !ivStarted) {
+                ivStarted = true;
+                window.parent.postMessage({ type: 'h5p-iv-started' }, '*');
+              }
               // La slide 1 (index 0) est toujours la slide de départ — la marquer immédiatement
               if (totalSlides > 0) {
                 visitedSlides.add(0);
@@ -128,6 +134,12 @@ export async function GET(
                 try {
                   var verb = event.getVerb ? event.getVerb() : '';
                   var statement = event.data && event.data.statement;
+
+                  // Signaler que la vidéo a démarré dès le premier event xAPI
+                  if (isInteractiveVideo && !ivStarted) {
+                    ivStarted = true;
+                    window.parent.postMessage({ type: 'h5p-iv-started' }, '*');
+                  }
 
                   if (verb === 'progressed' && statement) {
                     var ext = (statement.object &&
@@ -144,14 +156,12 @@ export async function GET(
                         var m = String(durStr).match(/PT([\d.]+)S/);
                         if (m) videoDuration = Math.max(videoDuration, parseFloat(m[1]));
                       }
-                      if (videoDuration > 0) {
-                        window.parent.postMessage({
-                          type: 'h5p-video-progress',
-                          currentTime: currentTime,
-                          duration: videoDuration,
-                          pct: Math.min(100, Math.round((currentTime / videoDuration) * 100))
-                        }, '*');
-                      }
+                      window.parent.postMessage({
+                        type: 'h5p-video-progress',
+                        currentTime: currentTime,
+                        duration: videoDuration,
+                        pct: videoDuration > 0 ? Math.min(100, Math.round((currentTime / videoDuration) * 100)) : 0
+                      }, '*');
                     } else if (rawIdx !== undefined && rawIdx !== null) {
                       // Pour CoursePresentation : ending-point est 1-indexé (numéro de diapo)
                       var slideIdx = Number(rawIdx) - 1;

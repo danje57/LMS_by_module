@@ -63,9 +63,16 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
             }
           });
       }
+      if (e.data?.type === "h5p-iv-started" && !videoStartedRef.current) {
+        videoStartedRef.current = true;
+        void fetch(`/api/courses/${courseId}/progress`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitedSlides: [] }),
+        });
+      }
       if (e.data?.type === "h5p-video-progress") {
         setVideoProgress({ pct: e.data.pct, currentTime: e.data.currentTime, duration: e.data.duration });
-        // Premier événement vidéo → marquer le cours comme commencé
         if (!videoStartedRef.current) {
           videoStartedRef.current = true;
           void fetch(`/api/courses/${courseId}/progress`, {
