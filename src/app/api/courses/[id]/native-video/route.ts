@@ -1,11 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { writeFile, mkdir, unlink } from "fs/promises";
+import { createWriteStream, mkdirSync } from "fs";
+import { unlink, rm } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import { Readable } from "stream";
+import Busboy from "busboy";
+
+const MAX_VIDEO_SIZE = 600 * 1024 * 1024;
 
 type Params = { params: Promise<{ id: string }> };
+
+function parseVideoUpload(req: NextRequest): Promise<{
+  fields: Record<string, string>;
+  file: { tmpPath: string; originalName: string; size: number } | null;
+}> {
+  return new Promise((resolve, reject) => {
+    const contentType = req.headers.get("content-type") ?? "";
+    const bb = Busboy({ headers: { "content-type": contentType }, limits: { fileSize: MAX_VIDEO_SIZE } });
+    const fields: Record<string, string> = {};
+    let fileResult: { tmpPath: string; originalName: string; size: number } | null = null;
+    let busboyDone = false, writeDone = false, hasFile = false;
+
+    function tryResolve() {
+      if (busboyDone && (writeDone || !hasFile)) resolve({ fields, file: fileResult });
+    }
+
+    bb.on("field", (name, value) => { fields[name] = value; });
+
+    bb.on("file", (_, stream, info) => {
+      hasFile = true;
+      const { filename } = info;
+      const ext = path.extname(filename).toLowerCase();
+      if (![".mp4", ".webm", ".mov"].includes(ext)) {
+        stream.resume();
+        return reject(new Error("Format non supporté (mp4, webm, mov)"));
+      }
+
+      const tmpId = crypto.randomBytes(8).toString("hex");
+      const tmpDir = path.join(process.cwd(), "uploads", "tmp");
+      mkdirSync(tmpDir, { recursive: true });
+      const tmpPath = path.join(tmpDir, `${tmpId}${ext}`);
+
+      let size = 0;
+      const ws = createWriteStream(tmpPath);
+      stream.on("data", (chunk: Buffer) => { size += chunk.length; });
+      stream.on("limit", () => reject(new Error("Fichier trop volumineux (max 600 Mo)")));
+      stream.pipe(ws);
+      ws.on("finish", () => { fileResult = { tmpPath, originalName: filename, size }; writeDone = true; tryResolve(); });
+      ws.on("error", reject);
+    });
+
+    bb.on("finish", () => { busboyDone = true; tryResolve(); });
+    bb.on("error", reject);
+    Readable.fromWeb(req.body as import("stream/web").ReadableStream).pipe(bb);
+  });
+}
 
 // GET — récupérer la vidéo native + questions
 export async function GET(_req: NextRequest, { params }: Params) {
@@ -27,68 +78,73 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
   const { id } = await params;
-
-  // Vérifier que le cours existe et appartient à l'utilisateur (ou admin/manager)
   const course = await prisma.course.findUnique({ where: { id } });
   if (!course) return NextResponse.json({ error: "Cours introuvable" }, { status: 404 });
 
-  const form = await req.formData();
-  const file = form.get("video") as File | null;
-  if (!file) return NextResponse.json({ error: "Fichier vidéo manquant" }, { status: 400 });
+  let tmpPath: string | null = null;
+  try {
+    const { fields, file } = await parseVideoUpload(req);
+    if (!file) return NextResponse.json({ error: "Fichier vidéo manquant" }, { status: 400 });
+    tmpPath = file.tmpPath;
 
-  const ext = path.extname(file.name).toLowerCase();
-  if (![".mp4", ".webm", ".mov"].includes(ext))
-    return NextResponse.json({ error: "Format non supporté (mp4, webm, mov)" }, { status: 400 });
+    const force = fields.force === "true";
+    const ext = path.extname(file.originalName).toLowerCase();
 
-  const slug = crypto.randomBytes(8).toString("hex");
-  const filename = `${slug}${ext}`;
-  const uploadDir = path.join(process.cwd(), "uploads", "videos");
-  await mkdir(uploadDir, { recursive: true });
-  const filePath = path.join(uploadDir, filename);
+    // Lire le fichier pour calculer le hash
+    const { readFile } = await import("fs/promises");
+    const buffer = await readFile(tmpPath);
+    const fileHash = crypto.createHash("sha1").update(buffer).digest("hex");
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const fileHash = crypto.createHash("sha1").update(buffer).digest("hex");
-
-  // Détection de doublon (sauf si force=true)
-  const force = form.get("force") === "true";
-  if (!force) {
-    const duplicate = await prisma.nativeVideo.findFirst({
-      where: { fileHash, course: { isActive: true, id: { not: id } } },
-      include: { course: { select: { title: true, id: true } } },
-    });
-    if (duplicate) {
-      return NextResponse.json({
-        duplicate: true,
-        existingTitle: duplicate.course.title,
-        existingId: duplicate.course.id,
+    // Détection de doublon
+    if (!force) {
+      const duplicate = await prisma.nativeVideo.findFirst({
+        where: { fileHash, course: { isActive: true, id: { not: id } } },
+        include: { course: { select: { title: true, id: true } } },
       });
+      if (duplicate) {
+        await rm(tmpPath, { force: true });
+        tmpPath = null;
+        return NextResponse.json({
+          duplicate: true,
+          existingTitle: duplicate.course.title,
+          existingId: duplicate.course.id,
+        });
+      }
     }
+
+    // Déplacer vers le dossier final
+    const slug = crypto.randomBytes(8).toString("hex");
+    const filename = `${slug}${ext}`;
+    const uploadDir = path.join(process.cwd(), "uploads", "videos");
+    mkdirSync(uploadDir, { recursive: true });
+    const finalPath = path.join(uploadDir, filename);
+    const { rename } = await import("fs/promises");
+    await rename(tmpPath, finalPath);
+    tmpPath = null;
+
+    // Supprimer l'ancienne vidéo si elle existe
+    const existing = await prisma.nativeVideo.findUnique({ where: { courseId: id } });
+    if (existing) {
+      try { await unlink(path.join(process.cwd(), "uploads", "videos", path.basename(existing.videoPath))); } catch { /* ignore */ }
+      await prisma.nativeVideo.delete({ where: { courseId: id } });
+    }
+
+    const nativeVideo = await prisma.nativeVideo.create({
+      data: { courseId: id, videoPath: `videos/${filename}`, fileHash },
+    });
+
+    await prisma.course.update({
+      where: { id },
+      data: { courseType: "native_video", originalFileName: file.originalName, fileSize: BigInt(file.size) },
+    });
+
+    return NextResponse.json({ ok: true, id: nativeVideo.id, videoPath: nativeVideo.videoPath });
+
+  } catch (err) {
+    if (tmpPath) rm(tmpPath, { force: true }).catch(() => {});
+    const msg = err instanceof Error ? err.message : "Erreur inconnue";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
-
-  await writeFile(filePath, buffer);
-
-  // Supprimer l'ancienne vidéo si elle existe
-  const existing = await prisma.nativeVideo.findUnique({ where: { courseId: id } });
-  if (existing) {
-    try { await unlink(path.join(process.cwd(), "uploads", "videos", path.basename(existing.videoPath))); } catch { /* ignore */ }
-    await prisma.nativeVideo.delete({ where: { courseId: id } });
-  }
-
-  const nativeVideo = await prisma.nativeVideo.create({
-    data: {
-      courseId: id,
-      videoPath: `videos/${filename}`,
-      fileHash,
-    },
-  });
-
-  // Mettre à jour courseType
-  await prisma.course.update({
-    where: { id },
-    data: { courseType: "native_video", originalFileName: file.name, fileSize: BigInt(buffer.length) },
-  });
-
-  return NextResponse.json({ ok: true, id: nativeVideo.id, videoPath: nativeVideo.videoPath });
 }
 
 // PUT — sauvegarder questions + durée
@@ -103,7 +159,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const nativeVideo = await prisma.nativeVideo.findUnique({ where: { courseId: id } });
   if (!nativeVideo) return NextResponse.json({ error: "Vidéo introuvable" }, { status: 404 });
 
-  // Remplacer toutes les questions
   await prisma.nativeVideoQuestion.deleteMany({ where: { videoId: nativeVideo.id } });
 
   if (Array.isArray(questions) && questions.length > 0) {
