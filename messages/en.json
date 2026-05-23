@@ -113,6 +113,8 @@
     "uploadCourse": "Upload course",
     "importPptx": "Import PPTX",
     "uploadExistingH5p": "Upload an existing .h5p file.",
+    "lumiTip": "To create H5P courses (interactive video, quizzes, presentations…), use the free editor",
+    "lumiDownload": "Download Lumi Desktop",
     "convertPptx": "Convert a PowerPoint (.pptx) to an interactive course automatically.",
     "autoConversion": "Automatic conversion",
     "conversionDesc": "Each slide becomes an interactive page. Conversion time ~30s/slide.",

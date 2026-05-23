@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, FileCheck, Presentation } from "lucide-react";
+import { Upload, FileCheck, Presentation, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
@@ -236,6 +236,21 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
         <input name="duration" type="number" min="1" required placeholder="30" className={fieldClass} />
       </div>
       <QuizToggle hasQuiz={hasQuiz} setHasQuiz={setHasQuiz} passingScore={passingScore} setPassingScore={setPassingScore} />
+      {/* Tip Lumi Desktop */}
+      <div className="flex items-start gap-3 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-xl px-4 py-3">
+        <div className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93] leading-relaxed">
+          {t("lumiTip")}{" "}
+          <a
+            href="https://lumi.education"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[#0071E3] hover:underline font-medium"
+          >
+            {t("lumiDownload")}
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+      </div>
       <div>
         <label className={labelClass}>{t("uploadFile")}</label>
         <FileDropZone accept=".h5p" label={t("uploadFile")} hint={t("h5pFile")} selectedFile={selectedFile} onFileChange={handleFileChange} />
