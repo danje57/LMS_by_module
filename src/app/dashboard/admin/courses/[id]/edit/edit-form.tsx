@@ -56,7 +56,7 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
   const [saved, setSaved] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
   const [stats, setStats] = useState<CourseStats | null>(null);
-  const [nativeVideo, setNativeVideo] = useState<NativeVideoData | null>(null);
+  const [nativeVideo, setNativeVideo] = useState<NativeVideoData | null | undefined>(undefined);
 
   useEffect(() => {
     fetch(`/api/admin/courses/${id}`)
@@ -72,7 +72,9 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
         if (data.courseType === "native_video") {
           fetch(`/api/courses/${id}/native-video`)
             .then(r => r.json())
-            .then(d => setNativeVideo(d));
+            .then(d => setNativeVideo(d ?? null));
+        } else {
+          setNativeVideo(null);
         }
       });
 
@@ -212,12 +214,17 @@ export function EditCourseForm({ isAdmin }: { isAdmin: boolean }) {
         {course.courseType === "native_video" && (
           <div className="p-6 space-y-4">
             <h2 className="text-[13px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Vidéo &amp; Questions</h2>
-            <NativeVideoEditor
-              courseId={id}
-              initialVideoId={nativeVideo?.id}
-              initialQuestions={nativeVideo?.questions ?? []}
-              onSaved={() => { setSaved(true); setTimeout(() => setSaved(false), 2500); }}
-            />
+            {nativeVideo === undefined ? (
+              <p className="text-[13px] text-[#6E6E73]">Chargement…</p>
+            ) : (
+              <NativeVideoEditor
+                key={nativeVideo?.id ?? "new"}
+                courseId={id}
+                initialVideoId={nativeVideo?.id}
+                initialQuestions={nativeVideo?.questions ?? []}
+                onSaved={() => { setSaved(true); setTimeout(() => setSaved(false), 2500); }}
+              />
+            )}
           </div>
         )}
 
