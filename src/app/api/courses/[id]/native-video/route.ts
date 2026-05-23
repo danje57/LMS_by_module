@@ -47,6 +47,24 @@ export async function POST(req: NextRequest, { params }: Params) {
   const filePath = path.join(uploadDir, filename);
 
   const buffer = Buffer.from(await file.arrayBuffer());
+  const fileHash = crypto.createHash("sha1").update(buffer).digest("hex");
+
+  // Détection de doublon (sauf si force=true)
+  const force = form.get("force") === "true";
+  if (!force) {
+    const duplicate = await prisma.nativeVideo.findFirst({
+      where: { fileHash, course: { isActive: true, id: { not: id } } },
+      include: { course: { select: { title: true, id: true } } },
+    });
+    if (duplicate) {
+      return NextResponse.json({
+        duplicate: true,
+        existingTitle: duplicate.course.title,
+        existingId: duplicate.course.id,
+      });
+    }
+  }
+
   await writeFile(filePath, buffer);
 
   // Supprimer l'ancienne vidéo si elle existe
@@ -60,6 +78,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     data: {
       courseId: id,
       videoPath: `videos/${filename}`,
+      fileHash,
     },
   });
 

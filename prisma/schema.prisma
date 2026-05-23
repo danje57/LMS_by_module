@@ -125,6 +125,7 @@ model NativeVideo {
   courseId  String                @unique
   course    Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
   videoPath String
+  fileHash  String?
   duration  Float?
   questions NativeVideoQuestion[]
   createdAt DateTime              @default(now())

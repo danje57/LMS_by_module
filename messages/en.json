@@ -136,11 +136,16 @@
     "titlePlaceholderPptx": "E.g.: Network Security Training",
     "nativeVideo": "Interactive Video",
     "nativeVideoDesc": "Create a video course with questions at specific moments in the video.",
-    "nativeVideoHint": "You will be redirected to the editor after creation to upload your video and add questions.",
     "creator": "Course creator",
     "courseTitlePlaceholder": "E.g.: Network Security Training",
-    "creating": "Creating…",
-    "createAndEdit": "Create and Edit"
+    "creating": "Creating course…",
+    "uploadingVideo": "Uploading video…",
+    "videoUploadError": "Error uploading video.",
+    "createAndEdit": "Create and add questions",
+    "videoFile": "Video file",
+    "clickToSelectVideo": "Click to select a video",
+    "videoFormats": "Accepted formats: mp4, webm, mov · max 600 MB",
+    "selectVideo": "Please select a video file."
   },
   "users": {
     "search": "Search a user…",

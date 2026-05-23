@@ -4,7 +4,6 @@ import { useRef, useState, useCallback } from "react";
 import { Plus, Trash2, GripVertical, Clock, Upload, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
-import crypto from "crypto";
 
 interface Choice { id: string; text: string; correct: boolean; }
 interface Question { id: string; timestamp: number; question: string; choices: Choice[]; order: number; }
@@ -22,13 +21,15 @@ function formatTime(s: number) {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
+function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
 function newChoice(text = "", correct = false): Choice {
-  return { id: crypto.randomUUID(), text, correct };
+  return { id: uid(), text, correct };
 }
 
 function newQuestion(timestamp: number, order: number): Question {
   return {
-    id: crypto.randomUUID(),
+    id: uid(),
     timestamp,
     question: "",
     choices: [newChoice(), newChoice(), newChoice(), newChoice()],

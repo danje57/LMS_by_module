@@ -136,11 +136,16 @@
     "titlePlaceholderPptx": "Ex : Formation sécurité réseau",
     "nativeVideo": "Vidéo Interactive",
     "nativeVideoDesc": "Créez un cours vidéo avec des questions à des moments précis de la vidéo.",
-    "nativeVideoHint": "Vous serez redirigé vers l'éditeur après la création pour uploader votre vidéo et ajouter des questions.",
     "creator": "Créateur du cours",
     "courseTitlePlaceholder": "Ex : Formation sécurité réseau",
-    "creating": "Création en cours…",
-    "createAndEdit": "Créer et éditer"
+    "creating": "Création du cours…",
+    "uploadingVideo": "Upload de la vidéo…",
+    "videoUploadError": "Erreur lors de l'upload de la vidéo.",
+    "createAndEdit": "Créer et ajouter des questions",
+    "videoFile": "Fichier vidéo",
+    "clickToSelectVideo": "Cliquez pour sélectionner une vidéo",
+    "videoFormats": "Formats acceptés : mp4, webm, mov · max 600 Mo",
+    "selectVideo": "Veuillez sélectionner un fichier vidéo."
   },
   "users": {
     "search": "Rechercher un utilisateur…",
