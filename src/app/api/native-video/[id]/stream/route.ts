@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createReadStream, statSync } from "fs";
+import { Readable } from "stream";
 import path from "path";
 
 type Params = { params: Promise<{ id: string }> };
@@ -24,19 +25,18 @@ export async function GET(req: NextRequest, { params }: Params) {
   const mimeMap: Record<string, string> = { ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime" };
   const contentType = mimeMap[ext] ?? "video/mp4";
 
-  const range = req.headers.get("range");
   const fileSize = stat.size;
+  const range = req.headers.get("range");
 
   if (range) {
     const parts = range.replace(/bytes=/, "").split("-");
     const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const end = parts[1] ? Math.min(parseInt(parts[1], 10), fileSize - 1) : fileSize - 1;
     const chunkSize = end - start + 1;
 
-    const stream = createReadStream(filePath, { start, end });
-    const nodeStream = stream as unknown as ReadableStream;
+    const webStream = Readable.toWeb(createReadStream(filePath, { start, end })) as ReadableStream;
 
-    return new NextResponse(nodeStream, {
+    return new NextResponse(webStream, {
       status: 206,
       headers: {
         "Content-Range": `bytes ${start}-${end}/${fileSize}`,
@@ -47,8 +47,9 @@ export async function GET(req: NextRequest, { params }: Params) {
     });
   }
 
-  const stream = createReadStream(filePath) as unknown as ReadableStream;
-  return new NextResponse(stream, {
+  const webStream = Readable.toWeb(createReadStream(filePath)) as ReadableStream;
+
+  return new NextResponse(webStream, {
     status: 200,
     headers: {
       "Content-Length": String(fileSize),
