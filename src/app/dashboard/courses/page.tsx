@@ -102,7 +102,7 @@ async function getProgressMap(userId: string): Promise<Record<string, CourseProg
   const [progressRows, certRows] = await Promise.all([
     prisma.userCourseProgress.findMany({
       where: { userId },
-      select: { courseId: true, visitedSlides: true, completedAt: true },
+      select: { courseId: true, visitedSlides: true, completedAt: true, lastAccessAt: true },
     }),
     prisma.certificate.findMany({
       where: { userId },
@@ -122,7 +122,7 @@ async function getProgressMap(userId: string): Promise<Record<string, CourseProg
     const cert = certMap.get(p.courseId);
     let status: CourseProgress["status"] = "not_started";
     if (cert) status = "completed";
-    else if (p.completedAt || p.visitedSlides.length > 0) status = "in_progress";
+    else if (p.completedAt || p.visitedSlides.length > 0 || !!p.lastAccessAt) status = "in_progress";
 
     map[p.courseId] = {
       status,

@@ -28,6 +28,7 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
   const [slideInfo, setSlideInfo] = useState<{ current: number; visited: number[]; total: number } | null>(null);
   const [videoProgress, setVideoProgress] = useState<{ pct: number; currentTime: number; duration: number } | null>(null);
   const [savedVisited, setSavedVisited] = useState<number[]>([]);
+  const videoStartedRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Charger la progression sauvegardée (slides visitées + complétion)
@@ -64,6 +65,15 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
       }
       if (e.data?.type === "h5p-video-progress") {
         setVideoProgress({ pct: e.data.pct, currentTime: e.data.currentTime, duration: e.data.duration });
+        // Premier événement vidéo → marquer le cours comme commencé
+        if (!videoStartedRef.current) {
+          videoStartedRef.current = true;
+          void fetch(`/api/courses/${courseId}/progress`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ visitedSlides: [] }),
+          });
+        }
       }
       if (e.data?.type === "h5p-slide-update") {
         const { current, visited, total } = e.data;
