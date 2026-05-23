@@ -61,6 +61,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
   const visitedSlides: number[] = Array.isArray(body?.visitedSlides) ? body.visitedSlides : [];
+  const h5pScore: { scaled: number; raw: number; max: number } | null = body?.h5pScore ?? null;
 
   // Check if this is a new completion (completedAt was null)
   const existing = await prisma.userCourseProgress.findUnique({
@@ -89,6 +90,10 @@ export async function POST(req: NextRequest, { params }: Params) {
           courseTitle: course.title,
           completedAt: now,
           hasQuiz: false,
+          ...(h5pScore ? {
+            quizScore: Math.round(h5pScore.scaled * 100),
+            quizPassed: true,
+          } : {}),
         },
       });
     }

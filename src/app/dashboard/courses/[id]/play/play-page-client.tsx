@@ -46,11 +46,12 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
     function handleMessage(e: MessageEvent) {
       if (e.data?.type === "h5p-completed") {
         const visited: number[] = e.data.visited ?? [];
+        const h5pScore = e.data.h5pScore ?? null;
         setCourseCompleted(true);
         fetch(`/api/courses/${courseId}/progress`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visitedSlides: visited }),
+          body: JSON.stringify({ visitedSlides: visited, h5pScore }),
         });
       }
       if (e.data?.type === "h5p-video-progress") {

@@ -170,10 +170,22 @@ export async function GET(
                     }
                   }
 
-                  // Fallback : si H5P fire quand même 'completed' ou 'passed'
                   if (verb === 'completed' || verb === 'passed') {
                     for (var i = 0; i < totalSlides; i++) visitedSlides.add(i);
-                    notifyCompleted();
+                    var h5pScore = null;
+                    if (statement && statement.result && statement.result.score) {
+                      h5pScore = {
+                        scaled: statement.result.score.scaled,
+                        raw: statement.result.score.raw,
+                        max: statement.result.score.max
+                      };
+                    }
+                    window.parent.postMessage({
+                      type: 'h5p-completed',
+                      visited: Array.from(visitedSlides),
+                      total: totalSlides,
+                      h5pScore: h5pScore
+                    }, '*');
                   }
                 } catch(e) {}
               });
