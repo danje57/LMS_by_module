@@ -31,7 +31,7 @@ export function Header({ session }: HeaderProps) {
   }, []);
 
   const isAdminMode = session.user.sessionMode === "admin";
-  const hasAdminRole = session.user.roles.includes("admin");
+  const hasAdminRole = session.user.roles.includes("admin") || session.user.roles.includes("superadmin");
 
   const initials = (session.user.name ?? session.user.email ?? "?")
     .split(" ")

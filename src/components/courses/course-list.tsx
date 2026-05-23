@@ -211,6 +211,15 @@ function CourseCard({
                 {t("certificate")}
               </Link>
             )}
+            {isAdmin && (
+              <Link
+                href={`/dashboard/courses/${course.id}/play`}
+                className="inline-flex items-center gap-1.5 px-4 py-2 border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] text-[13px] font-medium rounded-xl transition-colors"
+              >
+                <Play className="w-3.5 h-3.5" />
+                {t("preview")}
+              </Link>
+            )}
             {!isAdmin && !hideDeadline && isAssignedToMe && (
               <Link
                 href={`/dashboard/courses/${course.id}/play`}

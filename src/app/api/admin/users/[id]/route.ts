@@ -23,10 +23,13 @@ export async function PATCH(
   if (id === session.user.id && isActive === false)
     return NextResponse.json({ error: "Impossible de se désactiver soi-même" }, { status: 400 });
 
+  // Vérifier la protection sur l'utilisateur cible
+  const targetMeta = await prisma.user.findUnique({ where: { id }, select: { isProtected: true, isActive: true, email: true, name: true } });
+  if (targetMeta?.isProtected)
+    return NextResponse.json({ error: "Le compte Super Admin est protégé et ne peut pas être modifié." }, { status: 403 });
+
   // Capture l'état avant modification pour détecter changement de suspension
-  const before = isActive !== undefined
-    ? await prisma.user.findUnique({ where: { id }, select: { isActive: true, email: true, name: true } })
-    : null;
+  const before = isActive !== undefined ? targetMeta : null;
 
   if (password) {
     const pwCheck = validatePassword(password);
@@ -77,6 +80,7 @@ export async function PATCH(
     name: user.name,
     email: user.email,
     isActive: user.isActive,
+    isProtected: user.isProtected,
     createdAt: user.createdAt,
     roles: user.roles.map((ur) => ur.role.name),
   });
@@ -95,8 +99,9 @@ export async function DELETE(
   if (id === session.user.id)
     return NextResponse.json({ error: "Impossible de supprimer son propre compte" }, { status: 400 });
 
-  // Capture les infos avant suppression pour l'email
-  const target = await prisma.user.findUnique({ where: { id }, select: { name: true, email: true } });
+  const target = await prisma.user.findUnique({ where: { id }, select: { isProtected: true, name: true, email: true } });
+  if (target?.isProtected)
+    return NextResponse.json({ error: "Ce compte administrateur est protégé et ne peut pas être supprimé." }, { status: 403 });
 
   await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "user.delete", targetId: id, targetLabel: target?.email });
   await prisma.user.delete({ where: { id } });

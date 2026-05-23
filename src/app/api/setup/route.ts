@@ -5,7 +5,7 @@ import { validatePassword } from "@/lib/password";
 import { auditLog } from "@/lib/audit";
 
 async function adminExists() {
-  const role = await prisma.role.findUnique({ where: { name: "admin" }, include: { users: { take: 1 } } });
+  const role = await prisma.role.findFirst({ where: { name: { in: ["superadmin", "admin"] } }, include: { users: { take: 1 } } });
   return role && role.users.length > 0;
 }
 
@@ -32,9 +32,9 @@ export async function POST(req: Request) {
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  let adminRole = await prisma.role.findUnique({ where: { name: "admin" } });
-  if (!adminRole) {
-    adminRole = await prisma.role.create({ data: { name: "admin", description: "Administrateur" } });
+  let superAdminRole = await prisma.role.findUnique({ where: { name: "superadmin" } });
+  if (!superAdminRole) {
+    superAdminRole = await prisma.role.create({ data: { name: "superadmin", description: "Super Administrateur" } });
   }
 
   const user = await prisma.user.create({
@@ -43,7 +43,8 @@ export async function POST(req: Request) {
       email: email.trim().toLowerCase(),
       passwordHash,
       isActive: true,
-      roles: { create: { roleId: adminRole.id } },
+      isProtected: true,
+      roles: { create: { roleId: superAdminRole.id } },
     },
   });
 

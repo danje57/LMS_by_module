@@ -103,7 +103,14 @@ export async function PUT(
   }
 
   const assignedById = session.user.id;
-  const incoming = new Map(assignments.map((a) => [a.userId, a.dueDate]));
+
+  // Exclure les comptes protégés des affectations
+  const protectedIds = new Set(
+    (await prisma.user.findMany({ where: { isProtected: true }, select: { id: true } })).map((u) => u.id)
+  );
+  const incoming = new Map(
+    assignments.filter((a) => !protectedIds.has(a.userId)).map((a) => [a.userId, a.dueDate])
+  );
 
   const existing = await prisma.courseAssignment.findMany({
     where: { courseId },

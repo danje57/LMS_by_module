@@ -10,8 +10,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Mode invalide" }, { status: 400 });
   }
 
-  // Seul un utilisateur avec le rôle admin peut activer le mode admin
-  if (mode === "admin" && !session.user.roles.includes("admin")) {
+  // Seul un utilisateur avec le rôle admin ou superadmin peut activer le mode admin
+  const canAdmin = session.user.roles.includes("admin") || session.user.roles.includes("superadmin");
+  if (mode === "admin" && !canAdmin) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 

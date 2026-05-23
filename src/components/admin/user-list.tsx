@@ -17,14 +17,16 @@ type UserRow = {
   name: string | null;
   email: string;
   isActive: boolean;
+  isProtected: boolean;
   createdAt: string;
   roles: RoleType[];
   teams: { id: string; name: string }[];
 };
 
-const ALL_ROLES: RoleType[] = ["admin", "manager", "creator", "learner"];
+const ALL_ROLES: RoleType[] = ["admin", "manager", "creator", "learner"]; // superadmin non assignable par un admin
 
 const ROLE_LABELS: Record<RoleType, string> = {
+  superadmin: "Super Admin",
   admin: "Admin",
   manager: "Manager",
   creator: "Créateur",
@@ -32,6 +34,7 @@ const ROLE_LABELS: Record<RoleType, string> = {
 };
 
 const ROLE_COLORS: Record<RoleType, string> = {
+  superadmin: "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
   admin: "bg-red-50 text-red-600",
   manager: "bg-purple-50 text-purple-600",
   creator: "bg-amber-50 text-amber-600",
@@ -39,6 +42,7 @@ const ROLE_COLORS: Record<RoleType, string> = {
 };
 
 const ROLE_COLORS_ACTIVE: Record<RoleType, string> = {
+  superadmin: "bg-red-700 text-white border-red-700",
   admin: "bg-red-500 text-white border-red-500",
   manager: "bg-purple-500 text-white border-purple-500",
   creator: "bg-amber-500 text-white border-amber-500",
@@ -46,6 +50,7 @@ const ROLE_COLORS_ACTIVE: Record<RoleType, string> = {
 };
 
 const ROLE_COLORS_IMPLIED: Record<RoleType, string> = {
+  superadmin: "",
   admin: "",
   manager: "bg-purple-100 text-purple-500 border-purple-200",
   creator: "bg-amber-100 text-amber-500 border-amber-200",
@@ -179,7 +184,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
     });
     const json = await res.json();
     if (!res.ok) { setLoading(false); setError(json.error ?? "Erreur"); return; }
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...json, teams: u.teams } : u)));
+    setUsers((prev) => prev.map((u) => (u.id === id ? { ...json, teams: u.teams, isProtected: u.isProtected } : u)));
     await updateManagedTeam(id, managedTeamId, oldTeamId);
     setLoading(false);
     setModalEdit(null);
@@ -193,7 +198,7 @@ export function UserList({ initialUsers, currentUserId, teams: initialTeams }: U
     });
     if (!res.ok) return;
     const json = await res.json();
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...json, teams: u.teams } : u)));
+    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...json, teams: u.teams, isProtected: u.isProtected } : u)));
   }
 
   async function handleDelete(user: UserRow) {
@@ -623,7 +628,15 @@ function UserTableRow({
   return (
     <tr className={cn("hover:bg-[#F9F9FB] transition-colors", !user.isActive && "opacity-60")}>
       <td className="px-5 py-3.5">
-        <p className="text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{user.name ?? <span className="italic text-[#ADADB8]">{t("noName")}</span>}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{user.name ?? <span className="italic text-[#ADADB8]">{t("noName")}</span>}</p>
+          {user.isProtected && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400" title={t("protectedAccount")}>
+              <ShieldCheck className="w-3 h-3" />
+              {t("protected")}
+            </span>
+          )}
+        </div>
         <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93]">{user.email}</p>
       </td>
       <td className="px-5 py-3.5">
@@ -661,38 +674,41 @@ function UserTableRow({
         <div className="flex items-center justify-end gap-1">
           <button
             onClick={() => onToggle(user)}
-            disabled={user.id === currentUserId}
-            title={user.isActive ? t("deactivate") : t("enable")}
+            disabled={user.id === currentUserId || user.isProtected}
+            title={user.isProtected ? t("protectedAccount") : user.isActive ? t("deactivate") : t("enable")}
             className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             {user.isActive ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           </button>
-          <Link
-            href={`/dashboard/admin/users/${user.id}`}
-            title={t("viewProfile")}
-            className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-purple-500 transition-colors"
-          >
-            <BarChart2 className="w-3.5 h-3.5" />
-          </Link>
+          {!user.isProtected && (
+            <Link
+              href={`/dashboard/admin/users/${user.id}`}
+              title={t("viewProfile")}
+              className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-purple-500 transition-colors"
+            >
+              <BarChart2 className="w-3.5 h-3.5" />
+            </Link>
+          )}
           <button
             onClick={() => onEdit(user)}
-            title="Modifier"
-            className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-[#0071E3] transition-colors"
+            disabled={user.isProtected}
+            title={user.isProtected ? t("protectedAccount") : "Modifier"}
+            className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-[#0071E3] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onReset(user)}
-            disabled={user.id === currentUserId}
-            title={t("resetPassword")}
+            disabled={user.id === currentUserId || user.isProtected}
+            title={user.isProtected ? t("protectedAccount") : t("resetPassword")}
             className="p-2 rounded-lg text-[#6E6E73] hover:bg-amber-50 hover:text-amber-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <KeyRound className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onDelete(user)}
-            disabled={user.id === currentUserId}
-            title={t("delete")}
+            disabled={user.id === currentUserId || user.isProtected}
+            title={user.isProtected ? t("protectedAccount") : t("delete")}
             className="p-2 rounded-lg text-[#6E6E73] hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />

@@ -15,9 +15,9 @@ export async function GET() {
   if (!allowed) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
 
   const [users, teams, callerTeams] = await Promise.all([
-    // Tous les utilisateurs actifs avec rôle opérationnel
+    // Tous les utilisateurs actifs avec rôle opérationnel (jamais les comptes protégés)
     prisma.user.findMany({
-      where: { isActive: true, roles: { some: { role: { name: { in: ["manager", "creator", "learner"] } } } } },
+      where: { isActive: true, isProtected: false, roles: { some: { role: { name: { in: ["manager", "creator", "learner"] } } } } },
       select: {
         id: true, name: true, email: true,
         roles: { include: { role: { select: { name: true } } } },

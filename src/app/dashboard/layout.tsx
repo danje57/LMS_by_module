@@ -23,17 +23,23 @@ export default async function DashboardLayout({
 
   const isAdmin = session.user.sessionMode === "admin";
 
-  const [branding, managerRole, messages] = await Promise.all([
+  const [branding, managerRole, strictManagerRole, messages] = await Promise.all([
     getBranding(),
     isAdmin
       ? Promise.resolve(null)
       : prisma.userRole.findFirst({
           where: { userId: session.user.id, role: { name: { in: ["manager", "creator"] } } },
         }),
+    isAdmin
+      ? Promise.resolve(null)
+      : prisma.userRole.findFirst({
+          where: { userId: session.user.id, role: { name: "manager" } },
+        }),
     getMessages(),
   ]);
 
   const isManager = !isAdmin && managerRole !== null; // true pour manager ET créateur
+  const isStrictManager = !isAdmin && strictManagerRole !== null; // true pour manager uniquement
 
   return (
     <NextIntlClientProvider messages={messages}>
@@ -43,6 +49,7 @@ export default async function DashboardLayout({
         logoPath={branding?.logoPath ? `/api/assets/${branding.logoPath}` : null}
         isAdmin={isAdmin}
         isManager={isManager}
+        isStrictManager={isStrictManager}
       />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header session={session} />

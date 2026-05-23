@@ -24,6 +24,7 @@ async function getData() {
       name: u.name,
       email: u.email,
       isActive: u.isActive,
+      isProtected: u.isProtected,
       createdAt: u.createdAt.toISOString(),
       roles: u.roles.map((ur) => ur.role.name),
       teams: u.teams.map((ut) => ({ id: ut.team.id, name: ut.team.name })),

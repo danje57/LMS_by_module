@@ -340,6 +340,74 @@ export function templateDeadlineWarning(opts: {
 
 // ── 3. Deadline dépassée ─────────────────────────────────────────────────────
 
+export function templateCreatorPromoted(opts: {
+  branding: MailBranding;
+  userName: string;
+  managerName: string;
+}): { subject: string; html: string } {
+  const { branding, userName, managerName } = opts;
+
+  const body = `
+    <p style="margin:0 0 4px;font-size:15px;color:#1D1D1F;">Bonjour <strong>${userName}</strong>,</p>
+    <p style="margin:0 0 20px;font-size:14px;color:#6E6E73;">
+      <strong>${managerName}</strong> vous a accordé le rôle <strong>Créateur</strong> sur <strong>${branding.appName}</strong>.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:16px 18px;">
+          <p style="margin:0;font-size:14px;color:#92400E;">
+            Vous pouvez désormais <strong>créer et publier des cours</strong> ainsi que les affecter aux apprenants de votre équipe.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin:20px 0 0;font-size:14px;color:#6E6E73;">
+      Connectez-vous à la plateforme pour commencer à créer votre premier cours.
+    </p>
+  `;
+
+  return {
+    subject: `✨ Vous êtes maintenant Créateur sur ${branding.appName}`,
+    html: baseLayout(branding, "#D97706", "✨", "Rôle Créateur accordé", body),
+  };
+}
+
+export function templateCreatorDemoted(opts: {
+  branding: MailBranding;
+  userName: string;
+  managerName: string;
+}): { subject: string; html: string } {
+  const { branding, userName, managerName } = opts;
+
+  const body = `
+    <p style="margin:0 0 4px;font-size:15px;color:#1D1D1F;">Bonjour <strong>${userName}</strong>,</p>
+    <p style="margin:0 0 20px;font-size:14px;color:#6E6E73;">
+      <strong>${managerName}</strong> a retiré votre rôle <strong>Créateur</strong> sur <strong>${branding.appName}</strong>.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="background:#F5F5F7;border-radius:12px;padding:16px 18px;">
+          <p style="margin:0;font-size:14px;color:#6E6E73;">
+            Votre accès aux cours reste actif en tant qu'<strong>Apprenant</strong>. Vous ne pouvez plus créer ni publier de cours.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin:20px 0 0;font-size:13px;color:#8E8E93;">
+      Si vous pensez qu'il s'agit d'une erreur, contactez votre manager.
+    </p>
+  `;
+
+  return {
+    subject: `Votre rôle Créateur a été retiré sur ${branding.appName}`,
+    html: baseLayout(branding, "#6E6E73", "ℹ️", "Rôle Créateur retiré", body),
+  };
+}
+
 export function templateDeadlineExpired(opts: {
   branding: MailBranding;
   userName: string;

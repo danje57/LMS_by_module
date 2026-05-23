@@ -25,6 +25,7 @@ export async function GET() {
       name: u.name,
       email: u.email,
       isActive: u.isActive,
+      isProtected: u.isProtected,
       createdAt: u.createdAt,
       roles: u.roles.map((ur) => ur.role.name),
     }))

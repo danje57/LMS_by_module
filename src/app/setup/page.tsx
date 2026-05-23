@@ -6,7 +6,7 @@ import { SetupForm } from "./setup-form";
 export const dynamic = "force-dynamic";
 
 export default async function SetupPage() {
-  const adminRole = await prisma.role.findUnique({ where: { name: "admin" }, include: { users: { take: 1 } } });
+  const adminRole = await prisma.role.findFirst({ where: { name: { in: ["superadmin", "admin"] } }, include: { users: { take: 1 } } });
   if (adminRole && adminRole.users.length > 0) redirect("/login");
 
   return (
@@ -21,7 +21,7 @@ export default async function SetupPage() {
             Installation
           </h1>
           <p className="text-[15px] text-[#6E6E73] dark:text-[#8E8E93] mt-1 text-center">
-            Créez le premier compte administrateur
+            Créez un compte ou restaurez un backup existant
           </p>
         </div>
 
