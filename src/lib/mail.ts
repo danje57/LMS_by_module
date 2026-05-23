@@ -76,6 +76,7 @@ async function sendViaGraph(cfg: MailConfig, payload: MailPayload): Promise<void
 // ── Point d'entrée unique ────────────────────────────────────────────────────
 
 export async function sendMail(payload: MailPayload): Promise<void> {
+  if (process.env.MAIL_DISABLED === "true") return;
   const cfg = await getMailConfig();
   if (cfg.provider === "graph") {
     await sendViaGraph(cfg, payload);
