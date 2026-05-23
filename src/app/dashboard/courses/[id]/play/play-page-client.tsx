@@ -25,6 +25,7 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
   const [tab, setTab] = useState<Tab>("course");
   const [courseCompleted, setCourseCompleted] = useState(false);
   const [slideInfo, setSlideInfo] = useState<{ current: number; visited: number[]; total: number } | null>(null);
+  const [videoProgress, setVideoProgress] = useState<{ pct: number; currentTime: number; duration: number } | null>(null);
   const [savedVisited, setSavedVisited] = useState<number[]>([]);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -51,6 +52,9 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ visitedSlides: visited }),
         });
+      }
+      if (e.data?.type === "h5p-video-progress") {
+        setVideoProgress({ pct: e.data.pct, currentTime: e.data.currentTime, duration: e.data.duration });
       }
       if (e.data?.type === "h5p-slide-update") {
         const { current, visited, total } = e.data;
@@ -110,6 +114,22 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
       {tab === "course" && (
         <>
           <H5PPlayer courseId={courseId} filePath={filePath} visitedSlides={savedVisited} />
+
+          {/* Barre de progression vidéo (Interactive Video) */}
+          {videoProgress && !courseCompleted && (
+            <div className="bg-white border border-[#E5E5EA] rounded-2xl px-4 py-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[12px] font-medium text-[#6E6E73]">{t("videoProgress")}</p>
+                <p className="text-[12px] text-[#ADADB8]">{videoProgress.pct}%</p>
+              </div>
+              <div className="h-1.5 w-full bg-[#F2F2F7] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#0071E3] rounded-full transition-all duration-500"
+                  style={{ width: `${videoProgress.pct}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Barre de progression des slides */}
           {slideInfo && slideInfo.total > 0 && (

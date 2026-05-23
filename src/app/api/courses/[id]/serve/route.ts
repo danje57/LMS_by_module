@@ -35,14 +35,25 @@ export async function GET(
     );
   }
 
-  // Lire le nombre de slides depuis content.json (CoursePresentation)
-  let totalSlides = 0;
+  // Détecter le type de contenu H5P
+  let mainLibrary = "";
   try {
-    const raw = await readFile(path.join(extractDir, "content", "content.json"), "utf-8");
-    const content = JSON.parse(raw);
-    const slides = content?.presentation?.slides;
-    if (Array.isArray(slides)) totalSlides = slides.length;
-  } catch { /* contenu non-CoursePresentation ou structure différente */ }
+    const h5pJson = JSON.parse(await readFile(path.join(extractDir, "h5p.json"), "utf-8"));
+    mainLibrary = h5pJson?.mainLibrary ?? "";
+  } catch { /* ignore */ }
+
+  const isInteractiveVideo = mainLibrary === "H5P.InteractiveVideo";
+
+  // Lire le nombre de slides depuis content.json (CoursePresentation uniquement)
+  let totalSlides = 0;
+  if (!isInteractiveVideo) {
+    try {
+      const raw = await readFile(path.join(extractDir, "content", "content.json"), "utf-8");
+      const content = JSON.parse(raw);
+      const slides = content?.presentation?.slides;
+      if (Array.isArray(slides)) totalSlides = slides.length;
+    } catch { /* contenu non-CoursePresentation ou structure différente */ }
+  }
 
   // Restaurer les slides déjà visitées (sauvegardées en session précédente)
   const visitedParam = req.nextUrl.searchParams.get("visited");
@@ -73,6 +84,8 @@ export async function GET(
     (function() {
       var totalSlides = ${totalSlides};
       var visitedSlides = new Set(${JSON.stringify(savedVisited)});
+      var isInteractiveVideo = ${isInteractiveVideo ? "true" : "false"};
+      var videoDuration = 0;
 
       function notifyCompleted() {
         window.parent.postMessage({
@@ -116,15 +129,31 @@ export async function GET(
                   var verb = event.getVerb ? event.getVerb() : '';
                   var statement = event.data && event.data.statement;
 
-                  // Tracker chaque slide visitée via l'événement 'progressed'
-                  // L'extension 'ending-point' contient l'index de la slide (0-based)
                   if (verb === 'progressed' && statement) {
                     var ext = (statement.object &&
                                statement.object.definition &&
                                statement.object.definition.extensions) || {};
                     var rawIdx = ext['http://id.tincanapi.com/extension/ending-point'];
-                    if (rawIdx !== undefined && rawIdx !== null) {
-                      // ending-point est 1-indexé (numéro de la diapo de destination)
+
+                    if (isInteractiveVideo) {
+                      // Pour Interactive Video : ending-point = temps en secondes
+                      var currentTime = Number(rawIdx) || 0;
+                      // Récupérer la durée depuis result.duration (ISO 8601 "PTxx.xxS")
+                      var durStr = statement.result && statement.result.duration;
+                      if (durStr) {
+                        var m = String(durStr).match(/PT([\d.]+)S/);
+                        if (m) videoDuration = Math.max(videoDuration, parseFloat(m[1]));
+                      }
+                      if (videoDuration > 0) {
+                        window.parent.postMessage({
+                          type: 'h5p-video-progress',
+                          currentTime: currentTime,
+                          duration: videoDuration,
+                          pct: Math.min(100, Math.round((currentTime / videoDuration) * 100))
+                        }, '*');
+                      }
+                    } else if (rawIdx !== undefined && rawIdx !== null) {
+                      // Pour CoursePresentation : ending-point est 1-indexé (numéro de diapo)
                       var slideIdx = Number(rawIdx) - 1;
                       if (slideIdx >= 0) {
                         visitedSlides.add(slideIdx);
@@ -134,7 +163,6 @@ export async function GET(
                           visited: Array.from(visitedSlides),
                           total: totalSlides
                         }, '*');
-                        // Toutes les slides visitées → cours terminé
                         if (totalSlides > 0 && visitedSlides.size >= totalSlides) {
                           notifyCompleted();
                         }

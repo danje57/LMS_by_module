@@ -433,6 +433,7 @@
     "saving": "Saving…"
   },
   "player": {
+    "videoProgress": "Video progress",
     "slideProgress": "Slide progress",
     "slidesViewed": "{n} / {total} viewed",
     "slideViewed": "Slide {n} — viewed",
