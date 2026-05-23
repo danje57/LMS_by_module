@@ -113,6 +113,8 @@
     "uploadCourse": "Uploader le cours",
     "importPptx": "Importer un PPTX",
     "uploadExistingH5p": "Uploadez un fichier .h5p existant.",
+    "h5pPassingScore": "Score minimum pour le certificat (%)",
+    "h5pPassingScoreHint": "Applicable aux vidéos interactives H5P avec questions. 0 = pas de seuil.",
     "lumiTip": "Pour créer des cours H5P (vidéo interactive, quiz, présentations…), utilisez l'éditeur gratuit",
     "lumiDownload": "Télécharger Lumi Desktop",
     "convertPptx": "Convertissez un PowerPoint (.pptx) en cours interactif automatiquement.",
@@ -442,7 +444,8 @@
     "slideNotViewed": "Slide {n} — non vue",
     "courseCompletedQuiz": "Cours terminé — le quiz est maintenant disponible.",
     "takeQuiz": "Passer le quiz",
-    "courseCompleted": "Cours terminé — toutes les slides ont été consultées."
+    "courseCompleted": "Cours terminé — toutes les slides ont été consultées.",
+    "h5pFailed": "Score insuffisant : {score}% obtenus, {threshold}% requis. Recommencez la vidéo pour obtenir votre certificat."
   },
   "presence": {
     "title": "En formation",

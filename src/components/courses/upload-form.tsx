@@ -145,6 +145,7 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
   const t = useTranslations("upload");
   const [hasQuiz, setHasQuiz] = useState(false);
   const [passingScore, setPassingScore] = useState("70");
+  const [h5pPassingScore, setH5pPassingScore] = useState("80");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -172,7 +173,7 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
 
     const form = new FormData(formRef.current);
     form.set("hasQuiz", hasQuiz ? "on" : "");
-    form.set("passingScore", passingScore);
+    form.set("passingScore", hasQuiz ? passingScore : h5pPassingScore);
     if (force) form.set("force", "true");
 
     try {
@@ -236,6 +237,18 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: () => vo
         <input name="duration" type="number" min="1" required placeholder="30" className={fieldClass} />
       </div>
       <QuizToggle hasQuiz={hasQuiz} setHasQuiz={setHasQuiz} passingScore={passingScore} setPassingScore={setPassingScore} />
+      {/* Score minimum pour le certificat (H5P Interactive Video) */}
+      <div>
+        <label className={labelClass}>{t("h5pPassingScore")}</label>
+        <input
+          type="number" min="0" max="100"
+          value={h5pPassingScore}
+          onChange={(e) => setH5pPassingScore(e.target.value)}
+          className={fieldClass}
+        />
+        <p className="text-[12px] text-[#8E8E93] mt-1">{t("h5pPassingScoreHint")}</p>
+      </div>
+
       {/* Tip Lumi Desktop */}
       <div className="flex items-start gap-3 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-xl px-4 py-3">
         <div className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93] leading-relaxed">

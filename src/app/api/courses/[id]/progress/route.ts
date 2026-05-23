@@ -69,19 +69,29 @@ export async function POST(req: NextRequest, { params }: Params) {
     select: { completedAt: true },
   });
 
-  const now = new Date();
-  const progress = await prisma.userCourseProgress.upsert({
-    where: { userId_courseId: { userId: session.user.id, courseId: id } },
-    update: { completedAt: now, lastAccessAt: now, progress: 100, visitedSlides },
-    create: { userId: session.user.id, courseId: id, progress: 100, completedAt: now, visitedSlides },
+  const course = await prisma.course.findUnique({
+    where: { id },
+    select: { title: true, hasQuiz: true, passingScore: true },
   });
 
-  // Create certificate only if course has no quiz (quiz-gated courses get their cert on quiz pass)
-  if (!existing?.completedAt) {
-    const course = await prisma.course.findUnique({
-      where: { id },
-      select: { title: true, hasQuiz: true },
-    });
+  // Vérifier le seuil de réussite pour H5P Interactive Video
+  const scorePercent = h5pScore ? Math.round(h5pScore.scaled * 100) : null;
+  const threshold = course?.passingScore ?? 0;
+  const passesScore = scorePercent === null || threshold === 0 || scorePercent >= threshold;
+
+  const now = new Date();
+  await prisma.userCourseProgress.upsert({
+    where: { userId_courseId: { userId: session.user.id, courseId: id } },
+    update: {
+      ...(passesScore ? { completedAt: now, progress: 100 } : {}),
+      lastAccessAt: now,
+      visitedSlides,
+    },
+    create: { userId: session.user.id, courseId: id, progress: passesScore ? 100 : 0, completedAt: passesScore ? now : undefined, visitedSlides },
+  });
+
+  // Créer le certificat uniquement si pas de quiz séparé ET score suffisant
+  if (!existing?.completedAt && passesScore) {
     if (course && !course.hasQuiz) {
       await prisma.certificate.create({
         data: {
@@ -91,7 +101,7 @@ export async function POST(req: NextRequest, { params }: Params) {
           completedAt: now,
           hasQuiz: false,
           ...(h5pScore ? {
-            quizScore: Math.round(h5pScore.scaled * 100),
+            quizScore: scorePercent,
             quizPassed: true,
           } : {}),
         },
@@ -109,5 +119,5 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
   }
 
-  return NextResponse.json({ completed: true, completedAt: progress.completedAt });
+  return NextResponse.json({ ok: true, passed: passesScore, score: scorePercent, threshold });
 }

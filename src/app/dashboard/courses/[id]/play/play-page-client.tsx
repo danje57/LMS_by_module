@@ -24,6 +24,7 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
   const tQuiz = useTranslations("quiz");
   const [tab, setTab] = useState<Tab>("course");
   const [courseCompleted, setCourseCompleted] = useState(false);
+  const [h5pFailed, setH5pFailed] = useState<{ score: number; threshold: number } | null>(null);
   const [slideInfo, setSlideInfo] = useState<{ current: number; visited: number[]; total: number } | null>(null);
   const [videoProgress, setVideoProgress] = useState<{ pct: number; currentTime: number; duration: number } | null>(null);
   const [savedVisited, setSavedVisited] = useState<number[]>([]);
@@ -47,12 +48,19 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
       if (e.data?.type === "h5p-completed") {
         const visited: number[] = e.data.visited ?? [];
         const h5pScore = e.data.h5pScore ?? null;
-        setCourseCompleted(true);
-        fetch(`/api/courses/${courseId}/progress`, {
+        setH5pFailed(null);
+        void fetch(`/api/courses/${courseId}/progress`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ visitedSlides: visited, h5pScore }),
-        });
+        }).then((res) => res.json().catch(() => ({ passed: true })))
+          .then((result) => {
+            if (result.passed) {
+              setCourseCompleted(true);
+            } else {
+              setH5pFailed({ score: result.score ?? 0, threshold: result.threshold ?? 0 });
+            }
+          });
       }
       if (e.data?.type === "h5p-video-progress") {
         setVideoProgress({ pct: e.data.pct, currentTime: e.data.currentTime, duration: e.data.duration });
@@ -129,6 +137,15 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
                   style={{ width: `${videoProgress.pct}%` }}
                 />
               </div>
+            </div>
+          )}
+
+          {/* Banner score insuffisant H5P */}
+          {h5pFailed && (
+            <div className="flex items-center justify-between bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl px-4 py-3">
+              <p className="text-[13px] text-red-700 dark:text-red-400 font-medium">
+                {t("h5pFailed", { score: h5pFailed.score, threshold: h5pFailed.threshold })}
+              </p>
             </div>
           )}
 
