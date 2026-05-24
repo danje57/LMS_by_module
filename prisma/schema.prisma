@@ -290,8 +290,12 @@ model BrandingSetting {
   bannerPath             String?
   loginNotice            String?
   auditLogRetentionDays  Int      @default(180)
-  seasonalThemesEnabled  Boolean  @default(false)
-  updatedAt              DateTime @updatedAt
+  seasonalThemesEnabled      Boolean   @default(false)
+  maintenanceBannerEnabled   Boolean   @default(false)
+  maintenanceBannerMessage   String?
+  maintenanceBannerColor     String    @default("orange")
+  maintenanceBannerEndsAt    DateTime?
+  updatedAt                  DateTime  @updatedAt
 
   @@map("branding_settings")
 }

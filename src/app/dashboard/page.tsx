@@ -113,8 +113,13 @@ export default async function DashboardPage() {
   const adminStats     = isAdmin ? await getAdminStats()       : null;
   const recentActivity = isAdmin ? await getRecentActivity()   : null;
   const userStats      = !isAdmin ? await getUserStats(userId) : null;
-  const branding       = await prisma.brandingSetting.findFirst({ select: { seasonalThemesEnabled: true } });
-  const seasonalEnabled = branding?.seasonalThemesEnabled ?? false;
+  const branding = await prisma.brandingSetting.findFirst({
+    select: { seasonalThemesEnabled: true, maintenanceBannerEnabled: true, maintenanceBannerEndsAt: true },
+  });
+  const maintenanceActive =
+    (branding?.maintenanceBannerEnabled ?? false) &&
+    (!branding?.maintenanceBannerEndsAt || new Date() <= branding.maintenanceBannerEndsAt);
+  const seasonalEnabled = !maintenanceActive && (branding?.seasonalThemesEnabled ?? false);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { SessionGuard } from "@/components/layout/session-guard";
+import { MaintenanceBanner } from "@/components/maintenance-banner";
 import { prisma } from "@/lib/prisma";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
@@ -54,6 +55,12 @@ export default async function DashboardLayout({
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header session={session} />
         <SessionGuard userId={session.user.id} />
+        <MaintenanceBanner
+          enabled={branding?.maintenanceBannerEnabled ?? false}
+          message={branding?.maintenanceBannerMessage ?? null}
+          color={branding?.maintenanceBannerColor ?? "orange"}
+          endsAt={branding?.maintenanceBannerEndsAt ?? null}
+        />
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
       </div>
     </div>
