@@ -12,6 +12,8 @@ interface NativeVideoData {
   id: string;
   videoPath: string;
   duration: number | null;
+  scoreVideoQuestions: boolean;
+  showVideoAnswers: boolean;
   questions: { id: string; timestamp: number; question: string; choices: { id: string; text: string; correct: boolean }[]; order: number; type?: "qcm" | "vrai_faux"; allowMultiple?: boolean; explanation?: string | null }[];
 }
 
@@ -35,6 +37,7 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
   const [tab, setTab] = useState<Tab>("course");
   const [courseCompleted, setCourseCompleted] = useState(false);
   const [h5pFailed, setH5pFailed] = useState<{ score: number; threshold: number } | null>(null);
+  const [videoScore, setVideoScore] = useState<{ correct: number; total: number } | null>(null);
   const [slideInfo, setSlideInfo] = useState<{ current: number; visited: number[]; total: number } | null>(null);
   const [videoProgress, setVideoProgress] = useState<{ pct: number; currentTime: number; duration: number } | null>(null);
   const [savedVisited, setSavedVisited] = useState<number[]>([]);
@@ -148,109 +151,142 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
       )}
 
       {tab === "course" && courseType === "native_video" && nativeVideo && (
-        <>
-          <NativeVideoPlayer
-            courseId={courseId}
-            videoData={nativeVideo}
-            onComplete={() => {
-              void fetch(`/api/courses/${courseId}/progress`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ visitedSlides: [], h5pScore: null }),
-              }).then(r => r.json()).then(result => {
-                if (result.passed !== false) setCourseCompleted(true);
-              });
-            }}
-          />
-          {courseCompleted && (
-            <div className="flex items-center justify-between bg-green-50 border border-green-100 rounded-xl px-4 py-3">
-              <p className="text-[13px] text-green-700 font-medium">✓ {t("courseCompleted")}</p>
+        <div className={cn("flex gap-4 items-start", !(courseCompleted && hasQuiz) && "flex-col")}>
+          <div className={cn(courseCompleted && hasQuiz ? "flex-1 min-w-0" : "w-full")}>
+            <NativeVideoPlayer
+              courseId={courseId}
+              videoData={nativeVideo}
+              scoreVideoQuestions={nativeVideo.scoreVideoQuestions}
+              showCorrectAnswers={nativeVideo.showVideoAnswers}
+              onComplete={(score) => {
+                const h5pScore = score
+                  ? { scaled: score.correct / score.total, raw: score.correct, max: score.total }
+                  : null;
+                if (score && hasQuiz) setVideoScore(score);
+                void fetch(`/api/courses/${courseId}/progress`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ visitedSlides: [], h5pScore }),
+                }).then(r => r.json()).then(result => {
+                  if (result.passed !== false) setCourseCompleted(true);
+                  else setH5pFailed({ score: result.score ?? 0, threshold: result.threshold ?? 0 });
+                });
+              }}
+            />
+            {courseCompleted && !hasQuiz && (
+              <div className="mt-3 flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-4 py-3">
+                <p className="text-[13px] text-green-700 font-medium">✓ {t("courseCompleted")}</p>
+              </div>
+            )}
+          </div>
+
+          {courseCompleted && hasQuiz && (
+            <div className="shrink-0 w-52 bg-gradient-to-b from-[#0071E3] to-[#0055B3] rounded-2xl p-5 flex flex-col items-center gap-4 text-white text-center shadow-lg">
+              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
+                <ClipboardList className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="font-semibold text-[15px]">Quiz disponible</p>
+                <p className="text-[12px] text-white/75 mt-1 leading-relaxed">Testez vos connaissances pour valider ce cours</p>
+              </div>
+              <button
+                onClick={() => setTab("quiz")}
+                className="w-full py-3 bg-white text-[#0071E3] font-semibold text-[14px] rounded-xl hover:bg-white/90 transition-colors"
+              >
+                {t("takeQuiz")} →
+              </button>
             </div>
           )}
-        </>
+        </div>
       )}
 
       {tab === "course" && courseType !== "native_video" && (
-        <>
-          <H5PPlayer courseId={courseId} filePath={filePath} visitedSlides={savedVisited} />
+        <div className={cn("flex gap-4 items-start", !(courseCompleted && hasQuiz) && "flex-col")}>
+          <div className={cn("space-y-4", courseCompleted && hasQuiz ? "flex-1 min-w-0" : "w-full")}>
+            <H5PPlayer courseId={courseId} filePath={filePath} visitedSlides={savedVisited} />
 
-          {/* Barre de progression vidéo (Interactive Video) */}
-          {videoProgress && !courseCompleted && (
-            <div className="bg-white border border-[#E5E5EA] rounded-2xl px-4 py-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-[12px] font-medium text-[#6E6E73]">{t("videoProgress")}</p>
-                <p className="text-[12px] text-[#ADADB8]">{videoProgress.pct}%</p>
+            {/* Barre de progression vidéo (Interactive Video) */}
+            {videoProgress && !courseCompleted && (
+              <div className="bg-white border border-[#E5E5EA] rounded-2xl px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[12px] font-medium text-[#6E6E73]">{t("videoProgress")}</p>
+                  <p className="text-[12px] text-[#ADADB8]">{videoProgress.pct}%</p>
+                </div>
+                <div className="h-1.5 w-full bg-[#F2F2F7] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#0071E3] rounded-full transition-all duration-500"
+                    style={{ width: `${videoProgress.pct}%` }}
+                  />
+                </div>
               </div>
-              <div className="h-1.5 w-full bg-[#F2F2F7] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#0071E3] rounded-full transition-all duration-500"
-                  style={{ width: `${videoProgress.pct}%` }}
-                />
-              </div>
-            </div>
-          )}
+            )}
 
-          {/* Banner score insuffisant H5P */}
-          {h5pFailed && (
-            <div className="flex items-center justify-between bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl px-4 py-3">
-              <p className="text-[13px] text-red-700 dark:text-red-400 font-medium">
-                {t("h5pFailed", { score: h5pFailed.score, threshold: h5pFailed.threshold })}
-              </p>
-            </div>
-          )}
-
-          {/* Barre de progression des slides */}
-          {slideInfo && slideInfo.total > 0 && (
-            <div className="bg-white border border-[#E5E5EA] rounded-2xl px-4 py-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-[12px] font-medium text-[#6E6E73]">{t("slideProgress")}</p>
-                <p className="text-[12px] text-[#ADADB8]">
-                  {t("slidesViewed", { n: slideInfo.visited.length, total: slideInfo.total })}
+            {/* Banner score insuffisant H5P */}
+            {h5pFailed && (
+              <div className="flex items-center justify-between bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl px-4 py-3">
+                <p className="text-[13px] text-red-700 dark:text-red-400 font-medium">
+                  {t("h5pFailed", { score: h5pFailed.score, threshold: h5pFailed.threshold })}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {Array.from({ length: slideInfo.total }, (_, i) => {
-                  const isVisited = slideInfo.visited.includes(i);
-                  const isCurrent = slideInfo.current === i;
-                  return (
-                    <div
-                      key={i}
-                      title={isVisited ? t("slideViewed", { n: i + 1 }) : t("slideNotViewed", { n: i + 1 })}
-                      className={cn(
-                        "w-7 h-7 rounded-lg text-[11px] font-bold flex items-center justify-center transition-all",
-                        isCurrent ? "bg-[#0071E3] text-white scale-110 shadow-sm" :
-                        isVisited ? "bg-green-500 text-white" :
-                                    "bg-[#E5E5EA] text-[#ADADB8]"
-                      )}
-                    >
-                      {i + 1}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+            )}
 
-          {/* Banner de complétion */}
-          {courseCompleted && (
-            <div className="flex items-center justify-between bg-green-50 border border-green-100 rounded-xl px-4 py-3">
-              {hasQuiz ? (
-                <>
-                  <p className="text-[13px] text-green-700 font-medium">{t("courseCompletedQuiz")}</p>
-                  <button
-                    onClick={() => setTab("quiz")}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors"
-                  >
-                    <ClipboardList className="w-3.5 h-3.5" />
-                    {t("takeQuiz")}
-                  </button>
-                </>
-              ) : (
+            {/* Barre de progression des slides */}
+            {slideInfo && slideInfo.total > 0 && (
+              <div className="bg-white border border-[#E5E5EA] rounded-2xl px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[12px] font-medium text-[#6E6E73]">{t("slideProgress")}</p>
+                  <p className="text-[12px] text-[#ADADB8]">
+                    {t("slidesViewed", { n: slideInfo.visited.length, total: slideInfo.total })}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {Array.from({ length: slideInfo.total }, (_, i) => {
+                    const isVisited = slideInfo.visited.includes(i);
+                    const isCurrent = slideInfo.current === i;
+                    return (
+                      <div
+                        key={i}
+                        title={isVisited ? t("slideViewed", { n: i + 1 }) : t("slideNotViewed", { n: i + 1 })}
+                        className={cn(
+                          "w-7 h-7 rounded-lg text-[11px] font-bold flex items-center justify-center transition-all",
+                          isCurrent ? "bg-[#0071E3] text-white scale-110 shadow-sm" :
+                          isVisited ? "bg-green-500 text-white" :
+                                      "bg-[#E5E5EA] text-[#ADADB8]"
+                        )}
+                      >
+                        {i + 1}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {courseCompleted && !hasQuiz && (
+              <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-4 py-3">
                 <p className="text-[13px] text-green-700 font-medium">✓ {t("courseCompleted")}</p>
-              )}
+              </div>
+            )}
+          </div>
+
+          {courseCompleted && hasQuiz && (
+            <div className="shrink-0 w-52 bg-gradient-to-b from-[#0071E3] to-[#0055B3] rounded-2xl p-5 flex flex-col items-center gap-4 text-white text-center shadow-lg">
+              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
+                <ClipboardList className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="font-semibold text-[15px]">Quiz disponible</p>
+                <p className="text-[12px] text-white/75 mt-1 leading-relaxed">Testez vos connaissances pour valider ce cours</p>
+              </div>
+              <button
+                onClick={() => setTab("quiz")}
+                className="w-full py-3 bg-white text-[#0071E3] font-semibold text-[14px] rounded-xl hover:bg-white/90 transition-colors"
+              >
+                {t("takeQuiz")} →
+              </button>
             </div>
           )}
-        </>
+        </div>
       )}
 
       {tab === "quiz" && courseCompleted && (
@@ -261,6 +297,7 @@ export function PlayPageClient({ courseId, courseTitle, filePath, hasQuiz, passi
             passingScore={passingScore}
             userName={userName}
             logoPath={logoPath}
+            videoScore={videoScore}
             onClose={() => setTab("course")}
           />
         </div>

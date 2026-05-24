@@ -72,7 +72,7 @@ export async function PATCH(
     if (!ok) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 
-  const { title, category, duration, hasQuiz, passingScore, createdById } = await req.json();
+  const { title, category, duration, hasQuiz, passingScore, scoreVideoQuestions, showVideoAnswers, createdById } = await req.json();
 
   const updated = await prisma.course.update({
     where: { id },
@@ -82,6 +82,8 @@ export async function PATCH(
       ...(duration !== undefined ? { duration: Number(duration) } : {}),
       ...(hasQuiz !== undefined ? { hasQuiz: !!hasQuiz } : {}),
       ...(passingScore !== undefined ? { passingScore: passingScore !== null ? Number(passingScore) : null } : {}),
+      ...(scoreVideoQuestions !== undefined ? { scoreVideoQuestions: !!scoreVideoQuestions } : {}),
+      ...(showVideoAnswers !== undefined ? { showVideoAnswers: !!showVideoAnswers } : {}),
       // createdById modifiable uniquement par l'admin
       ...(isAdmin && createdById !== undefined ? { createdById: createdById || null } : {}),
     },

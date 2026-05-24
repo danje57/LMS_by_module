@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { cn } from "@/lib/utils";
 import { Search, ChevronRight } from "lucide-react";
 
@@ -136,8 +136,8 @@ export function AuditClient({ entries }: { entries: AuditEntry[] }) {
                 const isExpanded = expanded === e.id;
                 const hasDetails = e.details && Object.keys(e.details).length > 0;
                 return (
-                  <>
-                    <tr key={e.id} className="hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors">
+                  <Fragment key={e.id}>
+                    <tr className="hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors">
                       <td className="px-5 py-3 text-[13px] text-[#6E6E73] dark:text-[#8E8E93] whitespace-nowrap">
                         {new Date(e.createdAt).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                       </td>
@@ -165,7 +165,7 @@ export function AuditClient({ entries }: { entries: AuditEntry[] }) {
                       </td>
                     </tr>
                     {isExpanded && hasDetails && (
-                      <tr key={`${e.id}-details`} className="bg-[#F5F5F7] dark:bg-[#2C2C2E]">
+                      <tr className="bg-[#F5F5F7] dark:bg-[#2C2C2E]">
                         <td colSpan={5} className="px-5 py-3">
                           <pre className="text-[12px] text-[#3C3C43] dark:text-[#AEAEB2] font-mono whitespace-pre-wrap">
                             {JSON.stringify(e.details, null, 2)}
@@ -173,7 +173,7 @@ export function AuditClient({ entries }: { entries: AuditEntry[] }) {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>

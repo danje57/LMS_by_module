@@ -54,6 +54,8 @@ export default async function PlayCoursePage({ params }: Props) {
           id: nativeVideo.id,
           videoPath: nativeVideo.videoPath,
           duration: nativeVideo.duration,
+          scoreVideoQuestions: course.scoreVideoQuestions,
+          showVideoAnswers: course.showVideoAnswers,
           questions: nativeVideo.questions.map(q => ({
             id: q.id,
             timestamp: q.timestamp,

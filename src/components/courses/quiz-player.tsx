@@ -27,6 +27,7 @@ interface Props {
   passingScore: number;
   userName?: string;
   logoPath?: string | null;
+  videoScore?: { correct: number; total: number } | null;
   onClose?: () => void;
 }
 
@@ -40,7 +41,7 @@ function isCorrect(question: Question, answer: string): boolean {
   return normalize(question.correctAnswer) === normalize(answer);
 }
 
-export function QuizPlayer({ courseId, courseTitle, passingScore, userName, logoPath, onClose }: Props) {
+export function QuizPlayer({ courseId, courseTitle, passingScore, userName, logoPath, videoScore, onClose }: Props) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [phase, setPhase] = useState<Phase>("loading");
   const [current, setCurrent] = useState(0);
@@ -87,9 +88,11 @@ export function QuizPlayer({ courseId, courseTitle, passingScore, userName, logo
   async function handleSubmit() {
     if (submitted) return;
     setSubmitted(true);
-    const total = questions.length;
-    const correct = questions.filter((q) => isCorrect(q, answers[q.id] ?? "")).length;
-    const score = Math.round((correct / total) * 100);
+    const quizCorrect = questions.filter((q) => isCorrect(q, answers[q.id] ?? "")).length;
+    const quizTotal = questions.length;
+    const totalCorrect = videoScore ? videoScore.correct + quizCorrect : quizCorrect;
+    const totalQuestions = videoScore ? videoScore.total + quizTotal : quizTotal;
+    const score = Math.round((totalCorrect / totalQuestions) * 100);
     const passed = score >= passingScore;
 
     const res = await fetch(`/api/courses/${courseId}/quiz`, {
@@ -118,7 +121,7 @@ export function QuizPlayer({ courseId, courseTitle, passingScore, userName, logo
         <div>
           <h2 className="text-[20px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Quiz disponible</h2>
           <p className="mt-1 text-[14px] text-[#6E6E73] dark:text-[#8E8E93]">
-            {questions.length} question(s) · Score minimum : {passingScore}%
+            {videoScore ? `${questions.length} question(s) quiz + ${videoScore.total} vidéo` : `${questions.length} question(s)`} · Score minimum : {passingScore}%
           </p>
         </div>
         <button onClick={startQuiz}
@@ -246,9 +249,11 @@ export function QuizPlayer({ courseId, courseTitle, passingScore, userName, logo
   }
 
   // Result phase
-  const total = questions.length;
-  const correct = questions.filter((q) => isCorrect(q, answers[q.id] ?? "")).length;
-  const score = Math.round((correct / total) * 100);
+  const quizCorrect = questions.filter((q) => isCorrect(q, answers[q.id] ?? "")).length;
+  const quizTotal = questions.length;
+  const totalCorrect = videoScore ? videoScore.correct + quizCorrect : quizCorrect;
+  const totalQuestions = videoScore ? videoScore.total + quizTotal : quizTotal;
+  const score = Math.round((totalCorrect / totalQuestions) * 100);
   const passed = score >= passingScore;
 
   return (
@@ -267,7 +272,7 @@ export function QuizPlayer({ courseId, courseTitle, passingScore, userName, logo
             {passed ? "Félicitations, quiz réussi !" : "Quiz non validé"}
           </p>
           <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93] mt-1">
-            {correct} / {total} bonnes réponses · Seuil : {passingScore}%
+            {totalCorrect} / {totalQuestions} bonnes réponses{videoScore ? ` (${videoScore.correct}/${videoScore.total} vidéo + ${quizCorrect}/${quizTotal} quiz)` : ""} · Seuil : {passingScore}%
           </p>
         </div>
 

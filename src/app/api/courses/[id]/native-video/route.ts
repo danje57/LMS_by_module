@@ -7,6 +7,11 @@ import path from "path";
 import crypto from "crypto";
 import { Readable } from "stream";
 import Busboy from "busboy";
+import { execFile } from "child_process";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
+const SCRIPTS_DIR = process.env.SCRIPTS_DIR ?? "./scripts";
 
 const MAX_VIDEO_SIZE = 600 * 1024 * 1024;
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
@@ -134,9 +139,26 @@ export async function POST(req: NextRequest, { params }: Params) {
       data: { courseId: id, videoPath: `videos/${filename}`, fileHash },
     });
 
+    // Générer le thumbnail vidéo
+    let thumbnailPath: string | null = null;
+    try {
+      const thumbDir = path.join(UPLOAD_DIR, "thumbnails");
+      mkdirSync(thumbDir, { recursive: true });
+      const thumbDest = path.join(thumbDir, `${id}.jpg`);
+      const scriptPath = path.resolve(SCRIPTS_DIR, "generate_video_thumbnail.py");
+      const videoAbsPath = path.join(UPLOAD_DIR, `videos/${filename}`);
+      await execFileAsync("python3", [scriptPath, videoAbsPath, thumbDest], { timeout: 60_000 });
+      thumbnailPath = `thumbnails/${id}.jpg`;
+    } catch { /* thumbnail non critique */ }
+
     await prisma.course.update({
       where: { id },
-      data: { courseType: "native_video", originalFileName: file.originalName, fileSize: BigInt(file.size) },
+      data: {
+        courseType: "native_video",
+        originalFileName: file.originalName,
+        fileSize: BigInt(file.size),
+        ...(thumbnailPath ? { thumbnailPath } : {}),
+      },
     });
 
     return NextResponse.json({ ok: true, id: nativeVideo.id, videoPath: nativeVideo.videoPath });

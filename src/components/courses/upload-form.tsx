@@ -145,7 +145,6 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: (courseI
   const t = useTranslations("upload");
   const [hasQuiz, setHasQuiz] = useState(false);
   const [passingScore, setPassingScore] = useState("70");
-  const [h5pPassingScore, setH5pPassingScore] = useState("80");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -173,7 +172,7 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: (courseI
 
     const form = new FormData(formRef.current);
     form.set("hasQuiz", hasQuiz ? "on" : "");
-    form.set("passingScore", hasQuiz ? passingScore : h5pPassingScore);
+    form.set("passingScore", passingScore);
     if (force) form.set("force", "true");
 
     try {
@@ -237,17 +236,6 @@ function H5PForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: (courseI
         <input name="duration" type="number" min="1" required placeholder="30" className={fieldClass} />
       </div>
       <QuizToggle hasQuiz={hasQuiz} setHasQuiz={setHasQuiz} passingScore={passingScore} setPassingScore={setPassingScore} />
-      {/* Score minimum pour le certificat (H5P Interactive Video) */}
-      <div>
-        <label className={labelClass}>{t("h5pPassingScore")}</label>
-        <input
-          type="number" min="0" max="100"
-          value={h5pPassingScore}
-          onChange={(e) => setH5pPassingScore(e.target.value)}
-          className={fieldClass}
-        />
-        <p className="text-[12px] text-[#8E8E93] mt-1">{t("h5pPassingScoreHint")}</p>
-      </div>
 
       {/* Tip Lumi Desktop */}
       <div className="flex items-start gap-3 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-xl px-4 py-3">
@@ -493,6 +481,9 @@ function NativeVideoForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: 
   const [step, setStep] = useState("");
   const [error, setError] = useState("");
   const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
+  const [scoreVideoQuestions, setScoreVideoQuestions] = useState(false);
+  const [showVideoAnswers, setShowVideoAnswers] = useState(true);
+  const [passingScore, setPassingScore] = useState("70");
   const pendingCourseId = React.useRef<string | null>(null);
 
   async function uploadVideo(courseId: string, force = false) {
@@ -525,7 +516,7 @@ function NativeVideoForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: 
     const res = await fetch("/api/admin/courses/create-native-video", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, duration, createdById }),
+      body: JSON.stringify({ title, duration, createdById, scoreVideoQuestions, showVideoAnswers, passingScore: scoreVideoQuestions ? passingScore : undefined }),
     });
     const data = await res.json();
     if (!res.ok) { setError(data.error ?? "Erreur"); setLoading(false); return; }
@@ -551,6 +542,49 @@ function NativeVideoForm({ onSuccess, isAdmin, userId, creators }: { onSuccess: 
         <label className={labelClass}>{t("duration")}</label>
         <input type="number" min={1} required value={duration} onChange={e => setDuration(e.target.value)} className={fieldClass} />
       </div>
+      <div className="flex items-start gap-3">
+        <button
+          type="button"
+          onClick={() => setScoreVideoQuestions(v => !v)}
+          className={`relative shrink-0 w-11 h-6 rounded-full transition-colors mt-0.5 ${scoreVideoQuestions ? "bg-[#0071E3]" : "bg-[#D2D2D7] dark:bg-[#3A3A3C]"}`}
+          aria-pressed={scoreVideoQuestions}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${scoreVideoQuestions ? "translate-x-5" : ""}`} />
+        </button>
+        <div>
+          <p className="text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Comptabiliser le score des questions vidéo</p>
+          <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">
+            Le score est calculé sur les questions dans la vidéo et comparé au seuil de passage. Les bonnes réponses ne sont pas révélées.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-3">
+        <button
+          type="button"
+          onClick={() => setShowVideoAnswers(v => !v)}
+          className={`relative shrink-0 w-11 h-6 rounded-full transition-colors mt-0.5 ${showVideoAnswers ? "bg-[#0071E3]" : "bg-[#D2D2D7] dark:bg-[#3A3A3C]"}`}
+          aria-pressed={showVideoAnswers}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${showVideoAnswers ? "translate-x-5" : ""}`} />
+        </button>
+        <div>
+          <p className="text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Révéler les bonnes réponses dans la vidéo</p>
+          <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">
+            Activé : la bonne réponse est colorée et l&apos;apprenant peut réessayer. Désactivé : seul ✓ ou ✗ est affiché, sans possibilité de réessayer.
+          </p>
+        </div>
+      </div>
+      {scoreVideoQuestions && (
+        <div className="max-w-[200px]">
+          <label className={labelClass}>Seuil de passage (%)</label>
+          <input
+            type="number" min={0} max={100} value={passingScore}
+            onChange={e => setPassingScore(e.target.value)}
+            className={fieldClass}
+          />
+        </div>
+      )}
       <div>
         <label className={labelClass}>{t("videoFile")}</label>
         <label className={`flex items-center gap-3 cursor-pointer border-2 border-dashed rounded-xl px-4 py-5 transition-colors ${videoFile ? "border-[#0071E3] bg-blue-50 dark:bg-blue-500/10" : "border-[#D2D2D7] dark:border-[#3A3A3C] hover:border-[#0071E3]"}`}>

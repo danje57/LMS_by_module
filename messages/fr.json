@@ -145,7 +145,8 @@
     "videoFile": "Fichier vidéo",
     "clickToSelectVideo": "Cliquez pour sélectionner une vidéo",
     "videoFormats": "Formats acceptés : mp4, webm, mov · max 600 Mo",
-    "selectVideo": "Veuillez sélectionner un fichier vidéo."
+    "selectVideo": "Veuillez sélectionner un fichier vidéo.",
+    "cancel": "Annuler"
   },
   "users": {
     "search": "Rechercher un utilisateur…",

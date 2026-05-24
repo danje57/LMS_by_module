@@ -1,0 +1,110 @@
+TODO - Fonctionnalités à implémenter
+=====================================
+
+[ ] Réactiver les emails
+    - Vérifier/déboguer la config SMTP existante
+    - Tester l'envoi (assignation, rappels deadlines, certificats)
+
+[ ] Mécanisme de protection du contenu (licencing)
+    - Chaque instance de l'app sera liée à une licence unique
+    - Empêcher le transfert de contenu entre instances
+    - Utiliser chiffrement + intégrité + non-répudiation
+    - (ex: signature des fichiers cours avec clé propre à l'instance, vérification à la lecture)
+
+[ ] App Store / Marketplace de contenu
+    - Catalogue de contenus disponibles à l'achat/déblocage
+    - Contenu installable sur l'instance uniquement si licence valide
+    - Lié au mécanisme de licencing (voir ci-dessus)
+    - Gestion des contenus installés vs disponibles
+
+[ ] Questions inline dans les cours PPTX (sous le coude, pas prioritaire)
+    - Ajouter des questions à des positions de slides spécifiques
+    - Interface d'édition dans le formulaire de cours
+    - Injection dans le JSON H5P lors de la conversion
+
+[ ] Parcours pédagogique (Learning Paths)
+    - Enchaîner plusieurs cours dans un ordre défini
+    - Débloquer le cours suivant uniquement à la complétion du précédent
+    - Assignable comme un tout à un utilisateur / une équipe
+    - Progression globale du parcours visible
+
+[ ] Tableau de bord reporting admin
+    - Taux de complétion par cours, par équipe
+    - Scores moyens aux quiz
+    - Activité récente des apprenants
+    - Vue graphique (courbes, jauges...)
+    - Vignette "Actifs cette semaine" cliquable → liste des utilisateurs actifs sur la période
+    - Rapport d'activité sur 6 mois : qui a été actif, sur quel cours, et quand
+    - Exportable (CSV)
+
+[ ] Export CSV
+    - Export des progressions par cours et par utilisateur
+    - Export des résultats quiz
+    - Utile pour reporting RH / conformité
+
+[ ] Pagination des certificats
+    - Vue apprenant : paginer la liste de ses certificats
+    - Vue manager/créateur : idem pour les apprenants de leur équipe
+
+[ ] Vue certificats admin
+    - Visualiser les certificats de tous les apprenants
+    - Groupé par utilisateur
+    - Groupé par département
+    - Avec pagination
+
+[ ] Validité des certificats
+    - Expiration d'un certificat après X mois configurables par cours
+    - Relancer automatiquement la formation à l'expiration
+    - Notification à l'apprenant et au manager
+
+[ ] Note / feedback apprenant sur les cours
+    - L'apprenant peut noter le cours après complétion (1-5 étoiles)
+    - Commentaire optionnel
+    - Vue admin/manager des retours
+
+[ ] Mettre en place HTTPS
+    - Génération/configuration certificat TLS (Let's Encrypt ou self-signed)
+    - Redirection HTTP → HTTPS
+    - Mise à jour AUTH_URL dans .env
+
+[ ] Dockeriser l'application
+    - Dockerfile pour Next.js
+    - docker-compose avec PostgreSQL, volumes pour uploads/backups
+    - Variables d'environnement externalisées
+    - Documentation de déploiement
+
+[ ] Tester backup / restauration from scratch
+    - Vérifier que le backup complet fonctionne (DB + fichiers)
+    - Tester la restauration sur une instance vierge
+    - Documenter la procédure
+
+[ ] Résumé des notifications (email + cloche)
+    - Faire un inventaire complet de tous les emails envoyés (triggers, templates, destinataires)
+    - Faire un inventaire de toutes les notifications in-app (cloche en haut à droite)
+    - Identifier les manques et incohérences
+
+[ ] Intégration SIEM pour les logs
+    - À discuter : choix du protocole (Syslog, CEF, JSON over HTTP...)
+    - Envoyer les logs d'audit vers un SIEM externe
+    - (Sujet à approfondir)
+
+[ ] Thèmes saisonniers / fêtes automatiques
+    - Décorations automatiques de l'interface selon les fêtes du calendrier
+    - Calendriers supportés : France et Luxembourg
+    - Ex: Noël, Nouvel An, Fête Nationale (14 juillet / 23 juin), Halloween, Pâques...
+    - Activable/désactivable depuis les paramètres admin
+    - Customisable : l'admin peut choisir quelles fêtes afficher et l'intensité des décorations
+
+[ ] Bannière de maintenance
+    - L'admin peut activer une bannière visible par tous les utilisateurs connectés
+    - Configurable depuis les paramètres admin : message, couleur, date de fin
+    - Disparaît automatiquement à la date de fin ou si désactivée manuellement
+    - Non bloquante : les users peuvent continuer à utiliser l'app
+
+[ ] Module PDF / Attestation de lecture (GRC / Compliance)
+    - Upload d'un ou plusieurs PDF (politiques, chartes, procédures...)
+    - Assignables comme des cours aux utilisateurs / équipes
+    - L'utilisateur lit le PDF dans l'app et signe électroniquement (case "J'ai lu et j'accepte")
+    - Génération d'un certificat/attestation horodaté prouvant la prise de connaissance
+    - Historique des signatures par document et par utilisateur
+    - Utile pour : RGPD, politique de sécurité, règlement intérieur, chartes IT...

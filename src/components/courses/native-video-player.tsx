@@ -25,15 +25,19 @@ interface NativeVideoData { id: string; videoPath: string; duration: number | nu
 interface Props {
   courseId: string;
   videoData: NativeVideoData;
-  onComplete: () => void;
+  scoreVideoQuestions?: boolean;
+  showCorrectAnswers?: boolean;
+  onComplete: (score?: { correct: number; total: number }) => void;
 }
 
-export function NativeVideoPlayer({ courseId, videoData, onComplete }: Props) {
+export function NativeVideoPlayer({ courseId, videoData, scoreVideoQuestions = false, showCorrectAnswers = true, onComplete }: Props) {
   const t = useTranslations("nativeVideo");
   const videoRef = useRef<HTMLVideoElement>(null);
   const [activeQuestion, setActiveQuestion] = useState<Question | null>(null);
   const [selectedChoices, setSelectedChoices] = useState<Set<string>>(new Set());
   const [answered, setAnswered] = useState<Record<string, boolean>>({});
+  // In score mode: tracks how many were answered correctly (one attempt only)
+  const correctCountRef = useRef(0);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   const [completed, setCompleted] = useState(false);
   const triggeredRef = useRef<Set<string>>(new Set());
@@ -71,9 +75,13 @@ export function NativeVideoPlayer({ courseId, videoData, onComplete }: Props) {
   const handleEnded = useCallback(() => {
     if (allAnswered && !completed) {
       setCompleted(true);
-      onComplete();
+      if (scoreVideoQuestions && videoData.questions.length > 0) {
+        onComplete({ correct: correctCountRef.current, total: videoData.questions.length });
+      } else {
+        onComplete();
+      }
     }
-  }, [allAnswered, completed, onComplete]);
+  }, [allAnswered, completed, onComplete, scoreVideoQuestions, videoData.questions.length]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -115,23 +123,35 @@ export function NativeVideoPlayer({ courseId, videoData, onComplete }: Props) {
 
     setFeedback(isCorrect ? "correct" : "wrong");
 
-    if (isCorrect) {
+    // Score tracking (independent of display mode)
+    if (scoreVideoQuestions && isCorrect) correctCountRef.current += 1;
+
+    if (showCorrectAnswers) {
+      // Normal mode: mark answered, auto-advance on correct, manual continue on wrong
+      setAnswered(prev => ({ ...prev, [activeQuestion.id]: true }));
+      if (isCorrect) {
+        setTimeout(() => {
+          setActiveQuestion(null);
+          setFeedback(null);
+          setSelectedChoices(new Set());
+          videoRef.current?.play();
+        }, activeQuestion.explanation ? 2500 : 1200);
+      }
+      // On wrong: "Poursuivre la vidéo" button shown, user resumes manually
+    } else {
+      // Stealth mode: one attempt, always advance after 1.5s, no retry
       setAnswered(prev => ({ ...prev, [activeQuestion.id]: true }));
       setTimeout(() => {
         setActiveQuestion(null);
         setFeedback(null);
         setSelectedChoices(new Set());
         videoRef.current?.play();
-      }, activeQuestion.explanation ? 2500 : 1200);
+      }, 1500);
     }
   }
 
-  function retryQuestion() {
-    setSelectedChoices(new Set());
-    setFeedback(null);
-  }
-
   return (
+    <div className="max-w-6xl mx-auto">
     <div className="relative rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: "16/9" }}>
       <video
         ref={videoRef}
@@ -163,6 +183,8 @@ export function NativeVideoPlayer({ courseId, videoData, onComplete }: Props) {
               {activeQuestion.choices.map((choice, i) => {
                 const isSelected = selectedChoices.has(choice.id);
                 const letter = LETTERS[i];
+                // In stealth mode: after answering, don't colour individual choices (only show ✓/✗ badge)
+                const showChoiceResult = showCorrectAnswers;
                 return (
                   <button
                     key={choice.id}
@@ -171,8 +193,9 @@ export function NativeVideoPlayer({ courseId, videoData, onComplete }: Props) {
                     className={cn(
                       "w-full text-left px-4 py-3 rounded-xl border text-[13px] transition-all flex items-center gap-3",
                       isSelected && feedback === null && "border-[#0071E3] bg-blue-50 dark:bg-[#0071E3]/10 text-[#0071E3]",
-                      feedback === "correct" && isSelected && "border-green-500 bg-green-50 dark:bg-emerald-500/10 text-green-700 dark:text-emerald-400",
-                      feedback === "wrong" && isSelected && "border-red-400 bg-red-50 dark:bg-red-500/10 text-red-600",
+                      showChoiceResult && feedback === "correct" && isSelected && "border-green-500 bg-green-50 dark:bg-emerald-500/10 text-green-700 dark:text-emerald-400",
+                      showChoiceResult && feedback === "wrong" && isSelected && "border-red-400 bg-red-50 dark:bg-red-500/10 text-red-600",
+                      !showChoiceResult && feedback !== null && isSelected && "border-[#ADADB8] bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-[#F5F5F7]",
                       feedback === null && !isSelected && "border-[#E5E5EA] dark:border-[#3A3A3C] hover:border-[#ADADB8] text-[#1D1D1F] dark:text-[#F5F5F7]",
                       feedback !== null && !isSelected && "border-[#E5E5EA] dark:border-[#3A3A3C] opacity-50 text-[#1D1D1F] dark:text-[#F5F5F7]"
                     )}
@@ -180,8 +203,8 @@ export function NativeVideoPlayer({ courseId, videoData, onComplete }: Props) {
                     <span className={cn(
                       "w-7 h-7 rounded-lg text-[13px] font-bold flex items-center justify-center shrink-0 transition-all",
                       isSelected && feedback === null ? "bg-[#0071E3] text-white"
-                      : feedback === "correct" && isSelected ? "bg-green-500 text-white"
-                      : feedback === "wrong" && isSelected ? "bg-red-400 text-white"
+                      : showChoiceResult && feedback === "correct" && isSelected ? "bg-green-500 text-white"
+                      : showChoiceResult && feedback === "wrong" && isSelected ? "bg-red-400 text-white"
                       : "bg-[#E5E5EA] dark:bg-[#3A3A3C] text-[#3A3A3C] dark:text-[#E5E5EA]"
                     )}>
                       {letter}
@@ -192,7 +215,20 @@ export function NativeVideoPlayer({ courseId, videoData, onComplete }: Props) {
               })}
             </div>
 
-            {feedback === "correct" && (
+            {/* Stealth mode feedback: just ✓ or ✗, no answer revealed */}
+            {!showCorrectAnswers && feedback === "correct" && (
+              <div className="flex items-center gap-2 text-green-600 dark:text-emerald-400 text-[13px] font-medium">
+                <CheckCircle className="w-4 h-4" /> Bonne réponse
+              </div>
+            )}
+            {!showCorrectAnswers && feedback === "wrong" && (
+              <div className="flex items-center gap-2 text-red-500 text-[13px] font-medium">
+                <XCircle className="w-4 h-4" /> Mauvaise réponse
+              </div>
+            )}
+
+            {/* Normal mode feedback */}
+            {showCorrectAnswers && feedback === "correct" && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-green-600 dark:text-emerald-400 text-[13px] font-medium">
                   <CheckCircle className="w-4 h-4" /> {t("correct")}
@@ -204,17 +240,21 @@ export function NativeVideoPlayer({ courseId, videoData, onComplete }: Props) {
                 )}
               </div>
             )}
-
-            {feedback === "wrong" && (
+            {showCorrectAnswers && feedback === "wrong" && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-red-500 text-[13px] font-medium">
                   <XCircle className="w-4 h-4" /> {t("wrong")}
                 </div>
                 <button
-                  onClick={retryQuestion}
-                  className="w-full py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[13px] font-medium rounded-xl transition-colors"
+                  onClick={() => {
+                    setActiveQuestion(null);
+                    setFeedback(null);
+                    setSelectedChoices(new Set());
+                    videoRef.current?.play();
+                  }}
+                  className="w-full py-2 bg-[#636366] hover:bg-[#48484A] text-white text-[13px] font-medium rounded-xl transition-colors"
                 >
-                  {t("retry")}
+                  Poursuivre la vidéo
                 </button>
               </div>
             )}
@@ -231,6 +271,7 @@ export function NativeVideoPlayer({ courseId, videoData, onComplete }: Props) {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

@@ -74,10 +74,10 @@ export async function POST(req: NextRequest, { params }: Params) {
     select: { title: true, hasQuiz: true, passingScore: true },
   });
 
-  // Vérifier le seuil de réussite pour H5P Interactive Video
+  // Seuil vidéo : ignoré quand hasQuiz=true car le score sera combiné vidéo+quiz côté quiz
   const scorePercent = h5pScore ? Math.round(h5pScore.scaled * 100) : null;
   const threshold = course?.passingScore ?? 0;
-  const passesScore = scorePercent === null || threshold === 0 || scorePercent >= threshold;
+  const passesScore = scorePercent === null || threshold === 0 || course?.hasQuiz || scorePercent >= threshold;
 
   const now = new Date();
   await prisma.userCourseProgress.upsert({

@@ -52,6 +52,10 @@ def convert(pptx_path: str, output_dir: str, title: str) -> dict:
                 w, h = img.size
                 if i == 1:
                     width, height = w, h
+                    # Thumbnail from slide 1
+                    thumb = img.copy()
+                    thumb.thumbnail((800, 450), Image.LANCZOS)
+                    thumb.convert("RGB").save(str(output_dir / "thumbnail.jpg"), "JPEG", quality=85, optimize=True)
             shutil.copy(png, images_dir / f"slide_{i}.png")
 
     # content.json

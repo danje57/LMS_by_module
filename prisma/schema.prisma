@@ -96,12 +96,15 @@ model Course {
   id               String               @id @default(cuid())
   title            String
   duration         Int
-  hasQuiz          Boolean              @default(false)
-  passingScore     Int?
+  hasQuiz              Boolean              @default(false)
+  passingScore         Int?
+  scoreVideoQuestions  Boolean              @default(false)
+  showVideoAnswers     Boolean              @default(true)
   filePath         String               @default("")
   originalFileName String               @default("")
   fileSize         BigInt               @default(0)
   fileHash         String?
+  thumbnailPath    String?
   category         String?
   isActive         Boolean              @default(true)
   courseType       CourseType           @default(h5p)
@@ -281,12 +284,13 @@ model MailSetting {
 }
 
 model BrandingSetting {
-  id           String   @id @default(cuid())
-  appName      String   @default("LMS")
-  logoPath     String?
-  bannerPath   String?
-  loginNotice  String?
-  updatedAt    DateTime @updatedAt
+  id                     String   @id @default(cuid())
+  appName                String   @default("LMS")
+  logoPath               String?
+  bannerPath             String?
+  loginNotice            String?
+  auditLogRetentionDays  Int      @default(180)
+  updatedAt              DateTime @updatedAt
 
   @@map("branding_settings")
 }

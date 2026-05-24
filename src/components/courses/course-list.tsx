@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Course } from "@prisma/client";
 import { formatDuration, formatFileSize } from "@/lib/utils";
-import { Search, Clock, CircleCheck, Play, Pencil, ArrowUpDown, UserPlus, Award, CalendarClock, AlertTriangle, Tag } from "lucide-react";
+import { Search, Clock, CircleCheck, Play, Pencil, ArrowUpDown, UserPlus, Award, CalendarClock, AlertTriangle, Tag, Video, Presentation, Layers } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useTranslations, useLocale } from "next-intl";
@@ -51,6 +51,20 @@ interface CourseListProps {
   assignableCourseIds?: Set<string>;
 }
 
+function getTypeBadge(course: Course) {
+  if (course.courseType === "native_video") {
+    return { Icon: Video, label: "Vidéo", cls: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10" };
+  }
+  const fname = (course.originalFileName ?? "").toLowerCase();
+  if (course.courseType === "h5p" && fname.endsWith(".pptx")) {
+    return { Icon: Presentation, label: "PowerPoint", cls: "text-orange-600 bg-orange-50 dark:bg-orange-500/10" };
+  }
+  if (course.courseType === "h5p") {
+    return { Icon: Layers, label: "H5P", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10" };
+  }
+  return null;
+}
+
 function CourseCard({
   course,
   isAdmin,
@@ -60,6 +74,7 @@ function CourseCard({
   isAssignedToMe,
   hideDeadline = false,
   isDeletable = false,
+  showTypeBadge = false,
   onAssign,
   onManagerAssign,
 }: {
@@ -71,6 +86,7 @@ function CourseCard({
   isAssignedToMe: boolean;
   hideDeadline?: boolean;
   isDeletable?: boolean;
+  showTypeBadge?: boolean;
   onAssign: (t: { id: string; title: string }) => void;
   onManagerAssign: (t: { id: string; title: string }) => void;
 }) {
@@ -91,16 +107,27 @@ function CourseCard({
       !hideDeadline && deadlineState === "danger"  ? "border-orange-300 hover:border-orange-400" :
       "border-[#E5E5EA] dark:border-[#3A3A3C] hover:border-[#D2D2D7] dark:hover:border-[#636366]"
     )}>
-      <div className={cn(
-        "h-1.5 bg-gradient-to-r",
-        hideDeadline                              ? "from-[#0071E3] to-[#40B3FF]" :
-        deadlineState === "overdue"               ? "from-red-500 to-red-400" :
-        deadlineState === "danger"                ? "from-orange-400 to-amber-400" :
-        deadlineState === "warning"               ? "from-amber-400 to-yellow-300" :
-        isCompleted                               ? "from-emerald-400 to-teal-400" :
-        status === "in_progress"                  ? "from-amber-400 to-orange-400" :
-                                                    "from-[#0071E3] to-[#40B3FF]"
-      )} />
+      {course.thumbnailPath ? (
+        <div className="h-36 overflow-hidden bg-[#F5F5F7] dark:bg-[#2C2C2E]">
+          <img
+            src={`/api/courses/${course.id}/thumbnail?v=${new Date(course.updatedAt).getTime()}`}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      ) : (
+        <div className={cn(
+          "h-1.5 bg-gradient-to-r",
+          hideDeadline                              ? "from-[#0071E3] to-[#40B3FF]" :
+          deadlineState === "overdue"               ? "from-red-500 to-red-400" :
+          deadlineState === "danger"                ? "from-orange-400 to-amber-400" :
+          deadlineState === "warning"               ? "from-amber-400 to-yellow-300" :
+          isCompleted                               ? "from-emerald-400 to-teal-400" :
+          status === "in_progress"                  ? "from-amber-400 to-orange-400" :
+                                                      "from-[#0071E3] to-[#40B3FF]"
+        )} />
+      )}
 
       <div className="p-5 space-y-4">
         <h3 className="text-[15px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] leading-snug line-clamp-2">
@@ -131,6 +158,17 @@ function CourseCard({
         )}
 
         <div className="flex flex-wrap gap-2">
+          {showTypeBadge && (() => {
+            const badge = getTypeBadge(course);
+            if (!badge) return null;
+            const { Icon, label, cls } = badge;
+            return (
+              <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium rounded-lg px-2.5 py-1 ${cls}`}>
+                <Icon className="w-3 h-3" />
+                {label}
+              </span>
+            );
+          })()}
           <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#6E6E73] dark:text-[#8E8E93] bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-lg px-2.5 py-1">
             <Clock className="w-3 h-3" />
             {formatDuration(course.duration)}
@@ -211,7 +249,7 @@ function CourseCard({
                 {t("certificate")}
               </Link>
             )}
-            {isAdmin && (
+            {(isAdmin || (isManagerOrCreator && hideDeadline)) && (
               <Link
                 href={`/dashboard/courses/${course.id}/play`}
                 className="inline-flex items-center gap-1.5 px-4 py-2 border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] text-[13px] font-medium rounded-xl transition-colors"
@@ -389,7 +427,8 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {paginated.map((course) => (
             <CourseCard key={course.id} course={course} isAdmin={true} isManagerOrCreator={false}
-              progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={false} onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
+              progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={false} showTypeBadge
+              onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
           ))}
         </div>
       ) : isManagerOrCreator ? (
@@ -465,7 +504,7 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
                   {paginated.map((course) => (
                     <CourseCard key={course.id} course={course} isAdmin={false} isManagerOrCreator={true}
                       progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={assignedSet.has(course.id)}
-                      hideDeadline isDeletable={assignableCourseIds?.has(course.id) ?? false}
+                      hideDeadline isDeletable={assignableCourseIds?.has(course.id) ?? false} showTypeBadge
                       onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
                   ))}
                 </div>

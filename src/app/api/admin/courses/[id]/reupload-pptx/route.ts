@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { auditLog } from "@/lib/audit";
 import { createWriteStream, mkdirSync } from "fs";
 import { rm, readdir, readFile } from "fs/promises";
 import path from "path";
@@ -15,25 +16,23 @@ const execFileAsync = promisify(execFile);
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
 const H5P_LIBS_DIR = process.env.H5P_LIBS_DIR ?? "./h5p-libraries";
 const SCRIPTS_DIR = process.env.SCRIPTS_DIR ?? "./scripts";
-const MAX_PPTX_SIZE = 200 * 1024 * 1024; // 200 Mo
+const MAX_PPTX_SIZE = 200 * 1024 * 1024;
 
-function parseMultipart(req: NextRequest): Promise<{
-  fields: Record<string, string>;
-  file: { path: string; originalName: string; size: number } | null;
-}> {
+type Params = { params: Promise<{ id: string }> };
+
+function parsePptx(req: NextRequest): Promise<{ file: { path: string; originalName: string; size: number } | null; force: boolean }> {
   return new Promise((resolve, reject) => {
     const contentType = req.headers.get("content-type") ?? "";
     const bb = Busboy({ headers: { "content-type": contentType }, limits: { fileSize: MAX_PPTX_SIZE } });
-    const fields: Record<string, string> = {};
     let fileResult: { path: string; originalName: string; size: number } | null = null;
+    let force = false;
     let busboyDone = false, writeDone = false, hasFile = false;
 
     function tryResolve() {
-      if (busboyDone && (writeDone || !hasFile)) resolve({ fields, file: fileResult });
+      if (busboyDone && (writeDone || !hasFile)) resolve({ file: fileResult, force });
     }
 
-    bb.on("field", (name, value) => { fields[name] = value; });
-
+    bb.on("field", (name, value) => { if (name === "force") force = value === "true"; });
     bb.on("file", (_, stream, info) => {
       hasFile = true;
       const { filename } = info;
@@ -41,21 +40,16 @@ function parseMultipart(req: NextRequest): Promise<{
         stream.resume();
         return reject(new Error("Seuls les fichiers .pptx sont acceptés"));
       }
-
       const hash = createHash("md5").update(Date.now().toString()).digest("hex").slice(0, 12);
-      const tmpPptxDir = path.join(UPLOAD_DIR, "tmp");
-      mkdirSync(tmpPptxDir, { recursive: true });
-      const pptxPath = path.join(tmpPptxDir, `${hash}.pptx`);
+      const tmpDir = path.join(UPLOAD_DIR, "tmp");
+      mkdirSync(tmpDir, { recursive: true });
+      const pptxPath = path.join(tmpDir, `${hash}.pptx`);
       const ws = createWriteStream(pptxPath);
       let size = 0;
-
       stream.on("data", (chunk: Buffer) => { size += chunk.length; });
+      stream.on("limit", () => reject(new Error("Fichier trop volumineux (max 200 Mo)")));
       stream.pipe(ws);
-      ws.on("finish", () => {
-        fileResult = { path: pptxPath, originalName: filename, size };
-        writeDone = true;
-        tryResolve();
-      });
+      ws.on("finish", () => { fileResult = { path: pptxPath, originalName: filename, size }; writeDone = true; tryResolve(); });
       ws.on("error", reject);
     });
 
@@ -66,20 +60,16 @@ function parseMultipart(req: NextRequest): Promise<{
 }
 
 async function addLibrariesToZip(zip: AdmZip) {
-  const libsPath = path.resolve(H5P_LIBS_DIR);
   try {
-    const entries = await readdir(libsPath, { withFileTypes: true });
+    const entries = await readdir(path.resolve(H5P_LIBS_DIR), { withFileTypes: true });
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
-      const libDir = path.join(libsPath, entry.name);
-      zip.addLocalFolder(libDir, entry.name);
+      zip.addLocalFolder(path.join(path.resolve(H5P_LIBS_DIR), entry.name), entry.name);
     }
-  } catch {
-    // Si le dossier n'existe pas, on continue sans librairies externes
-  }
+  } catch { /* pas de librairies externes */ }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
@@ -91,108 +81,85 @@ export async function POST(req: NextRequest) {
     if (!role) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 
+  const { id } = await params;
+  const course = await prisma.course.findUnique({ where: { id } });
+  if (!course) return NextResponse.json({ error: "Cours introuvable" }, { status: 404 });
+
   let pptxPath: string | null = null;
   let contentDir: string | null = null;
 
   try {
-    const { fields, file } = await parseMultipart(req);
+    const { file, force } = await parsePptx(req);
     if (!file) return NextResponse.json({ error: "Fichier PPTX manquant" }, { status: 400 });
 
     pptxPath = file.path;
-    const title = fields.title?.trim() || path.basename(file.originalName, ".pptx");
-    const duration = parseInt(fields.duration ?? "30", 10) || 30;
-    const hasQuiz = fields.hasQuiz === "on";
-    const passingScore = hasQuiz ? (parseInt(fields.passingScore ?? "70", 10) || 70) : null;
-    const force = fields.force === "true";
-    const createdById = isAdmin ? (fields.createdById?.trim() || null) : session.user.id;
 
-    // Hash du PPTX source pour détection de doublons
     const pptxBuffer = await readFile(pptxPath);
     const fileHash = createHash("sha1").update(pptxBuffer).digest("hex");
 
     if (!force) {
-      const existing = await prisma.course.findFirst({ where: { fileHash, isActive: true } });
+      const existing = await prisma.course.findFirst({ where: { fileHash, isActive: true, id: { not: id } } });
       if (existing) {
         await rm(pptxPath, { force: true });
         pptxPath = null;
         return NextResponse.json({ duplicate: true, existingTitle: existing.title, existingId: existing.id });
       }
     }
-
-    // Dossier temporaire pour la conversion
     const hash = fileHash.slice(0, 12);
+
     contentDir = path.join(UPLOAD_DIR, "tmp", `converted_${hash}`);
     mkdirSync(contentDir, { recursive: true });
 
-    // Lancer le script Python
     const scriptPath = path.resolve(SCRIPTS_DIR, "pptx_to_h5p.py");
-    const { stdout, stderr } = await execFileAsync("python3", [scriptPath, pptxPath, contentDir, title], {
+    const { stdout, stderr } = await execFileAsync("python3", [scriptPath, pptxPath, contentDir, course.title], {
       timeout: 300_000,
     });
 
-    let meta: { slideCount: number; width: number; height: number } | { error: string };
-    try {
-      meta = JSON.parse(stdout.trim());
-    } catch {
-      throw new Error(`Script invalide: ${stdout} / ${stderr}`);
-    }
-
+    let meta: { slideCount: number } | { error: string };
+    try { meta = JSON.parse(stdout.trim()); }
+    catch { throw new Error(`Script invalide: ${stdout} / ${stderr}`); }
     if ("error" in meta) throw new Error(meta.error);
 
-    // Créer le .h5p (ZIP) avec contenu + librairies
-    const courseHash = hash;
-    const courseDir = path.join(UPLOAD_DIR, "courses", courseHash);
+    const courseDir = path.join(UPLOAD_DIR, "courses", hash);
     mkdirSync(courseDir, { recursive: true });
 
-    const h5pFilename = title.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 50) + ".h5p";
+    const h5pFilename = course.title.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 50) + ".h5p";
     const h5pDest = path.join(courseDir, h5pFilename);
 
     const zip = new AdmZip();
-
-    // Ajouter le contenu généré (h5p.json + content/)
     zip.addLocalFile(path.join(contentDir, "h5p.json"), "");
     zip.addLocalFolder(path.join(contentDir, "content"), "content");
-
-    // Ajouter les librairies H5P bundlées
     await addLibrariesToZip(zip);
-
     zip.writeZip(h5pDest);
 
     const fileSize = (await readFile(h5pDest)).length;
-    const relPath = `courses/${courseHash}/${h5pFilename}`;
+    const relPath = `courses/${hash}/${h5pFilename}`;
 
-    // Copier le thumbnail généré par le script Python
     let thumbnailPath: string | null = null;
     try {
       const { copyFile } = await import("fs/promises");
       await copyFile(path.join(contentDir, "thumbnail.jpg"), path.join(courseDir, "thumbnail.jpg"));
-      thumbnailPath = `courses/${courseHash}/thumbnail.jpg`;
+      thumbnailPath = `courses/${hash}/thumbnail.jpg`;
     } catch { /* pas de thumbnail */ }
 
-    // Créer l'enregistrement en base
-    const course = await prisma.course.create({
+    await prisma.course.update({
+      where: { id },
       data: {
-        title,
         filePath: relPath,
         originalFileName: file.originalName,
         fileSize: BigInt(fileSize),
         fileHash,
-        duration,
-        hasQuiz,
-        passingScore,
-        isActive: true,
-        createdById,
         ...(thumbnailPath ? { thumbnailPath } : {}),
       },
     });
 
-    return NextResponse.json({ success: true, courseId: course.id, slides: (meta as { slideCount: number }).slideCount });
+    await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "course.reupload", targetId: id, targetLabel: course.title });
+    return NextResponse.json({ ok: true, slides: (meta as { slideCount: number }).slideCount });
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Erreur inconnue";
     return NextResponse.json({ error: msg }, { status: 500 });
   } finally {
-    // Nettoyage
     if (pptxPath) rm(pptxPath, { force: true }).catch(() => {});
     if (contentDir) rm(contentDir, { recursive: true, force: true }).catch(() => {});
   }

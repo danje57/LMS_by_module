@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getTranslations } from "next-intl/server";
-import { BookOpen, Users, CircleCheck, Clock, LayoutList, Circle, TrendingUp, Award } from "lucide-react";
+import { BookOpen, Users, CircleCheck, Clock, LayoutList, Circle, TrendingUp, Award, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { PresenceCard } from "@/components/admin/presence-card";
 
@@ -152,15 +152,16 @@ export default async function DashboardPage() {
           {/* Presence + active this week */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <PresenceCard />
-            <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-5 flex items-center gap-4">
+            <Link href="/dashboard/admin/activity?mode=week" className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-5 flex items-center gap-4 hover:border-[#0071E3]/40 hover:shadow-sm transition-all group">
               <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-500/10 flex items-center justify-center shrink-0">
                 <Users className="w-4.5 h-4.5 text-sky-600 dark:text-sky-400" style={{ width: 18, height: 18 }} />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93] font-medium">{t("activeThisWeek")}</p>
                 <p className="text-[28px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] leading-none mt-1">{adminStats.activeThisWeek}</p>
               </div>
-            </div>
+              <ArrowRight className="w-4 h-4 text-[#ADADB8] group-hover:text-[#0071E3] transition-colors" />
+            </Link>
           </div>
 
           {/* Recent activity */}

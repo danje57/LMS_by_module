@@ -8,6 +8,11 @@ import path from "path";
 import { createHash } from "crypto";
 import { Readable } from "stream";
 import Busboy from "busboy";
+import { execFile } from "child_process";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
+const SCRIPTS_DIR = process.env.SCRIPTS_DIR ?? "./scripts";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
 const MAX_H5P_SIZE = 600 * 1024 * 1024;
@@ -122,9 +127,36 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    let thumbnailPath: string | null = null;
+    try {
+      const thumbDir = path.join(UPLOAD_DIR, "thumbnails");
+      mkdirSync(thumbDir, { recursive: true });
+      const scriptPath = path.resolve(SCRIPTS_DIR, "generate_h5p_thumbnail.py");
+      // courseId isn't known yet — use a temp name and rename after create
+      const tmpThumb = path.join(thumbDir, `tmp_${courseHash}.jpg`);
+      await execFileAsync("python3", [scriptPath, finalPath, tmpThumb], { timeout: 30_000 });
+      thumbnailPath = `thumbnails/tmp_${courseHash}.jpg`;
+    } catch { /* thumbnail non critique */ }
+
     const course = await prisma.course.create({
-      data: { title, category, duration, hasQuiz, passingScore, filePath: relPath, originalFileName: file.originalName, fileSize: BigInt(file.size), fileHash, createdById },
+      data: {
+        title, category, duration, hasQuiz, passingScore,
+        filePath: relPath, originalFileName: file.originalName,
+        fileSize: BigInt(file.size), fileHash, createdById,
+        ...(thumbnailPath ? { thumbnailPath } : {}),
+      },
     });
+
+    // Renommer le thumbnail avec le vrai courseId
+    if (thumbnailPath) {
+      try {
+        const { rename: renameFile } = await import("fs/promises");
+        const oldPath = path.join(UPLOAD_DIR, thumbnailPath);
+        const newRelPath = `thumbnails/${course.id}.jpg`;
+        await renameFile(oldPath, path.join(UPLOAD_DIR, newRelPath));
+        await prisma.course.update({ where: { id: course.id }, data: { thumbnailPath: newRelPath } });
+      } catch { /* non critique */ }
+    }
 
     await auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "course.upload", targetId: course.id, targetLabel: title });
     return NextResponse.json({ ok: true, courseId: course.id });
