@@ -36,10 +36,11 @@ TODO - Fonctionnalités à implémenter
     - Vignette "Actifs cette semaine" cliquable
     - Rapport d'activité sur 6 mois exportable CSV
 
-[ ] Export CSV
-    - Export des progressions par cours et par utilisateur
-    - Export des résultats quiz
-    - Utile pour reporting RH / conformité
+[x] Export CSV
+    - Export des progressions (avancement, statut, dates) par cours et par utilisateur
+    - Export des résultats quiz (scores, seuils, réussite/échec, tentatives)
+    - Admin : toutes les données / Manager : uniquement ses propres équipes
+    - BOM UTF-8 pour compatibilité Excel
 
 [ ] Pagination des certificats
     - Vue apprenant : paginer la liste de ses certificats
