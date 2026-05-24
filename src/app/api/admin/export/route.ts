@@ -20,15 +20,41 @@ function fmtDate(d: Date | null): string {
   });
 }
 
+async function getManagedUserIds(managerId: string): Promise<string[]> {
+  const teams = await prisma.team.findMany({
+    where: { managerId },
+    include: { members: { select: { userId: true } } },
+  });
+  return teams.flatMap((t) => t.members.map((m) => m.userId));
+}
+
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (session?.user.sessionMode !== "admin")
+  const isAdmin = session?.user.sessionMode === "admin";
+  const isManager = !isAdmin && session?.user?.id != null;
+
+  if (!session?.user?.id)
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
 
+  // Vérifier que le manager a bien le rôle manager ou creator
+  let allowedUserIds: string[] | null = null; // null = tous (admin)
+  if (!isAdmin) {
+    const role = await prisma.userRole.findFirst({
+      where: { userId: session.user.id, role: { name: { in: ["manager", "creator"] } } },
+    });
+    if (!role) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+
+    allowedUserIds = await getManagedUserIds(session.user.id);
+    if (allowedUserIds.length === 0)
+      return NextResponse.json({ error: "Aucune équipe à exporter" }, { status: 403 });
+  }
+
   const type = new URL(req.url).searchParams.get("type");
+  const TYPE_LABELS: Record<string, string> = { h5p: "H5P", native_video: "Vidéo", pptx: "PPTX" };
 
   if (type === "progress") {
     const rows = await prisma.userCourseProgress.findMany({
+      where: allowedUserIds ? { userId: { in: allowedUserIds } } : undefined,
       include: {
         user: { select: { name: true, email: true } },
         course: { select: { title: true, courseType: true } },
@@ -36,7 +62,6 @@ export async function GET(req: NextRequest) {
       orderBy: { startedAt: "desc" },
     });
 
-    // Fetch teams per user
     const userIds = [...new Set(rows.map((r) => r.userId))];
     const userTeams = await prisma.userTeam.findMany({
       where: { userId: { in: userIds } },
@@ -48,8 +73,6 @@ export async function GET(req: NextRequest) {
       list.push(ut.team.name);
       teamsByUser.set(ut.userId, list);
     }
-
-    const TYPE_LABELS: Record<string, string> = { h5p: "H5P", native_video: "Vidéo", pptx: "PPTX" };
 
     const csv = buildCsv(
       ["Nom", "Email", "Équipe(s)", "Cours", "Type", "Progression (%)", "Statut", "Démarré le", "Terminé le"],
@@ -76,6 +99,7 @@ export async function GET(req: NextRequest) {
 
   if (type === "quiz") {
     const rows = await prisma.userQuizResult.findMany({
+      where: allowedUserIds ? { userId: { in: allowedUserIds } } : undefined,
       include: {
         user: { select: { name: true, email: true } },
         course: { select: { title: true } },

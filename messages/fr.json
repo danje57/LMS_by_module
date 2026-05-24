@@ -10,6 +10,7 @@
     "manageCertificates": "Gérer certificats",
     "settings": "Paramètres",
     "reporting": "Reporting",
+    "export": "Exports CSV",
     "activity": "Activité apprenants",
     "audit": "Journal d'audit"
   },
