@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Sparkles, CheckCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function SeasonalThemeToggle({ current }: { current: boolean }) {
+  const router = useRouter();
   const [enabled, setEnabled] = useState(current);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -24,6 +26,7 @@ export function SeasonalThemeToggle({ current }: { current: boolean }) {
       setEnabled(value);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+      router.refresh();
     } else {
       const d = await res.json().catch(() => ({}));
       setError(d.error ?? "Erreur");

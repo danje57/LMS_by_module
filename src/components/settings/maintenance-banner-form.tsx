@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function MaintenanceBannerForm({ current }: Props) {
+  const router = useRouter();
   const [enabled, setEnabled]   = useState(current.enabled);
   const [message, setMessage]   = useState(current.message ?? "");
   const [color, setColor]       = useState(current.color ?? "orange");
@@ -44,7 +46,7 @@ export function MaintenanceBannerForm({ current }: Props) {
       body: JSON.stringify(payload),
     });
     setLoading(false);
-    if (res.ok) { setSuccess(true); setTimeout(() => setSuccess(false), 3000); }
+    if (res.ok) { setSuccess(true); setTimeout(() => setSuccess(false), 3000); router.refresh(); }
     else { const d = await res.json().catch(() => ({})); setError(d.error ?? "Erreur"); }
   }
 
