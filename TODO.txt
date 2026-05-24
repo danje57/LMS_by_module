@@ -93,11 +93,11 @@ TODO - Fonctionnalités à implémenter
     - Activable/désactivable depuis les paramètres admin (désactivé par défaut)
     - Dismissible par l'utilisateur (mémorisé par thème)
 
-[ ] Bannière de maintenance
-    - L'admin peut activer une bannière visible par tous les utilisateurs connectés
-    - Configurable depuis les paramètres admin : message, couleur, date de fin
-    - Disparaît automatiquement à la date de fin ou si désactivée manuellement
-    - Non bloquante : les users peuvent continuer à utiliser l'app
+[x] Bannière de maintenance
+    - Configurable depuis les paramètres admin : toggle, message, type (warning/critique/info), date de fin
+    - Visible sur toutes les pages pour tous les utilisateurs connectés
+    - Disparaît automatiquement à la date de fin ou si désactivée
+    - Prioritaire sur le thème saisonnier
 
 [ ] Module PDF / Attestation de lecture (GRC / Compliance)
     - Upload d'un ou plusieurs PDF (politiques, chartes, procédures...)
