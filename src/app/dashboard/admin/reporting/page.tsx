@@ -6,7 +6,7 @@ import {
   LineChart, Line, CartesianGrid,
 } from "recharts";
 import {
-  Users, BookOpen, Trophy, Award, TrendingUp, BarChart2,
+  Users, BookOpen, Trophy, Award, TrendingUp, BarChart2, Download, FileText, ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -293,6 +293,45 @@ export default function ReportingPage() {
           </div>
         </div>
       )}
+
+      {/* Exports CSV */}
+      <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-6 space-y-4">
+        <div>
+          <SectionTitle>Exports CSV</SectionTitle>
+          <p className="text-[12px] text-[#8E8E93] mt-1">Fichiers téléchargeables pour reporting RH et conformité</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <a
+            href="/api/admin/export?type=progress"
+            download
+            className="flex items-center gap-4 p-4 rounded-xl border border-[#E5E5EA] dark:border-[#3A3A3C] hover:border-[#0071E3]/40 hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-all group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Progressions</p>
+              <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93]">Tous les apprenants — avancement par cours, statut, dates</p>
+            </div>
+            <Download className="w-4 h-4 text-[#ADADB8] group-hover:text-[#0071E3] transition-colors shrink-0" />
+          </a>
+
+          <a
+            href="/api/admin/export?type=quiz"
+            download
+            className="flex items-center gap-4 p-4 rounded-xl border border-[#E5E5EA] dark:border-[#3A3A3C] hover:border-[#0071E3]/40 hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-all group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center shrink-0">
+              <ClipboardList className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Résultats quiz</p>
+              <p className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93]">Scores, seuils, réussite/échec par tentative et par apprenant</p>
+            </div>
+            <Download className="w-4 h-4 text-[#ADADB8] group-hover:text-[#0071E3] transition-colors shrink-0" />
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
