@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { BookOpen, Users, CircleCheck, Clock, LayoutList, Circle, TrendingUp, Award, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { PresenceCard } from "@/components/admin/presence-card";
+import { SeasonalBanner } from "@/components/seasonal-banner";
 
 const ACTION_LABELS: Record<string, string> = {
   "auth.login":           "Connexion",
@@ -114,6 +115,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
+
+      <SeasonalBanner />
 
       <div>
         <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
