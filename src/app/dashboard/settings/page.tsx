@@ -5,6 +5,7 @@ import { BrandingForm } from "@/components/settings/branding-form";
 import { MailSettingsForm } from "@/components/settings/mail-settings-form";
 import { BackupManager } from "@/components/settings/backup-manager";
 import { RetentionSettingsForm } from "@/components/settings/retention-settings-form";
+import { SeasonalThemeToggle } from "@/components/settings/seasonal-theme-toggle";
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
 
@@ -52,6 +53,7 @@ export default async function SettingsPage() {
       <BrandingForm branding={branding} />
       <MailSettingsForm />
       <RetentionSettingsForm current={branding?.auditLogRetentionDays ?? 180} />
+      <SeasonalThemeToggle current={branding?.seasonalThemesEnabled ?? false} />
       <BackupManager initialBackups={backups} cronUrl={cronUrl} />
     </div>
   );

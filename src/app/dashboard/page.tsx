@@ -5,6 +5,7 @@ import { BookOpen, Users, CircleCheck, Clock, LayoutList, Circle, TrendingUp, Aw
 import Link from "next/link";
 import { PresenceCard } from "@/components/admin/presence-card";
 import { SeasonalBanner } from "@/components/seasonal-banner";
+import { Suspense } from "react";
 
 const ACTION_LABELS: Record<string, string> = {
   "auth.login":           "Connexion",
@@ -112,11 +113,13 @@ export default async function DashboardPage() {
   const adminStats     = isAdmin ? await getAdminStats()       : null;
   const recentActivity = isAdmin ? await getRecentActivity()   : null;
   const userStats      = !isAdmin ? await getUserStats(userId) : null;
+  const branding       = await prisma.brandingSetting.findFirst({ select: { seasonalThemesEnabled: true } });
+  const seasonalEnabled = branding?.seasonalThemesEnabled ?? false;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
 
-      <SeasonalBanner />
+      <Suspense><SeasonalBanner enabled={seasonalEnabled} /></Suspense>
 
       <div>
         <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">

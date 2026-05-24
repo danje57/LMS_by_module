@@ -64,20 +64,6 @@ export function getCurrentTheme(now: Date = new Date()): SeasonalTheme | null {
     };
   }
 
-  // Carnaval : Mardi Gras = -47j avant Pâques, on affiche 3j avant
-  const mardiGrasDiff = diff + 47; // days since Mardi Gras
-  if (mardiGrasDiff >= -3 && mardiGrasDiff <= 0) {
-    return {
-      key: "carnaval",
-      label: "Carnaval",
-      emoji: "🎭",
-      message: "C'est le Carnaval ! Bonne fête masquée.",
-      gradient: "from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20",
-      textColor: "text-purple-800 dark:text-purple-300",
-      borderColor: "border-purple-200 dark:border-purple-700",
-    };
-  }
-
   if (inRange(now, 12, 26, 1, 5)) {
     return {
       key: "nouvel-an",
@@ -90,15 +76,17 @@ export function getCurrentTheme(now: Date = new Date()): SeasonalTheme | null {
     };
   }
 
-  if (inRange(now, 2, 10, 2, 14)) {
+  // Carnaval : Mardi Gras = Pâques − 47j, on affiche les 3 jours avant
+  const mardiGrasDiff = diff + 47; // jours depuis Mardi Gras (0 = Mardi Gras)
+  if (mardiGrasDiff >= -3 && mardiGrasDiff <= 0) {
     return {
-      key: "saint-valentin",
-      label: "Saint-Valentin",
-      emoji: "❤️",
-      message: "Bonne Saint-Valentin !",
-      gradient: "from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20",
-      textColor: "text-rose-800 dark:text-rose-300",
-      borderColor: "border-rose-200 dark:border-rose-700",
+      key: "carnaval",
+      label: "Carnaval",
+      emoji: "🎭",
+      message: "C'est le Carnaval ! Bonne fête masquée.",
+      gradient: "from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20",
+      textColor: "text-purple-800 dark:text-purple-300",
+      borderColor: "border-purple-200 dark:border-purple-700",
     };
   }
 
