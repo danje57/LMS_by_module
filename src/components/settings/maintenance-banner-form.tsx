@@ -28,23 +28,34 @@ export function MaintenanceBannerForm({ current }: Props) {
   const [success, setSuccess]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
 
-  async function save() {
+  async function patch(overrides: Partial<{ enabled: boolean; message: string; color: string; endsAt: string }> = {}) {
     setLoading(true);
     setSuccess(false);
     setError(null);
+    const payload = {
+      maintenanceBannerEnabled: overrides.enabled ?? enabled,
+      maintenanceBannerMessage: (overrides.message ?? message).trim() || null,
+      maintenanceBannerColor: overrides.color ?? color,
+      maintenanceBannerEndsAt: (overrides.endsAt ?? endsAt) ? new Date(overrides.endsAt ?? endsAt).toISOString() : null,
+    };
     const res = await fetch("/api/admin/branding/maintenance-banner", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        maintenanceBannerEnabled: enabled,
-        maintenanceBannerMessage: message.trim() || null,
-        maintenanceBannerColor: color,
-        maintenanceBannerEndsAt: endsAt ? new Date(endsAt).toISOString() : null,
-      }),
+      body: JSON.stringify(payload),
     });
     setLoading(false);
     if (res.ok) { setSuccess(true); setTimeout(() => setSuccess(false), 3000); }
     else { const d = await res.json().catch(() => ({})); setError(d.error ?? "Erreur"); }
+  }
+
+  async function toggleEnabled() {
+    const next = !enabled;
+    setEnabled(next);
+    await patch({ enabled: next });
+  }
+
+  async function save() {
+    await patch();
   }
 
   return (
@@ -64,7 +75,7 @@ export function MaintenanceBannerForm({ current }: Props) {
           </div>
         </div>
         <button
-          onClick={() => setEnabled((v) => !v)}
+          onClick={toggleEnabled}
           aria-pressed={enabled}
           className={cn(
             "relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0",
