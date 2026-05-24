@@ -28,14 +28,13 @@ TODO - Fonctionnalités à implémenter
     - Assignable comme un tout à un utilisateur / une équipe
     - Progression globale du parcours visible
 
-[ ] Tableau de bord reporting admin
+[x] Tableau de bord reporting admin
     - Taux de complétion par cours, par équipe
     - Scores moyens aux quiz
-    - Activité récente des apprenants
-    - Vue graphique (courbes, jauges...)
-    - Vignette "Actifs cette semaine" cliquable → liste des utilisateurs actifs sur la période
-    - Rapport d'activité sur 6 mois : qui a été actif, sur quel cours, et quand
-    - Exportable (CSV)
+    - Activité récente des apprenants (journal + export CSV)
+    - Vue graphique (courbes activité 30j, bar charts complétion et scores)
+    - Vignette "Actifs cette semaine" cliquable
+    - Rapport d'activité sur 6 mois exportable CSV
 
 [ ] Export CSV
     - Export des progressions par cours et par utilisateur
@@ -88,12 +87,11 @@ TODO - Fonctionnalités à implémenter
     - Envoyer les logs d'audit vers un SIEM externe
     - (Sujet à approfondir)
 
-[ ] Thèmes saisonniers / fêtes automatiques
-    - Décorations automatiques de l'interface selon les fêtes du calendrier
-    - Calendriers supportés : France et Luxembourg
-    - Ex: Noël, Nouvel An, Fête Nationale (14 juillet / 23 juin), Halloween, Pâques...
-    - Activable/désactivable depuis les paramètres admin
-    - Customisable : l'admin peut choisir quelles fêtes afficher et l'intensité des décorations
+[x] Thèmes saisonniers / fêtes automatiques
+    - Bannière festive automatique selon la date (Pâques calculé par algo Meeus, autres fixes)
+    - Calendriers : France et Luxembourg (10 thèmes)
+    - Activable/désactivable depuis les paramètres admin (désactivé par défaut)
+    - Dismissible par l'utilisateur (mémorisé par thème)
 
 [ ] Bannière de maintenance
     - L'admin peut activer une bannière visible par tous les utilisateurs connectés
