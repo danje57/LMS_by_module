@@ -100,10 +100,53 @@ TODO - Fonctionnalités à implémenter
     - Disparaît automatiquement à la date de fin ou si désactivée
     - Prioritaire sur le thème saisonnier
 
-[ ] Module PDF / Attestation de lecture (GRC / Compliance)
-    - Upload d'un ou plusieurs PDF (politiques, chartes, procédures...)
-    - Assignables comme des cours aux utilisateurs / équipes
-    - L'utilisateur lit le PDF dans l'app et signe électroniquement (case "J'ai lu et j'accepte")
-    - Génération d'un certificat/attestation horodaté prouvant la prise de connaissance
-    - Historique des signatures par document et par utilisateur
-    - Utile pour : RGPD, politique de sécurité, règlement intérieur, chartes IT...
+[~] Module PDF / Attestation de lecture (GRC / Compliance)
+    [x] Upload d'un ou plusieurs PDF (politiques, chartes, procédures...)
+    [x] Assignables aux utilisateurs / équipes (modal assignation avec deadline commune)
+    [x] Visionneuse PDF sécurisée (canvas PDF.js, pas de téléchargement direct)
+    [x] Signature électronique horodatée (case "J'ai lu et j'accepte")
+    [x] Attestation de lecture générée (template distinct "Attestation de lecture")
+    [x] Historique signatures : admin voit tout, manager/créateur voient leur scope
+    [x] Force-sign admin (marquer comme signé manuellement pour un utilisateur)
+    [x] Lien direct vers attestation depuis la liste "Documents signés" (apprenant)
+    [x] Dashboard admin : stats signatures (taux, nb assignés, nb signés)
+    [x] Dashboard apprenant : bannière orange si documents en attente de signature
+    [x] Scope manager/créateur : chacun voit uniquement son périmètre d'assignation
+
+    !!! PRIORITÉ SESSION SUIVANTE !!!
+    [ ] Activité PDF dans le journal d'audit admin (/dashboard/admin/activity)
+        → Vérifier que document.signed / document.force-signed / document.upload
+          remontent bien dans la vue activité et dans le reporting RH
+
+    [ ] Vérifier l'édition des documents (modal crayon dans la bibliothèque)
+        → Tester modification du titre seul
+        → Tester modification du département (admin)
+        → Tester remplacement du fichier PDF
+        → Vérifier que les assignations/signatures existantes sont préservées après remplacement
+
+    [ ] Améliorer le suivi des documents (signature)
+        → Vérifier que le statut "En cours" (document ouvert mais non signé) remonte correctement
+        → Vérifier la cohérence entre la page admin/progress (onglet Documents GRC)
+          et le modal "Suivi des signatures"
+        → S'assurer que document.view est bien loggé dans l'audit log à chaque ouverture
+        → Tester le workflow complet : assigner → ouvrir → signer → voir attestation
+
+    [ ] Améliorer les vignettes PDF (performance + fraîcheur)
+        → PROBLÈME ACTUEL : la vignette est générée côté client (PDF.js) à chaque
+          chargement de page — lent et gourmand en bande passante
+        → SOLUTION : générer la vignette serveur (PNG capture de la page 1) au moment
+          de l'upload, stocker dans uploads/thumbnails/{docId}.png
+        → Servir la vignette comme image statique (pas de re-rendu PDF.js)
+        → Régénérer la vignette automatiquement si le fichier est remplacé via l'édition
+        → Fallback : si la vignette n'existe pas encore, utiliser l'icône FileText
+        → Outils possibles : pdf2pic, sharp + pdf2png, ou canvas serveur avec pdfjs-dist
+
+    [ ] Tester le workflow complet documents end-to-end
+        → Uploader un vrai document PDF (ex: politique AUP, charte IT)
+        → Tester département admin à l'upload + modification via édition
+        → Assigner à des utilisateurs / équipes avec deadline
+        → Se connecter en tant qu'apprenant : ouvrir, lire, signer
+        → Vérifier l'attestation générée et accessible depuis "Documents signés"
+        → Vérifier les stats admin (dashboard, progress, suivi signatures)
+        → Vérifier que le manager voit bien son scope uniquement
+        → Vérifier l'export CSV documents-progress (endpoint à implémenter si nécessaire)

@@ -7,10 +7,10 @@ import { getTranslations } from "next-intl/server";
 
 async function getCourses(isAdmin: boolean, isManagerOrCreator: boolean, userId: string) {
   if (isAdmin || isManagerOrCreator) {
-    return prisma.course.findMany({ where: { isActive: true }, orderBy: { createdAt: "desc" } });
+    return prisma.course.findMany({ where: { isActive: true, courseType: { not: "pdf" } }, orderBy: { createdAt: "desc" } });
   }
   return prisma.course.findMany({
-    where: { isActive: true, assignments: { some: { userId } } },
+    where: { isActive: true, courseType: { not: "pdf" }, assignments: { some: { userId } } },
     orderBy: { createdAt: "desc" },
   });
 }
@@ -30,7 +30,7 @@ async function getManagerAssignableIds(managerId: string): Promise<Set<string>> 
     : [];
   const authorizedIds = new Set([managerId, ...creatorMembers.map((r) => r.userId)]);
   const assignable = await prisma.course.findMany({
-    where: { isActive: true, createdById: { in: [...authorizedIds] } },
+    where: { isActive: true, courseType: { not: "pdf" }, createdById: { in: [...authorizedIds] } },
     select: { id: true },
   });
   return new Set(assignable.map((c) => c.id));
@@ -48,7 +48,7 @@ async function getAssignableCourseIds(userId: string): Promise<Set<string>> {
 
   // Créateur : ses cours + scope de son/ses manager(s)
   const [own, creatorTeams] = await Promise.all([
-    prisma.course.findMany({ where: { createdById: userId, isActive: true }, select: { id: true } }),
+    prisma.course.findMany({ where: { createdById: userId, isActive: true, courseType: { not: "pdf" } }, select: { id: true } }),
     prisma.userTeam.findMany({ where: { userId }, include: { team: { select: { managerId: true } } } }),
   ]);
   const result = new Set(own.map((c) => c.id));

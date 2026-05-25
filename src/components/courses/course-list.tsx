@@ -282,6 +282,7 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
   const [search, setSearch] = useState("");
   const [filterQuiz, setFilterQuiz] = useState<"all" | "yes" | "no">("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterCreator, setFilterCreator] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "not_started" | "in_progress" | "completed">("all");
   const [durationSort, setDurationSort] = useState<"none" | "asc" | "desc">("none");
   const [assignTarget, setAssignTarget] = useState<{ id: string; title: string } | null>(null);
@@ -293,13 +294,15 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
   function resetPage() { setPage(1); }
 
   const allCategories = [...new Set(courses.map((c) => c.category).filter(Boolean) as string[])].sort();
+  const allCreators   = [...new Set(courses.map((c) => metaMap[c.id]?.createdByName).filter(Boolean) as string[])].sort();
 
   const filtered = courses
     .filter((c) => {
-      const matchSearch = c.title.toLowerCase().includes(search.toLowerCase());
-      const matchQuiz = filterQuiz === "all" || (filterQuiz === "yes" ? c.hasQuiz : !c.hasQuiz);
+      const matchSearch   = c.title.toLowerCase().includes(search.toLowerCase());
+      const matchQuiz     = filterQuiz === "all" || (filterQuiz === "yes" ? c.hasQuiz : !c.hasQuiz);
       const matchCategory = filterCategory === "all" || c.category === filterCategory;
-      return matchSearch && matchQuiz && matchCategory;
+      const matchCreator  = filterCreator === "all" || metaMap[c.id]?.createdByName === filterCreator;
+      return matchSearch && matchQuiz && matchCategory && matchCreator;
     })
     .sort((a, b) => {
       if (durationSort === "asc") return a.duration - b.duration;
@@ -374,6 +377,17 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
           >
             <option value="all">Tous les départements</option>
             {allCategories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+          </select>
+        )}
+
+        {allCreators.length > 0 && (
+          <select
+            value={filterCreator}
+            onChange={(e) => { setFilterCreator(e.target.value); resetPage(); }}
+            className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all cursor-pointer"
+          >
+            <option value="all">Tous les créateurs</option>
+            {allCreators.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
 

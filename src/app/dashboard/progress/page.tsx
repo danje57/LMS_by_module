@@ -45,6 +45,7 @@ function buildUserRow(u: {
         assignedAt: a.assignedAt?.toISOString() ?? null,
       };
     }),
+    docAssignments: [],
   };
 }
 
