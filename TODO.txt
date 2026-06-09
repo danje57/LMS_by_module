@@ -48,9 +48,27 @@ TODO - Fonctionnalités à implémenter
 
 [x] Vue certificats admin
     - Visualiser les certificats de tous les apprenants
-    - Groupé par utilisateur (vue "Par utilisateur")
+    - Groupé par utilisateur (vue "Par utilisateur") — avec nom de l'équipe affiché
     - Groupé par équipe (vue "Par équipe" — hiérarchie équipe > membre > certificats)
     - Avec pagination serveur (20 par page)
+
+[x] Certificats Formation + GRC — couverture complète
+    - Champ Type (Formation / Document GRC) dans l'onglet vérification
+    - Template PDF adapté : "Attestation de lecture" vs "Certificat de réussite"
+    - Export CSV : colonne Type, évaluation masquée pour GRC, ZIP inclut les deux types
+    - Génération manuelle : cours ET documents GRC sélectionnables
+    - Génération par équipe(s) : résolution automatique des membres, aperçu du total
+
+[x] Confirmation du mot de passe lors du passage en mode admin
+    - Saisie du mot de passe requise à chaque bascule vers le mode admin
+    - Champ masqué / révélable, gestion erreur (401), soumission par Entrée
+    - Exempt pour les comptes SSO (pas de passwordHash)
+
+[x] Filtre "équipe du créateur" dans les bibliothèques
+    - Bibliothèque de cours : sélection par équipe du créateur (toutes équipes, pas seulement la première)
+    - Bibliothèque GRC : idem, filtre visible uniquement sur l'onglet Bibliothèque
+    - Toolbar cours découpée en deux lignes (recherche non écrasée)
+    - Admin : section "Bibliothèque" explicite avec compteur (cohérence avec vue manager)
 
 [ ] Validité des certificats
     - Expiration d'un certificat après X mois configurables par cours
