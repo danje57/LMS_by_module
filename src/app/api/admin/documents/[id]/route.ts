@@ -113,9 +113,20 @@ export async function PATCH(
       updateData.originalFileName = file.originalName;
       updateData.fileSize         = BigInt(file.size);
       updateData.fileHash         = fileHash;
+      updateData.thumbnailPath    = null; // sera régénérée au prochain appel
     }
 
     await prisma.course.update({ where: { id }, data: updateData });
+
+    // Régénération vignette si le PDF a changé
+    if (file && updateData.filePath) {
+      const newRelPath = updateData.filePath as string;
+      import("@/lib/pdf-thumbnail").then(({ generateAndSavePdfThumbnail }) =>
+        generateAndSavePdfThumbnail(id, newRelPath).then((thumbPath) =>
+          prisma.course.update({ where: { id }, data: { thumbnailPath: thumbPath } })
+        )
+      ).catch(() => {});
+    }
 
     await auditLog({
       actor: { id: session.user.id, name: session.user.name, email: session.user.email },

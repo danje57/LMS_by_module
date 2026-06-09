@@ -52,7 +52,7 @@ export async function POST(
       data: { userId, courseId, signedAt: now, ipAddress: null },
     }),
     prisma.certificate.create({
-      data: { userId, courseId, courseTitle: doc.title, completedAt: now, hasQuiz: false, issuedAt: now },
+      data: { userId, courseId, courseTitle: doc.title, completedAt: now, hasQuiz: false, isPdf: true, issuedAt: now },
     }),
   ]);
 

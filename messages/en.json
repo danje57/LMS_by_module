@@ -9,7 +9,8 @@
     "teams": "Teams",
     "manageCertificates": "Manage Certificates",
     "settings": "Settings",
-    "audit": "Audit log"
+    "audit": "Audit log",
+    "grcLibrary": "GRC Library"
   },
   "header": {
     "adminMode": "Admin mode",
@@ -252,6 +253,8 @@
     "noUserFound": "No user found",
     "deadline": "Deadline (optional)",
     "selectedUsers": "{count, plural, one {# user selected} other {# users selected}}",
+    "commonDeadline": "Common deadline",
+    "applyToAll": "Apply to all",
     "saving": "Saving…",
     "assign": "Assign",
     "cancel": "Cancel"

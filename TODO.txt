@@ -42,15 +42,15 @@ TODO - Fonctionnalités à implémenter
     - Admin : toutes les données / Manager : uniquement ses propres équipes
     - BOM UTF-8 pour compatibilité Excel
 
-[ ] Pagination des certificats
-    - Vue apprenant : paginer la liste de ses certificats
-    - Vue manager/créateur : idem pour les apprenants de leur équipe
+[x] Pagination des certificats
+    - Vue apprenant : paginer la liste de ses certificats (client-side, PAGE_SIZE=15, tri date/titre)
+    - Vue manager/créateur : idem via /dashboard/admin/certificates (scoped par équipes)
 
-[ ] Vue certificats admin
+[x] Vue certificats admin
     - Visualiser les certificats de tous les apprenants
-    - Groupé par utilisateur
-    - Groupé par département
-    - Avec pagination
+    - Groupé par utilisateur (vue "Par utilisateur")
+    - Groupé par équipe (vue "Par équipe" — hiérarchie équipe > membre > certificats)
+    - Avec pagination serveur (20 par page)
 
 [ ] Validité des certificats
     - Expiration d'un certificat après X mois configurables par cours
@@ -58,9 +58,10 @@ TODO - Fonctionnalités à implémenter
     - Notification à l'apprenant et au manager
 
 [ ] Note / feedback apprenant sur les cours
+    - Activable/désactivable depuis les paramètres admin (désactivé par défaut)
     - L'apprenant peut noter le cours après complétion (1-5 étoiles)
     - Commentaire optionnel
-    - Vue admin/manager des retours
+    - Vue admin/manager des retours (note moyenne, distribution, liste commentaires)
 
 [ ] Mettre en place HTTPS
     - Génération/configuration certificat TLS (Let's Encrypt ou self-signed)
@@ -113,33 +114,26 @@ TODO - Fonctionnalités à implémenter
     [x] Dashboard apprenant : bannière orange si documents en attente de signature
     [x] Scope manager/créateur : chacun voit uniquement son périmètre d'assignation
 
-    !!! PRIORITÉ SESSION SUIVANTE !!!
-    [ ] Activité PDF dans le journal d'audit admin (/dashboard/admin/activity)
-        → Vérifier que document.signed / document.force-signed / document.upload
-          remontent bien dans la vue activité et dans le reporting RH
+    [x] Activité PDF dans le journal d'audit admin (/dashboard/admin/activity)
+        → document.signed / document.force-signed / document.upload remontent dans activité et reporting RH
 
-    [ ] Vérifier l'édition des documents (modal crayon dans la bibliothèque)
-        → Tester modification du titre seul
-        → Tester modification du département (admin)
-        → Tester remplacement du fichier PDF
-        → Vérifier que les assignations/signatures existantes sont préservées après remplacement
+    [x] Vérifier l'édition des documents (modal crayon dans la bibliothèque)
+        → Modification titre, département (admin), remplacement PDF OK
+        → Assignations/signatures préservées après remplacement
 
-    [ ] Améliorer le suivi des documents (signature)
-        → Vérifier que le statut "En cours" (document ouvert mais non signé) remonte correctement
-        → Vérifier la cohérence entre la page admin/progress (onglet Documents GRC)
-          et le modal "Suivi des signatures"
-        → S'assurer que document.view est bien loggé dans l'audit log à chaque ouverture
-        → Tester le workflow complet : assigner → ouvrir → signer → voir attestation
+    [x] Améliorer le suivi des documents (signature)
+        → Statut "En cours" remonte correctement
+        → Cohérence admin/progress (onglet GRC) ↔ modal suivi signatures
+        → document.view loggé à l'ouverture
+        → Workflow complet validé : assigner → ouvrir → signer → voir attestation
 
-    [ ] Améliorer les vignettes PDF (performance + fraîcheur)
-        → PROBLÈME ACTUEL : la vignette est générée côté client (PDF.js) à chaque
-          chargement de page — lent et gourmand en bande passante
-        → SOLUTION : générer la vignette serveur (PNG capture de la page 1) au moment
-          de l'upload, stocker dans uploads/thumbnails/{docId}.png
-        → Servir la vignette comme image statique (pas de re-rendu PDF.js)
-        → Régénérer la vignette automatiquement si le fichier est remplacé via l'édition
-        → Fallback : si la vignette n'existe pas encore, utiliser l'icône FileText
-        → Outils possibles : pdf2pic, sharp + pdf2png, ou canvas serveur avec pdfjs-dist
+    [x] Améliorer les vignettes PDF (performance + fraîcheur)
+        → Vignette générée côté serveur à l'upload (script pdf-thumb.cjs, @napi-rs/canvas + pdfjs v4)
+        → Stockée dans uploads/thumbnails/{docId}.jpg
+        → Régénérée automatiquement si le fichier est remplacé via l'édition
+        → Lazy generation au premier appel si absente (docs uploadés avant la feature)
+        → Fallback icône FileText si génération impossible
+        → Cache navigateur 24h (Cache-Control: private, max-age=86400)
 
     [ ] Tester le workflow complet documents end-to-end
         → Uploader un vrai document PDF (ex: politique AUP, charte IT)

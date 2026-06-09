@@ -5,23 +5,24 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, BookOpen, Settings, GraduationCap, Users, UsersRound, Award, BadgeCheck, BarChart2, ClipboardList, UserCog, Activity, PieChart, Download } from "lucide-react";
+import { LayoutDashboard, BookOpen, Settings, GraduationCap, Users, UsersRound, Award, BadgeCheck, BarChart2, ClipboardList, UserCog, Activity, PieChart, Download, FileText, ShieldCheck } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard",                    key: "dashboard",          icon: LayoutDashboard, adminOnly: false, userOnly: false, managerOnly: false, strictManagerOnly: false },
-  { href: "/dashboard/courses",            key: "courses",            icon: BookOpen,        adminOnly: false, userOnly: false, managerOnly: false, strictManagerOnly: false },
-  { href: "/dashboard/certificates",       key: "certificates",       icon: Award,           adminOnly: false, userOnly: true,  managerOnly: false, strictManagerOnly: false },
-  { href: "/dashboard/progress",           key: "progress",           icon: BarChart2,       adminOnly: false, userOnly: false, managerOnly: true,  strictManagerOnly: false },
-  { href: "/dashboard/manager/team",       key: "myTeam",             icon: UserCog,         adminOnly: false, userOnly: false, managerOnly: false, strictManagerOnly: true  },
-  { href: "/dashboard/manager/export",    key: "export",             icon: Download,        adminOnly: false, userOnly: false, managerOnly: false, strictManagerOnly: true  },
-  { href: "/dashboard/admin/users",        key: "users",              icon: Users,           adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false },
-  { href: "/dashboard/admin/teams",        key: "teams",              icon: UsersRound,      adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false },
-  { href: "/dashboard/admin/progress",     key: "progress",           icon: BarChart2,       adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false },
-  { href: "/dashboard/admin/certificates", key: "manageCertificates", icon: BadgeCheck,      adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false },
-  { href: "/dashboard/admin/reporting",    key: "reporting",          icon: PieChart,        adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false },
-  { href: "/dashboard/admin/activity",    key: "activity",           icon: Activity,        adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false },
-  { href: "/dashboard/admin/audit",        key: "audit",              icon: ClipboardList,   adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false },
-  { href: "/dashboard/settings",           key: "settings",           icon: Settings,        adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false },
+  { href: "/dashboard",                    key: "dashboard",          icon: LayoutDashboard, adminOnly: false, userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
+  { href: "/dashboard/courses",            key: "courses",            icon: BookOpen,        adminOnly: false, userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
+  { href: "/dashboard/documents",          key: "grcLibrary",         icon: ShieldCheck,     adminOnly: false, userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
+  { href: "/dashboard/certificates",       key: "certificates",       icon: Award,           adminOnly: false, userOnly: true,  managerOnly: false, strictManagerOnly: false, adminOrManager: false },
+  { href: "/dashboard/progress",           key: "progress",           icon: BarChart2,       adminOnly: false, userOnly: false, managerOnly: true,  strictManagerOnly: false, adminOrManager: false },
+  { href: "/dashboard/manager/team",       key: "myTeam",             icon: UserCog,         adminOnly: false, userOnly: false, managerOnly: false, strictManagerOnly: true,  adminOrManager: false },
+  { href: "/dashboard/manager/export",    key: "export",             icon: Download,        adminOnly: false, userOnly: false, managerOnly: false, strictManagerOnly: true,  adminOrManager: false },
+  { href: "/dashboard/admin/users",        key: "users",              icon: Users,           adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
+  { href: "/dashboard/admin/teams",        key: "teams",              icon: UsersRound,      adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
+  { href: "/dashboard/admin/progress",     key: "progress",           icon: BarChart2,       adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
+  { href: "/dashboard/admin/certificates", key: "manageCertificates", icon: BadgeCheck,      adminOnly: false, userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: true  },
+  { href: "/dashboard/admin/reporting",    key: "reporting",          icon: PieChart,        adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
+  { href: "/dashboard/admin/activity",    key: "activity",           icon: Activity,        adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
+  { href: "/dashboard/admin/audit",        key: "audit",              icon: ClipboardList,   adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
+  { href: "/dashboard/settings",           key: "settings",           icon: Settings,        adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
 ];
 
 interface SidebarProps {
@@ -59,7 +60,8 @@ export function Sidebar({ appName, logoPath, isAdmin = false, isManager = false,
           (!item.adminOnly || isAdmin) &&
           (!item.userOnly || !isAdmin) &&
           (!item.managerOnly || isManager) &&
-          (!item.strictManagerOnly || isStrictManager)
+          (!item.strictManagerOnly || isStrictManager) &&
+          (!item.adminOrManager || isAdmin || isManager)
         ).map((item) => {
           const Icon = item.icon;
           const active =

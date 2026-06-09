@@ -11,9 +11,10 @@ interface CertificateViewProps {
   hasQuiz: boolean;
   logoPath?: string | null;
   inlineMode?: boolean;
+  isPdf?: boolean;
 }
 
-export function CertificateView({ id, courseTitle, learnerName, completedAt, hasQuiz, logoPath, inlineMode = false }: CertificateViewProps) {
+export function CertificateView({ id, courseTitle, learnerName, completedAt, hasQuiz, logoPath, inlineMode = false, isPdf = false }: CertificateViewProps) {
   const dateStr = new Intl.DateTimeFormat("fr-FR", {
     day: "numeric",
     month: "long",
@@ -279,7 +280,9 @@ export function CertificateView({ id, courseTitle, learnerName, completedAt, has
           )}
 
           <div className="cert-body">
-            <p className="cert-overline">✦ &nbsp; Certificat de réussite &nbsp; ✦</p>
+            <p className="cert-overline">
+              {isPdf ? "✦   Attestation de lecture   ✦" : "✦   Certificat de réussite   ✦"}
+            </p>
 
             <div className="cert-divider">✦</div>
 
@@ -288,11 +291,24 @@ export function CertificateView({ id, courseTitle, learnerName, completedAt, has
             <p className="cert-name">{learnerName}</p>
             <div className="cert-name-line" />
 
-            <p className="cert-course-label">a complété avec succès le cours</p>
-            <p className="cert-course-title">{courseTitle}</p>
+            {isPdf ? (
+              <>
+                <p className="cert-course-label">a lu et atteste avoir pris connaissance de l'ensemble des informations contenues dans le document</p>
+                <p className="cert-course-title">{courseTitle}</p>
+              </>
+            ) : (
+              <>
+                <p className="cert-course-label">a complété avec succès le cours</p>
+                <p className="cert-course-title">{courseTitle}</p>
+              </>
+            )}
 
             <div className="cert-footer-row">
-              {hasQuiz ? (
+              {isPdf ? (
+                <span className="cert-eval-badge" style={{ color: "#1B5E8A", background: "#EAF3FB", borderColor: "#A8C8E0" }}>
+                  ✓ &nbsp; Signature électronique horodatée
+                </span>
+              ) : hasQuiz ? (
                 <span className="cert-eval-badge">
                   ✓ &nbsp; Sanctionné par une évaluation des connaissances
                 </span>

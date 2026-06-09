@@ -29,5 +29,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|public/|h5p-standalone/).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|public/|h5p-standalone/|pdf\\.worker\\.min\\.mjs).*)"],
 };

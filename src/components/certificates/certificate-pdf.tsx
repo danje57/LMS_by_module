@@ -6,6 +6,7 @@ interface Props {
   learnerName: string;
   completedAt: Date;
   hasQuiz: boolean;
+  isPdf?: boolean;
   logoSrc?: string | null;
 }
 
@@ -158,7 +159,7 @@ const s = StyleSheet.create({
   },
 });
 
-export function CertificatePDF({ id, courseTitle, learnerName, completedAt, hasQuiz, logoSrc }: Props) {
+export function CertificatePDF({ id, courseTitle, learnerName, completedAt, hasQuiz, isPdf = false, logoSrc }: Props) {
   const dateStr = new Intl.DateTimeFormat("fr-FR", {
     day: "numeric", month: "long", year: "numeric",
   }).format(new Date(completedAt));
@@ -169,25 +170,33 @@ export function CertificatePDF({ id, courseTitle, learnerName, completedAt, hasQ
         <View style={s.outerBorder}>
           <View style={s.innerBorder}>
             <View style={s.row}>
-              {/* Left navy band */}
               <View style={s.band} />
 
-              {/* Main content */}
               <View style={s.body}>
                 {logoSrc && <Image src={logoSrc} style={s.logo} />}
 
-                <Text style={s.overline}>Certificat de reussite</Text>
+                <Text style={s.overline}>
+                  {isPdf ? "Attestation de lecture" : "Certificat de reussite"}
+                </Text>
                 <View style={s.divider} />
                 <Text style={s.subtitle}>Ce document atteste que</Text>
 
                 <Text style={s.name}>{learnerName}</Text>
                 <View style={s.nameLine} />
 
-                <Text style={s.courseLabel}>a complete avec succes le cours</Text>
+                <Text style={s.courseLabel}>
+                  {isPdf
+                    ? "a lu et atteste avoir pris connaissance du document"
+                    : "a complete avec succes le cours"}
+                </Text>
                 <Text style={s.courseTitle}>{courseTitle}</Text>
 
                 <View style={s.footerRow}>
-                  {hasQuiz ? (
+                  {isPdf ? (
+                    <View style={[s.evalBadge, { backgroundColor: "#EAF3FB", borderColor: "#A8C8E0" }]}>
+                      <Text style={[s.evalText, { color: "#1B5E8A" }]}>Signature electronique horodatee</Text>
+                    </View>
+                  ) : hasQuiz ? (
                     <View style={s.evalBadge}>
                       <Text style={s.evalText}>Sanctionne par une evaluation des connaissances</Text>
                     </View>
@@ -202,7 +211,6 @@ export function CertificatePDF({ id, courseTitle, learnerName, completedAt, hasQ
                 <Text style={s.certId}>N deg  {id.toUpperCase()}</Text>
               </View>
 
-              {/* Right navy band */}
               <View style={s.band} />
             </View>
           </View>

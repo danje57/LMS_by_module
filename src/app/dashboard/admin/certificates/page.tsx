@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { CertificateSearch } from "./certificate-search";
 import { ExportPanel } from "./export-panel";
 import { GeneratePanel } from "./generate-panel";
+import { CertificatesListPanel } from "./certificates-list-panel";
 import { CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { getTranslations, getLocale } from "next-intl/server";
@@ -14,9 +15,13 @@ interface PageProps {
 
 export default async function AdminCertificatesPage({ searchParams }: PageProps) {
   const session = await auth();
-  if (session?.user.sessionMode !== "admin") redirect("/dashboard");
+  const isAdmin   = session?.user.sessionMode === "admin";
+  const isManager = !isAdmin && session?.user?.id != null;
 
-  const { id, tab = "verify" } = await searchParams;
+  if (!isAdmin && !isManager) redirect("/dashboard");
+
+  // Managers don't need verify/export/generate — land on list tab
+  const { id, tab = isManager ? "list" : "verify" } = await searchParams;
   const query = id?.trim().toLowerCase() ?? "";
 
   let result: {
@@ -27,6 +32,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
     completedAt?: Date;
     hasQuiz?: boolean;
     issuedAt?: Date;
+    isPdf?: boolean;
   } | null = null;
 
   if (query && tab === "verify") {
@@ -44,6 +50,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
           completedAt: cert.completedAt,
           hasQuiz: cert.hasQuiz,
           issuedAt: cert.issuedAt,
+          isPdf: cert.isPdf,
         }
       : { found: false };
   }
@@ -56,13 +63,14 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
     new Intl.DateTimeFormat(dateLocale, { day: "numeric", month: "long", year: "numeric" }).format(d);
 
   const tabs = [
-    { key: "verify", label: t("verify") },
-    { key: "export", label: t("export") },
-    { key: "generate", label: t("generate") },
-  ];
+    { key: "list",     label: "Tous les certificats", show: true },
+    { key: "verify",   label: t("verify"),             show: isAdmin },
+    { key: "export",   label: t("export"),             show: isAdmin },
+    { key: "generate", label: t("generate"),           show: isAdmin },
+  ].filter((t) => t.show);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className={`mx-auto space-y-8 ${tab === "list" ? "max-w-5xl" : tab === "generate" ? "max-w-4xl" : "max-w-3xl"}`}>
       <div>
         <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">{t("title")}</h1>
         <p className="text-[15px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">
@@ -108,13 +116,16 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
                 <div className="px-6 py-5 space-y-4">
                   <Row label={t("certificateNumber")} value={query.toUpperCase()} mono />
                   <Row label={t("learner")} value={result.learnerName ? `${result.learnerName} (${result.learnerEmail})` : result.learnerEmail!} />
-                  <Row label={t("course")} value={result.courseTitle!} />
+                  <Row label="Type" value={result.isPdf ? "Document GRC" : "Formation"} />
+                  <Row label={result.isPdf ? "Document" : t("course")} value={result.courseTitle!} />
                   <Row label={t("completedOn")} value={fmt(result.completedAt!)} />
                   <Row label={t("issuedOn")} value={fmt(result.issuedAt!)} />
-                  <Row
-                    label={t("evaluation")}
-                    value={result.hasQuiz ? t("withEvaluation") : t("noEvaluation")}
-                  />
+                  {!result.isPdf && (
+                    <Row
+                      label={t("evaluation")}
+                      value={result.hasQuiz ? t("withEvaluation") : t("noEvaluation")}
+                    />
+                  )}
                 </div>
               </div>
             ) : (
@@ -128,6 +139,9 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
           )}
         </div>
       )}
+
+      {/* List tab */}
+      {tab === "list" && <CertificatesListPanel />}
 
       {/* Export tab */}
       {tab === "export" && <ExportPanel />}

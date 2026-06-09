@@ -7,6 +7,10 @@ import path from "path";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
 
+// Cache mémoire pour éviter les doublons document.view (requêtes Range parallèles de PDF.js)
+const viewCache = new Map<string, number>(); // clé: "userId:docId", valeur: timestamp
+const VIEW_TTL = 60 * 60 * 1000; // 1 heure
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -32,12 +36,17 @@ export async function GET(
   }
 
   if (!isAdmin) {
-    auditLog({
-      actor: { id: session.user.id, name: session.user.name, email: session.user.email },
-      action: "document.view",
-      targetId: doc.id,
-      targetLabel: doc.title,
-    }).catch(() => {});
+    const cacheKey = `${session.user.id}:${doc.id}`;
+    const lastView = viewCache.get(cacheKey) ?? 0;
+    if (Date.now() - lastView > VIEW_TTL) {
+      viewCache.set(cacheKey, Date.now());
+      auditLog({
+        actor: { id: session.user.id, name: session.user.name, email: session.user.email },
+        action: "document.view",
+        targetId: doc.id,
+        targetLabel: doc.title,
+      });
+    }
   }
 
   try {

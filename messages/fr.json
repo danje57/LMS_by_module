@@ -12,7 +12,8 @@
     "reporting": "Reporting",
     "export": "Exports CSV",
     "activity": "Activité apprenants",
-    "audit": "Journal d'audit"
+    "audit": "Journal d'audit",
+    "grcLibrary": "Bibliothèque GRC"
   },
   "header": {
     "adminMode": "Mode admin",
@@ -256,6 +257,8 @@
     "noUserFound": "Aucun utilisateur trouvé",
     "deadline": "Deadline (optionnel)",
     "selectedUsers": "{count, plural, one {# utilisateur sélectionné} other {# utilisateurs sélectionnés}}",
+    "commonDeadline": "Date limite pour tous",
+    "applyToAll": "Appliquer à tous",
     "saving": "Enregistrement…",
     "assign": "Assigner",
     "cancel": "Annuler"

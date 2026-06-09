@@ -14,11 +14,15 @@ export async function PATCH(req: NextRequest) {
     if (typeof maintenanceBannerEnabled !== "boolean")
       return NextResponse.json({ error: "Valeur invalide" }, { status: 400 });
 
+    const endsAtDate = maintenanceBannerEndsAt ? new Date(maintenanceBannerEndsAt) : null;
+    if (endsAtDate && endsAtDate <= new Date())
+      return NextResponse.json({ error: "La date de fin doit être dans le futur." }, { status: 400 });
+
     const data = {
       maintenanceBannerEnabled,
       maintenanceBannerMessage: maintenanceBannerMessage ?? null,
       maintenanceBannerColor: maintenanceBannerColor ?? "orange",
-      maintenanceBannerEndsAt: maintenanceBannerEndsAt ? new Date(maintenanceBannerEndsAt) : null,
+      maintenanceBannerEndsAt: endsAtDate,
     };
 
     const existing = await prisma.brandingSetting.findFirst();

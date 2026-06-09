@@ -22,6 +22,7 @@ export interface DocumentRow {
   department: string | null;
   createdByName: string | null;
   createdById: string | null;
+  createdByTeams: string[];
   signatureCount: number;
   assignmentCount: number;
 }

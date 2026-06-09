@@ -98,7 +98,7 @@ async function getLibraryDocuments(scope: Awaited<ReturnType<typeof getDocumentS
       createdAt: true,
       category: true,
       createdById: true,
-      createdBy: { select: { name: true, teams: { select: { team: { select: { name: true } } }, take: 1 } } },
+      createdBy: { select: { name: true, teams: { select: { team: { select: { name: true } } } } } },
       _count: {
         select: {
           assignments: scope.type === "admin"
@@ -141,6 +141,7 @@ async function getLibraryDocuments(scope: Awaited<ReturnType<typeof getDocumentS
     department: d.category ?? d.createdBy?.teams[0]?.team.name ?? null,
     createdByName: d.createdBy?.name ?? null,
     createdById: d.createdById ?? null,
+    createdByTeams: d.createdBy?.teams.map((t) => t.team.name) ?? [],
     signatureCount: sigMap.get(d.id) ?? 0,
     assignmentCount: d._count.assignments,
   }));
@@ -154,9 +155,19 @@ export default async function DocumentsPage() {
 
   const scope = await getDocumentScope(session.user.id, session.user.sessionMode ?? null);
 
-  const [myDocs, libraryDocs] = await Promise.all([
+  const isAdmin = scope?.type === "admin";
+
+  const [myDocs, libraryDocs, allTeams, userTeam] = await Promise.all([
     getMyDocuments(session.user.id),
     scope ? getLibraryDocuments(scope) : Promise.resolve([]),
+    isAdmin
+      ? prisma.team.findMany({ select: { name: true }, orderBy: { name: "asc" } }).then((r) => r.map((t) => t.name))
+      : Promise.resolve([] as string[]),
+    !isAdmin
+      ? prisma.team.findFirst({ where: { managerId: session.user.id }, select: { name: true } })
+          .then((t) => t ?? prisma.userTeam.findFirst({ where: { userId: session.user.id }, include: { team: { select: { name: true } } } })
+            .then((ut) => ut?.team ?? null))
+      : Promise.resolve(null),
   ]);
 
   return (
@@ -166,8 +177,10 @@ export default async function DocumentsPage() {
         libraryDocs={libraryDocs}
         canUpload={scope?.type === "admin" || scope?.type === "manager" || scope?.type === "creator"}
         hasLibrary={!!scope}
-        isAdmin={scope?.type === "admin"}
+        isAdmin={isAdmin}
         currentUserId={session.user.id}
+        allDepartments={allTeams}
+        userDepartment={userTeam?.name ?? null}
       />
     </div>
   );

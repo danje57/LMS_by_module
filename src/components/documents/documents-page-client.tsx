@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   Search, ArrowUpDown, Upload, FileText, Users, FileCheck,
-  Clock, X, Eye, Trash2, CheckCircle2, Award, Play, Pencil,
+  Clock, X, Eye, Trash2, CheckCircle2, Award, Play, Pencil, Download,
 } from "lucide-react";
 import { AssignModal } from "@/components/admin/assign-modal";
 import { PdfThumbnail } from "@/components/documents/pdf-thumbnail";
@@ -43,9 +43,9 @@ function formatDateLong(iso: string) {
 
 // ── Upload modal ──────────────────────────────────────────────────────────────
 
-function UploadModal({ isAdmin, onClose, onSuccess }: { isAdmin: boolean; onClose: () => void; onSuccess: () => void }) {
+function UploadModal({ isAdmin, departments, onClose, onSuccess }: { isAdmin: boolean; departments: string[]; onClose: () => void; onSuccess: () => void }) {
   const [title,      setTitle]      = useState("");
-  const [department, setDepartment] = useState("");
+  const [department, setDepartment] = useState(!isAdmin && departments.length > 0 ? departments[0] : "");
   const [file,       setFile]       = useState<File | null>(null);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState("");
@@ -82,12 +82,17 @@ function UploadModal({ isAdmin, onClose, onSuccess }: { isAdmin: boolean; onClos
               placeholder="Ex: Charte informatique 2026"
               className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all" />
           </div>
-          {isAdmin && (
+          {departments.length > 0 && (
             <div>
-              <label className="block text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] mb-1.5">Département <span className="text-[#ADADB8] font-normal">(optionnel)</span></label>
-              <input value={department} onChange={(e) => setDepartment(e.target.value)}
-                placeholder="Ex: Finance, RH, IT…"
-                className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all" />
+              <label className="block text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] mb-1.5">
+                Département {isAdmin && <span className="text-[#ADADB8] font-normal">(optionnel)</span>}
+              </label>
+              <select value={department} onChange={(e) => setDepartment(e.target.value)}
+                disabled={!isAdmin}
+                className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+                {isAdmin && <option value="">— Aucun —</option>}
+                {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
             </div>
           )}
           <div>
@@ -124,9 +129,10 @@ function UploadModal({ isAdmin, onClose, onSuccess }: { isAdmin: boolean; onClos
 
 // ── Edit document modal ───────────────────────────────────────────────────────
 
-function EditDocumentModal({ doc, isAdmin, onClose, onSuccess }: {
+function EditDocumentModal({ doc, isAdmin, departments, onClose, onSuccess }: {
   doc: DocumentRow;
   isAdmin: boolean;
+  departments: string[];
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -165,12 +171,17 @@ function EditDocumentModal({ doc, isAdmin, onClose, onSuccess }: {
             <input required value={title} onChange={(e) => setTitle(e.target.value)}
               className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all" />
           </div>
-          {isAdmin && (
+          {departments.length > 0 && (
             <div>
-              <label className="block text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] mb-1.5">Département <span className="text-[#ADADB8] font-normal">(optionnel)</span></label>
-              <input value={department} onChange={(e) => setDepartment(e.target.value)}
-                placeholder="Ex: Finance, RH, IT…"
-                className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all" />
+              <label className="block text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] mb-1.5">
+                Département {isAdmin && <span className="text-[#ADADB8] font-normal">(optionnel)</span>}
+              </label>
+              <select value={department} onChange={(e) => setDepartment(e.target.value)}
+                disabled={!isAdmin}
+                className="w-full h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+                {isAdmin && <option value="">— Aucun —</option>}
+                {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
             </div>
           )}
           <div>
@@ -328,20 +339,25 @@ export function DocumentsPageClient({
   hasLibrary,
   isAdmin = false,
   currentUserId = "",
+  allDepartments = [],
+  userDepartment = null,
 }: {
-  myDocs:         MyDoc[];
-  libraryDocs:    DocumentRow[];
-  canUpload:      boolean;
-  hasLibrary:     boolean;
-  isAdmin?:       boolean;
-  currentUserId?: string;
+  myDocs:           MyDoc[];
+  libraryDocs:      DocumentRow[];
+  canUpload:        boolean;
+  hasLibrary:       boolean;
+  isAdmin?:         boolean;
+  currentUserId?:   string;
+  allDepartments?:  string[];
+  userDepartment?:  string | null;
 }) {
   const [activeTab,       setActiveTab]       = useState<ActiveTab>("mine");
   const [search,          setSearch]          = useState("");
   const [sizeSort,        setSizeSort]        = useState<"none" | "asc" | "desc">("none");
-  const [filterCreator,   setFilterCreator]   = useState("all");
-  const [filterDepartment, setFilterDepartment] = useState("all");
-  const [filterStatus,    setFilterStatus]    = useState<MineFilter>("all");
+  const [filterCreator,     setFilterCreator]     = useState("all");
+  const [filterDepartment,  setFilterDepartment]  = useState("all");
+  const [filterCreatorTeam, setFilterCreatorTeam] = useState("all");
+  const [filterStatus,      setFilterStatus]      = useState<MineFilter>("all");
   const [pageSize,        setPageSize]        = useState<number>(10);
   const [page,            setPage]            = useState(1);
 
@@ -361,16 +377,19 @@ export function DocumentsPageClient({
     setFilterStatus("all");
     setFilterCreator("all");
     setFilterDepartment("all");
+    setFilterCreatorTeam("all");
     resetPage();
   }
 
-  const creatorsLibrary    = useMemo(() => [...new Set(libDocs.map((d) => d.createdByName).filter(Boolean) as string[])].sort(), [libDocs]);
-  const creatorsMine       = useMemo(() => [...new Set(myDocs.map((d) => d.createdByName).filter(Boolean) as string[])].sort(), [myDocs]);
-  const departmentsLibrary = useMemo(() => [...new Set(libDocs.map((d) => d.department).filter(Boolean) as string[])].sort(), [libDocs]);
-  const departmentsMine    = useMemo(() => [...new Set(myDocs.map((d) => d.department).filter(Boolean) as string[])].sort(), [myDocs]);
+  const creatorsLibrary     = useMemo(() => [...new Set(libDocs.map((d) => d.createdByName).filter(Boolean) as string[])].sort(), [libDocs]);
+  const creatorsMine        = useMemo(() => [...new Set(myDocs.map((d) => d.createdByName).filter(Boolean) as string[])].sort(), [myDocs]);
+  const departmentsLibrary  = useMemo(() => [...new Set(libDocs.map((d) => d.department).filter(Boolean) as string[])].sort(), [libDocs]);
+  const departmentsMine     = useMemo(() => [...new Set(myDocs.map((d) => d.department).filter(Boolean) as string[])].sort(), [myDocs]);
+  const creatorTeamsLibrary = useMemo(() => [...new Set(libDocs.flatMap((d) => d.createdByTeams ?? []))].sort(), [libDocs]);
 
-  const creators    = activeTab === "mine" ? creatorsMine    : creatorsLibrary;
-  const departments = activeTab === "mine" ? departmentsMine : departmentsLibrary;
+  const creators     = activeTab === "mine" ? creatorsMine    : creatorsLibrary;
+  const departments  = activeTab === "mine" ? departmentsMine : departmentsLibrary;
+  const creatorTeams = creatorTeamsLibrary; // uniquement pertinent pour la bibliothèque
 
   // ── Filtered lists ────────────────────────────────────────────────────────
 
@@ -380,8 +399,8 @@ export function DocumentsPageClient({
       const q = search.trim().toLowerCase();
       list = list.filter((d) => d.title.toLowerCase().includes(q));
     }
-    if (filterCreator    !== "all") list = list.filter((d) => d.createdByName === filterCreator);
-    if (filterDepartment !== "all") list = list.filter((d) => d.department === filterDepartment);
+    if (filterCreator     !== "all") list = list.filter((d) => d.createdByName === filterCreator);
+    if (filterDepartment  !== "all") list = list.filter((d) => d.department === filterDepartment);
     if (sizeSort !== "none") {
       list = [...list].sort((a, b) => sizeSort === "asc" ? a.fileSize - b.fileSize : b.fileSize - a.fileSize);
     }
@@ -394,14 +413,15 @@ export function DocumentsPageClient({
       const q = search.trim().toLowerCase();
       list = list.filter((d) => d.title.toLowerCase().includes(q) || (d.createdByName ?? "").toLowerCase().includes(q));
     }
-    if (filterCreator    !== "all") list = list.filter((d) => d.createdByName === filterCreator);
-    if (filterDepartment !== "all") list = list.filter((d) => d.department === filterDepartment);
+    if (filterCreator     !== "all") list = list.filter((d) => d.createdByName === filterCreator);
+    if (filterDepartment  !== "all") list = list.filter((d) => d.department === filterDepartment);
+    if (filterCreatorTeam !== "all") list = list.filter((d) => (d.createdByTeams ?? []).includes(filterCreatorTeam));
     list = [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     if (sizeSort !== "none") {
       list = [...list].sort((a, b) => sizeSort === "asc" ? a.fileSize - b.fileSize : b.fileSize - a.fileSize);
     }
     return list;
-  }, [libDocs, search, sizeSort, filterCreator, filterDepartment]);
+  }, [libDocs, search, sizeSort, filterCreator, filterDepartment, filterCreatorTeam]);
 
   const activeFiltered = activeTab === "mine" ? filteredMine : filteredLibrary;
   const totalItems  = activeFiltered.length;
@@ -436,15 +456,27 @@ export function DocumentsPageClient({
             Politiques, chartes, procédures — attestations de lecture horodatées
           </p>
         </div>
-        {canUpload && (
-          <button
-            onClick={() => setShowUpload(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium rounded-xl transition-colors shrink-0"
-          >
-            <Upload className="w-4 h-4" />
-            Uploader un PDF
-          </button>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {(canUpload || isAdmin) && (
+            <a
+              href="/api/admin/export?type=documents"
+              download
+              className="inline-flex items-center gap-2 px-4 py-2.5 border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#1C1C1E] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] text-[#1D1D1F] dark:text-[#F5F5F7] text-[14px] font-medium rounded-xl transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Exporter CSV
+            </a>
+          )}
+          {canUpload && (
+            <button
+              onClick={() => setShowUpload(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-[14px] font-medium rounded-xl transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              Uploader un PDF
+            </button>
+          )}
+        </div>
       </div>
 
     <div className="space-y-5">
@@ -501,6 +533,18 @@ export function DocumentsPageClient({
           >
             <option value="all">Tous les créateurs</option>
             {creators.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
+
+        {/* Filtre par équipe du créateur — bibliothèque uniquement */}
+        {activeTab === "library" && creatorTeams.length > 0 && (
+          <select
+            value={filterCreatorTeam}
+            onChange={(e) => { setFilterCreatorTeam(e.target.value); resetPage(); }}
+            className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all cursor-pointer"
+          >
+            <option value="all">Toutes les équipes</option>
+            {creatorTeams.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         )}
 
@@ -702,6 +746,20 @@ export function DocumentsPageClient({
                       Créé par <span className="text-[#6E6E73] dark:text-[#8E8E93]">{doc.createdByName}</span>
                     </p>
                   )}
+                  {doc.assignmentCount > 0 && (() => {
+                    const rate = Math.round((doc.signatureCount / doc.assignmentCount) * 100);
+                    return (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-[#6E6E73] dark:text-[#8E8E93]">{doc.signatureCount}/{doc.assignmentCount} signés</span>
+                          <span className={cn("font-semibold", rate === 100 ? "text-emerald-600" : rate > 50 ? "text-amber-600" : "text-[#6E6E73]")}>{rate}%</span>
+                        </div>
+                        <div className="h-1 w-full bg-[#F2F2F7] dark:bg-[#2C2C2E] rounded-full overflow-hidden">
+                          <div className={cn("h-full rounded-full transition-all", rate === 100 ? "bg-emerald-400" : "bg-[#0071E3]")} style={{ width: `${rate}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <div className="flex-1" />
                   <div className="flex items-center justify-between pt-2 border-t border-[#F5F5F7] dark:border-[#2C2C2E]">
                     <span className="text-[11px] text-[#ADADB8]">{formatSize(doc.fileSize)}</span>
@@ -773,8 +831,8 @@ export function DocumentsPageClient({
       )}
 
       {/* ── Modals ── */}
-      {showUpload  && <UploadModal isAdmin={isAdmin} onClose={() => setShowUpload(false)} onSuccess={() => { setShowUpload(false); refreshLibrary(); }} />}
-      {editDoc     && <EditDocumentModal doc={editDoc} isAdmin={isAdmin} onClose={() => setEditDoc(null)} onSuccess={() => { setEditDoc(null); refreshLibrary(); }} />}
+      {showUpload  && <UploadModal isAdmin={isAdmin} departments={isAdmin ? allDepartments : (userDepartment ? [userDepartment] : [])} onClose={() => setShowUpload(false)} onSuccess={() => { setShowUpload(false); refreshLibrary(); }} />}
+      {editDoc     && <EditDocumentModal doc={editDoc} isAdmin={isAdmin} departments={isAdmin ? allDepartments : (userDepartment ? [userDepartment] : [])} onClose={() => setEditDoc(null)} onSuccess={() => { setEditDoc(null); refreshLibrary(); }} />}
       {assignDoc   && <AssignModal courseId={assignDoc.id} courseTitle={assignDoc.title} onClose={() => { setAssignDoc(null); refreshLibrary(); }} />}
       {signaturesDoc && <SignaturesModal doc={signaturesDoc} onClose={() => setSignaturesDoc(null)} />}
     </div>

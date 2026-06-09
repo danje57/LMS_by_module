@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
   images: {
     domains: [],
   },
+  webpack: (config) => {
+    // pdfjs-dist référence le module Node "canvas" — on l'exclut du bundle navigateur
+    config.resolve.alias.canvas = false;
+    return config;
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: MAX_UPLOAD,

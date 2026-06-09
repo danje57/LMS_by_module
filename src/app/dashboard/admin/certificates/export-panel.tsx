@@ -11,7 +11,8 @@ export function ExportPanel() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [userId, setUserId] = useState("");
   const [teamId, setTeamId] = useState("");
-  const [year, setYear] = useState("");
+  const [year, setYear]     = useState("");
+  const [type, setType]     = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -23,7 +24,8 @@ export function ExportPanel() {
     const p = new URLSearchParams({ format });
     if (userId) p.set("userId", userId);
     if (teamId) p.set("teamId", teamId);
-    if (year) p.set("year", year);
+    if (year)   p.set("year", year);
+    if (type)   p.set("type", type);
     return `/api/admin/certificates/export?${p}`;
   };
 
@@ -47,7 +49,7 @@ export function ExportPanel() {
       </div>
 
       <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] p-6 space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           {/* User filter */}
           <div className="space-y-1.5">
             <label className="text-[13px] font-medium text-[#3C3C43] dark:text-[#AEAEB2]">Apprenant</label>
@@ -75,6 +77,20 @@ export function ExportPanel() {
               {teams.map(t => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
+            </select>
+          </div>
+
+          {/* Type filter */}
+          <div className="space-y-1.5">
+            <label className="text-[13px] font-medium text-[#3C3C43] dark:text-[#AEAEB2]">Type</label>
+            <select
+              value={type}
+              onChange={e => setType(e.target.value)}
+              className="w-full h-9 rounded-lg border border-[#E5E5EA] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] px-3 text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/40"
+            >
+              <option value="">Tous les types</option>
+              <option value="courses">Formations</option>
+              <option value="grc">Documents GRC</option>
             </select>
           </div>
 
@@ -113,9 +129,9 @@ export function ExportPanel() {
             {loading ? "Génération…" : "Exporter ZIP (PDFs)"}
           </button>
 
-          {(userId || teamId || year) && (
+          {(userId || teamId || year || type) && (
             <button
-              onClick={() => { setUserId(""); setTeamId(""); setYear(""); }}
+              onClick={() => { setUserId(""); setTeamId(""); setYear(""); setType(""); }}
               className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] transition-colors"
             >
               Réinitialiser les filtres

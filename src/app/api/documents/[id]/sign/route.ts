@@ -52,6 +52,7 @@ export async function POST(
         courseTitle: doc.title,
         completedAt: now,
         hasQuiz: false,
+        isPdf: true,
         issuedAt: now,
       },
     }),

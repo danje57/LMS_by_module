@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Search, UserCheck, Calendar, Users, UserPlus, CheckCheck } from "lucide-react";
+import { X, Search, UserCheck, Calendar, Users, UserPlus, CheckCheck, CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
@@ -36,6 +36,7 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<"teams" | "users">("teams");
+  const [globalDeadline, setGlobalDeadline] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -93,6 +94,13 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
 
   function deselectAll() {
     setSelected(new Set());
+  }
+
+  function applyGlobalDeadline() {
+    if (!globalDeadline) return;
+    const next: Record<string, string> = {};
+    selected.forEach((id) => { next[id] = globalDeadline; });
+    setDueDates((prev) => ({ ...prev, ...next }));
   }
 
   /* ---- Save ---- */
@@ -163,6 +171,33 @@ export function AssignModal({ courseId, courseTitle, onClose }: AssignModalProps
             <CheckCheck className="w-3.5 h-3.5" />
             {allSelected ? t("deselectAll") : t("assignAll")}
           </button>
+        </div>
+
+        {/* Date limite commune */}
+        <div className="px-6 py-2.5 border-b border-[#F5F5F7] dark:border-[#3A3A3C] flex items-center gap-3 shrink-0">
+          <CalendarRange className="w-4 h-4 text-[#ADADB8] shrink-0" />
+          <span className="text-[12px] text-[#6E6E73] dark:text-[#8E8E93] shrink-0">{t("commonDeadline")}</span>
+          <input
+            type="date"
+            value={globalDeadline}
+            onChange={(e) => setGlobalDeadline(e.target.value)}
+            className="h-7 px-2 rounded-lg border border-[#D2D2D7] dark:border-[#3A3A3C] bg-transparent dark:bg-[#2C2C2E] text-[12px] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all"
+          />
+          <button
+            onClick={applyGlobalDeadline}
+            disabled={!globalDeadline || selected.size === 0}
+            className="h-7 px-3 rounded-lg bg-[#0071E3]/10 hover:bg-[#0071E3]/20 text-[#0071E3] text-[12px] font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+          >
+            {t("applyToAll")}
+          </button>
+          {globalDeadline && (
+            <button
+              onClick={() => { setGlobalDeadline(""); setDueDates({}); }}
+              className="h-7 px-2 rounded-lg text-[12px] text-[#ADADB8] hover:text-red-400 transition-colors shrink-0"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         {/* Contenu */}

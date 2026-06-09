@@ -142,5 +142,69 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return NextResponse.json({ error: "Type invalide. Utilisez ?type=progress ou ?type=quiz" }, { status: 400 });
+  if (type === "documents") {
+    // Toutes les assignations sur des documents PDF actifs ou supprimés (soft delete préservé)
+    const assignments = await prisma.courseAssignment.findMany({
+      where: {
+        ...(allowedUserIds ? { userId: { in: allowedUserIds } } : {}),
+        course: { courseType: "pdf" },
+      },
+      include: {
+        user:   { select: { name: true, email: true } },
+        course: { select: { title: true, category: true, isActive: true } },
+      },
+      orderBy: [{ course: { title: "asc" } }, { user: { name: "asc" } }],
+    });
+
+    // Signatures existantes
+    const courseIds = [...new Set(assignments.map((a) => a.courseId))];
+    const userIds   = [...new Set(assignments.map((a) => a.userId))];
+
+    const [signatures, userTeams] = await Promise.all([
+      prisma.pdfSignature.findMany({
+        where: { courseId: { in: courseIds }, userId: { in: userIds } },
+        select: { userId: true, courseId: true, signedAt: true },
+      }),
+      prisma.userTeam.findMany({
+        where: { userId: { in: userIds } },
+        include: { team: { select: { name: true } } },
+      }),
+    ]);
+
+    const sigMap = new Map(signatures.map((s) => [`${s.userId}:${s.courseId}`, s.signedAt]));
+    const teamsByUser = new Map<string, string[]>();
+    for (const ut of userTeams) {
+      const list = teamsByUser.get(ut.userId) ?? [];
+      list.push(ut.team.name);
+      teamsByUser.set(ut.userId, list);
+    }
+
+    const csv = buildCsv(
+      ["Document", "Département", "Statut document", "Nom", "Email", "Équipe(s)", "Statut signature", "Signé le", "Assigné le", "Échéance"],
+      assignments.map((a) => {
+        const sig = sigMap.get(`${a.userId}:${a.courseId}`);
+        return [
+          a.course.title,
+          a.course.category ?? "—",
+          a.course.isActive ? "Actif" : "Supprimé",
+          a.user.name ?? "",
+          a.user.email,
+          (teamsByUser.get(a.userId) ?? []).join(" / ") || "—",
+          sig ? "Signé" : "Non signé",
+          sig ? fmtDate(sig) : "",
+          fmtDate(a.assignedAt),
+          fmtDate(a.dueDate),
+        ];
+      }),
+    );
+
+    return new NextResponse("﻿" + csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="signatures_grc_${new Date().toISOString().slice(0, 10)}.csv"`,
+      },
+    });
+  }
+
+  return NextResponse.json({ error: "Type invalide. Utilisez ?type=progress, ?type=quiz ou ?type=documents" }, { status: 400 });
 }

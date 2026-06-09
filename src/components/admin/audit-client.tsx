@@ -43,6 +43,12 @@ const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   "settings.mail":        { label: "Email modifié",         color: "bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400" },
   "certificate.generate": { label: "Certificat généré",     color: "bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400" },
   "setup.init":           { label: "Installation initiale", color: "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" },
+  "document.upload":      { label: "Document uploadé",      color: "bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400" },
+  "document.edit":        { label: "Document modifié",      color: "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400" },
+  "document.view":        { label: "Document consulté",     color: "bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400" },
+  "document.signed":      { label: "Document signé",        color: "bg-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-400" },
+  "document.force-signed":{ label: "Signature forcée",      color: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400" },
+  "document.delete":      { label: "Document supprimé",     color: "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400" },
 };
 
 const PAGE_SIZE = 25;
@@ -54,6 +60,7 @@ const ACTION_GROUPS = [
   { label: "Utilisateurs", actions: ["user.create", "user.edit", "user.delete", "user.activate", "user.deactivate", "user.reset_password", "user.import"] },
   { label: "Équipes", actions: ["team.create", "team.edit", "team.delete", "team.member.add", "team.member.remove", "team.import"] },
   { label: "Paramètres", actions: ["settings.branding", "settings.mail", "setup.init"] },
+  { label: "Documents GRC", actions: ["document.upload", "document.edit", "document.view", "document.signed", "document.force-signed", "document.delete"] },
 ];
 
 export function AuditClient({ entries }: { entries: AuditEntry[] }) {

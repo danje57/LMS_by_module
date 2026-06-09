@@ -29,6 +29,7 @@ model User {
   managedTeams   Team[]               @relation("ManagedTeams")
   createdCourses Course[]             @relation("CreatedCourses")
   notifications  Notification[]
+  pdfSignatures  PdfSignature[]
 
   @@map("users")
 }
@@ -119,6 +120,7 @@ model Course {
   certificates     Certificate[]
   questions        QuizQuestion[]
   nativeVideo      NativeVideo?
+  pdfSignatures    PdfSignature[]
 
   @@map("courses")
 }
@@ -249,6 +251,7 @@ model Certificate {
   courseTitle  String
   completedAt  DateTime
   hasQuiz      Boolean   @default(false)
+  isPdf        Boolean   @default(false)
   quizPassed   Boolean?
   quizScore    Int?
   passingScore Int?
@@ -346,6 +349,19 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+model PdfSignature {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  signedAt  DateTime @default(now())
+  ipAddress String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("pdf_signatures")
+}
+
 enum RoleType {
   superadmin
   admin
@@ -362,4 +378,5 @@ enum QuestionType {
 enum CourseType {
   h5p
   native_video
+  pdf
 }

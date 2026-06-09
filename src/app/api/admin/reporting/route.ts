@@ -22,10 +22,13 @@ export async function GET() {
     teams,
     userTeams,
     dailyActivity,
+    pdfDocs,
+    pdfAssignmentCounts,
+    pdfSignatureCounts,
   ] = await Promise.all([
-    prisma.course.count({ where: { isActive: true } }),
-    prisma.user.count({ where: { isActive: true } }),
-    prisma.certificate.count(),
+    prisma.course.count({ where: { isActive: true, courseType: { not: "pdf" } } }),
+    prisma.user.count({ where: { isActive: true, roles: { some: { role: { name: "learner" } } } } }),
+    prisma.certificate.count({ where: { course: { courseType: { not: "pdf" } } } }),
     prisma.auditLog.findMany({
       where: {
         createdAt: { gte: sevenDaysAgo },
@@ -41,7 +44,7 @@ export async function GET() {
       select: { courseId: true, score: true, passed: true },
     }),
     prisma.course.findMany({
-      where: { isActive: true },
+      where: { isActive: true, courseType: { not: "pdf" } },
       select: { id: true, title: true, courseType: true, hasQuiz: true },
       orderBy: { title: "asc" },
     }),
@@ -54,6 +57,21 @@ export async function GET() {
       },
       select: { createdAt: true },
       orderBy: { createdAt: "asc" },
+    }),
+    // GRC
+    prisma.course.findMany({
+      where: { isActive: true, courseType: "pdf" },
+      select: { id: true, title: true, category: true, createdAt: true },
+      orderBy: { title: "asc" },
+    }),
+    prisma.courseAssignment.groupBy({
+      by: ["courseId"],
+      where: { course: { courseType: "pdf", isActive: true } },
+      _count: true,
+    }),
+    prisma.pdfSignature.groupBy({
+      by: ["courseId"],
+      _count: true,
     }),
   ]);
 
@@ -159,5 +177,28 @@ export async function GET() {
     count,
   }));
 
-  return NextResponse.json({ kpis, courseStats, teamStats, activityChart });
+  // --- Stats GRC ---
+  const assignMap = new Map(pdfAssignmentCounts.map((r) => [r.courseId, r._count]));
+  const sigMap    = new Map(pdfSignatureCounts.map((r) => [r.courseId, r._count]));
+
+  const documentStats = pdfDocs.map((d) => {
+    const assigned  = assignMap.get(d.id) ?? 0;
+    const signed    = sigMap.get(d.id) ?? 0;
+    const rate      = assigned > 0 ? Math.round((signed / assigned) * 100) : 0;
+    return { id: d.id, title: d.title, department: d.category ?? null, assigned, signed, signatureRate: rate };
+  });
+
+  const totalPdfAssignments = documentStats.reduce((s, d) => s + d.assigned, 0);
+  const totalSignatures     = documentStats.reduce((s, d) => s + d.signed, 0);
+  const fullySignedDocs     = documentStats.filter((d) => d.assigned > 0 && d.signed === d.assigned).length;
+  const globalSignatureRate = totalPdfAssignments > 0 ? Math.round((totalSignatures / totalPdfAssignments) * 100) : 0;
+
+  const grcKpis = {
+    totalDocuments: pdfDocs.length,
+    totalSignatures,
+    globalSignatureRate,
+    fullySignedDocs,
+  };
+
+  return NextResponse.json({ kpis, courseStats, teamStats, activityChart, grcKpis, documentStats });
 }

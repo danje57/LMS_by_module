@@ -7,8 +7,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  if (session?.user.sessionMode !== "admin")
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  if (!session?.user?.id)
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  const isAdmin = session.user.sessionMode === "admin";
+  if (!isAdmin) {
+    const role = await prisma.userRole.findFirst({
+      where: { userId: session.user.id, role: { name: { in: ["manager", "creator"] } } },
+    });
+    if (!role) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  }
 
   const { id: courseId } = await params;
 
@@ -39,10 +46,10 @@ export async function PUT(
   // Admins et managers peuvent affecter des cours
   const isAdmin = session.user.sessionMode === "admin";
   if (!isAdmin) {
-    const isManager = await prisma.userRole.findFirst({
-      where: { userId: session.user.id, role: { name: "manager" } },
+    const role = await prisma.userRole.findFirst({
+      where: { userId: session.user.id, role: { name: { in: ["manager", "creator"] } } },
     });
-    if (!isManager) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    if (!role) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 
   const { id: courseId } = await params;

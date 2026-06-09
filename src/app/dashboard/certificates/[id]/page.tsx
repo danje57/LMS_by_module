@@ -24,15 +24,26 @@ export default async function CertificatePage({
   // Only the owner can view their certificate
   if (!cert || cert.userId !== session.user.id) notFound();
 
+  const course = cert.courseId
+    ? await prisma.course.findUnique({
+        where: { id: cert.courseId },
+        select: { courseType: true },
+      })
+    : null;
+
   void auditLog({ actor: { id: session.user.id, name: session.user.name, email: session.user.email }, action: "certificate.download", targetId: cert.id, targetLabel: cert.courseTitle });
+
+  // Use session name as primary — cert.userId === session.user.id is enforced above
+  const learnerName = session.user.name ?? cert.user.name ?? cert.user.email ?? "Apprenant";
 
   return (
     <CertificateView
       id={cert.id}
       courseTitle={cert.courseTitle}
-      learnerName={cert.user.name ?? cert.user.email ?? "Apprenant"}
+      learnerName={learnerName}
       completedAt={cert.completedAt}
       hasQuiz={cert.hasQuiz}
+      isPdf={course?.courseType === "pdf"}
       logoPath={branding?.logoPath ? `/api/assets/${branding.logoPath}` : null}
     />
   );

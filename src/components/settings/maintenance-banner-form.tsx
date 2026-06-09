@@ -20,20 +20,38 @@ type Props = {
   };
 };
 
+function isoToLocalInput(iso: string): string {
+  const d = new Date(iso);
+  const offset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+}
+
 export function MaintenanceBannerForm({ current }: Props) {
   const router = useRouter();
   const [enabled, setEnabled]   = useState(current.enabled);
   const [message, setMessage]   = useState(current.message ?? "");
   const [color, setColor]       = useState(current.color ?? "orange");
-  const [endsAt, setEndsAt]     = useState(current.endsAt ? current.endsAt.slice(0, 16) : "");
+  const [endsAt, setEndsAt]     = useState(current.endsAt ? isoToLocalInput(current.endsAt) : "");
   const [loading, setLoading]   = useState(false);
   const [success, setSuccess]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
+
+  function nowLocalInput(): string {
+    const d = new Date();
+    const offset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+  }
 
   async function patch(overrides: Partial<{ enabled: boolean; message: string; color: string; endsAt: string }> = {}) {
     setLoading(true);
     setSuccess(false);
     setError(null);
+    const resolvedEndsAt = overrides.endsAt ?? endsAt;
+    if (resolvedEndsAt && new Date(resolvedEndsAt) <= new Date()) {
+      setError("La date de fin doit être dans le futur.");
+      setLoading(false);
+      return;
+    }
     const payload = {
       maintenanceBannerEnabled: overrides.enabled ?? enabled,
       maintenanceBannerMessage: (overrides.message ?? message).trim() || null,
@@ -50,10 +68,8 @@ export function MaintenanceBannerForm({ current }: Props) {
     else { const d = await res.json().catch(() => ({})); setError(d.error ?? "Erreur"); }
   }
 
-  async function toggleEnabled() {
-    const next = !enabled;
-    setEnabled(next);
-    await patch({ enabled: next });
+  function toggleEnabled() {
+    setEnabled((prev) => !prev);
   }
 
   async function save() {
@@ -130,6 +146,7 @@ export function MaintenanceBannerForm({ current }: Props) {
         <input
           type="datetime-local"
           value={endsAt}
+          min={nowLocalInput()}
           onChange={(e) => setEndsAt(e.target.value)}
           className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[14px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20 transition-all"
         />

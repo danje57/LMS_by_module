@@ -28,12 +28,12 @@ async function getLogoDataUri(): Promise<string | null> {
   }
 }
 
-function buildWhere(userId?: string, teamId?: string, year?: string) {
+function buildWhere(userId?: string, teamId?: string, year?: string, type?: string) {
   const where: Record<string, unknown> = {};
   if (userId) where.userId = userId;
-  if (teamId) {
-    where.user = { teams: { some: { teamId } } };
-  }
+  if (teamId) where.user = { teams: { some: { teamId } } };
+  if (type === "courses") where.isPdf = false;
+  if (type === "grc")     where.isPdf = true;
   if (year) {
     const y = parseInt(year);
     if (!isNaN(y)) {
@@ -55,10 +55,11 @@ export async function GET(req: NextRequest) {
   const format = searchParams.get("format") ?? "csv";
   const userId = searchParams.get("userId") ?? undefined;
   const teamId = searchParams.get("teamId") ?? undefined;
-  const year = searchParams.get("year") ?? undefined;
+  const year   = searchParams.get("year")   ?? undefined;
+  const type   = searchParams.get("type")   ?? undefined;
 
   const certs = await prisma.certificate.findMany({
-    where: buildWhere(userId, teamId, year),
+    where: buildWhere(userId, teamId, year, type),
     include: { user: { select: { name: true, email: true } } },
     orderBy: { completedAt: "desc" },
   });
@@ -68,12 +69,13 @@ export async function GET(req: NextRequest) {
 
   // ── CSV ──────────────────────────────────────────────────────────────────────
   if (format === "csv") {
-    const header = "ID Certificat;Apprenant;Email;Cours;Complété le;Certificat émis le;Évaluation";
+    const header = "ID Certificat;Type;Apprenant;Email;Cours / Document;Complété le;Certificat émis le;Évaluation";
     const rows = certs.map((c) => {
-      const name = c.user.name ?? "";
-      const email = c.user.email;
-      const evalStr = c.hasQuiz ? "Evaluation validee" : "Sans evaluation";
-      return `${c.id.toUpperCase()};${name};${email};"${c.courseTitle}";${fmt(c.completedAt)};${fmt(c.issuedAt)};${evalStr}`;
+      const name     = c.user.name ?? "";
+      const email    = c.user.email;
+      const typeStr  = c.isPdf ? "Document GRC" : "Formation";
+      const evalStr  = c.isPdf ? "" : c.hasQuiz ? "Evaluation validee" : "Sans evaluation";
+      return `${c.id.toUpperCase()};${typeStr};${name};${email};"${c.courseTitle}";${fmt(c.completedAt)};${fmt(c.issuedAt)};${evalStr}`;
     });
     const csv = "﻿" + [header, ...rows].join("\n");
     const dateTag = new Date().toISOString().slice(0, 10);
@@ -99,6 +101,7 @@ export async function GET(req: NextRequest) {
           learnerName,
           completedAt: cert.completedAt,
           hasQuiz: cert.hasQuiz,
+          isPdf: cert.isPdf,
           logoSrc,
         }) as unknown as ReactElement<DocumentProps, JSXElementConstructor<DocumentProps>>
       );

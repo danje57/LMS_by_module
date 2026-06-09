@@ -10,24 +10,26 @@ export default async function CertificatesPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const certificates = await prisma.certificate.findMany({
+  const allCerts = await prisma.certificate.findMany({
     where: { userId: session.user.id },
     orderBy: { completedAt: "desc" },
-    select: { id: true, courseTitle: true, completedAt: true, hasQuiz: true, courseId: true },
+    select: { id: true, courseTitle: true, completedAt: true, hasQuiz: true, courseId: true, isPdf: true },
   });
 
   const t = await getTranslations("certificates");
+  const courseCerts = allCerts.filter((c) => !c.isPdf);
+  const grcCerts    = allCerts.filter((c) => c.isPdf);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-[28px] font-semibold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">{t("myCertificates")}</h1>
         <p className="text-[15px] text-[#6E6E73] dark:text-[#8E8E93] mt-0.5">
-          {t("obtained", { count: certificates.length })}
+          {t("obtained", { count: allCerts.length })}
         </p>
       </div>
 
-      {certificates.length === 0 ? (
+      {allCerts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-14 h-14 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] flex items-center justify-center mb-4">
             <Award className="w-6 h-6 text-[#ADADB8]" />
@@ -40,7 +42,7 @@ export default async function CertificatesPage() {
           </Link>
         </div>
       ) : (
-        <CertificateList certificates={certificates} />
+        <CertificateList courseCerts={courseCerts} grcCerts={grcCerts} />
       )}
     </div>
   );

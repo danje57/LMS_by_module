@@ -5,7 +5,7 @@ import { signOut } from "next-auth/react";
 import Link from "next/link";
 import type { Session } from "next-auth";
 import { useTranslations } from "next-intl";
-import { LogOut, ShieldCheck, ShieldOff, X, TriangleAlert, ShieldAlert, User } from "lucide-react";
+import { LogOut, ShieldCheck, ShieldOff, X, TriangleAlert, ShieldAlert, User, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/layout/notification-bell";
 
@@ -15,7 +15,10 @@ interface HeaderProps {
 
 export function Header({ session }: HeaderProps) {
   const [pendingMode, setPendingMode] = useState<"admin" | "user" | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [password, setPassword]       = useState("");
+  const [pwdError, setPwdError]       = useState("");
+  const [showPwd, setShowPwd]         = useState(false);
+  const [loading, setLoading]         = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const t = useTranslations("header");
@@ -40,14 +43,27 @@ export function Header({ session }: HeaderProps) {
     .toUpperCase()
     .slice(0, 2);
 
+  function openAdminModal() {
+    setPassword("");
+    setPwdError("");
+    setShowPwd(false);
+    setPendingMode("admin");
+  }
+
   async function applyMode(mode: "admin" | "user") {
-    setPendingMode(null);
+    setPwdError("");
     setLoading(true);
-    await fetch("/api/auth/session-mode", {
+    const res = await fetch("/api/auth/session-mode", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode }),
+      body: JSON.stringify({ mode, ...(mode === "admin" ? { password } : {}) }),
     });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setLoading(false);
+      setPwdError(data.error ?? "Erreur inconnue");
+      return;
+    }
     window.location.href = "/dashboard";
   }
 
@@ -63,7 +79,7 @@ export function Header({ session }: HeaderProps) {
 
         {hasAdminRole && (
           <button
-            onClick={() => setPendingMode(isAdminMode ? "user" : "admin")}
+            onClick={() => isAdminMode ? setPendingMode("user") : openAdminModal()}
             disabled={loading}
             className={cn(
               "inline-flex items-center gap-2 h-8 px-3 rounded-xl text-[13px] font-medium border transition-all disabled:opacity-50",
@@ -145,14 +161,48 @@ export function Header({ session }: HeaderProps) {
             <p className="text-[13px] text-[#6E6E73] leading-relaxed"
               dangerouslySetInnerHTML={{ __html: t.raw("activateAdminDesc") as string }}
             />
+            {/* Champ mot de passe */}
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-[#3C3C43] dark:text-[#AEAEB2]">
+                Confirmez votre mot de passe
+              </label>
+              <div className="relative">
+                <input
+                  type={showPwd ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setPwdError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && password && applyMode("admin")}
+                  placeholder="Votre mot de passe"
+                  autoFocus
+                  className={cn(
+                    "w-full h-10 rounded-xl border px-3 pr-10 text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] bg-white dark:bg-[#2C2C2E] placeholder-[#ADADB8] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 transition-colors",
+                    pwdError
+                      ? "border-red-400 dark:border-red-500"
+                      : "border-[#D2D2D7] dark:border-[#3A3A3C]"
+                  )}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#ADADB8] hover:text-[#6E6E73] transition-colors"
+                >
+                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {pwdError && (
+                <p className="text-[12px] text-red-500">{pwdError}</p>
+              )}
+            </div>
             <div className="flex gap-3 pt-1">
               <button onClick={() => setPendingMode(null)}
                 className="flex-1 h-10 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] text-[14px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C30] transition-colors">
                 {t("cancel")}
               </button>
-              <button onClick={() => applyMode("admin")} disabled={loading}
+              <button
+                onClick={() => applyMode("admin")}
+                disabled={loading || !password}
                 className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium disabled:opacity-50 transition-colors">
-                {t("activate")}
+                {loading ? "Vérification…" : t("activate")}
               </button>
             </div>
           </div>

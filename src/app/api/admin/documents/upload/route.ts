@@ -132,6 +132,13 @@ export async function POST(req: NextRequest) {
       targetLabel: title,
     });
 
+    // Génération vignette en arrière-plan (non bloquant)
+    import("@/lib/pdf-thumbnail").then(({ generateAndSavePdfThumbnail }) =>
+      generateAndSavePdfThumbnail(course.id, relPath).then((thumbPath) =>
+        prisma.course.update({ where: { id: course.id }, data: { thumbnailPath: thumbPath } })
+      )
+    ).catch(() => {});
+
     return NextResponse.json({ ok: true, documentId: course.id });
   } catch (err) {
     if (tmpPath) rm(tmpPath, { force: true }).catch(() => {});

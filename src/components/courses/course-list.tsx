@@ -20,6 +20,7 @@ export type CourseProgress = {
 
 export type CourseMeta = {
   createdByName: string | null;
+  createdByTeams: string[];
   assignedByName: string | null;
   dueDate: string | null;
   assignedAt: string | null;
@@ -41,6 +42,8 @@ function getDeadlineState(dueDate: string | null, assignedAt: string | null): De
   return "normal";
 }
 
+export type CourseStatEntry = { assigned: number; completed: number };
+
 interface CourseListProps {
   courses: Course[];
   isAdmin?: boolean;
@@ -49,6 +52,7 @@ interface CourseListProps {
   metaMap?: Record<string, CourseMeta>;
   assignedCourseIds?: string[];
   assignableCourseIds?: Set<string>;
+  statsMap?: Record<string, CourseStatEntry>;
 }
 
 function getTypeBadge(course: Course) {
@@ -75,6 +79,7 @@ function CourseCard({
   hideDeadline = false,
   isDeletable = false,
   showTypeBadge = false,
+  stats,
   onAssign,
   onManagerAssign,
 }: {
@@ -87,6 +92,7 @@ function CourseCard({
   hideDeadline?: boolean;
   isDeletable?: boolean;
   showTypeBadge?: boolean;
+  stats?: CourseStatEntry;
   onAssign: (t: { id: string; title: string }) => void;
   onManagerAssign: (t: { id: string; title: string }) => void;
 }) {
@@ -196,6 +202,21 @@ function CourseCard({
           </p>
         )}
 
+        {stats && stats.assigned > 0 && (() => {
+          const rate = Math.round((stats.completed / stats.assigned) * 100);
+          return (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-[#6E6E73] dark:text-[#8E8E93]">{stats.completed}/{stats.assigned} terminés</span>
+                <span className={cn("font-semibold", rate === 100 ? "text-emerald-600" : rate > 50 ? "text-amber-600" : "text-[#6E6E73]")}>{rate}%</span>
+              </div>
+              <div className="h-1 w-full bg-[#F2F2F7] dark:bg-[#2C2C2E] rounded-full overflow-hidden">
+                <div className={cn("h-full rounded-full transition-all", rate === 100 ? "bg-emerald-400" : "bg-[#0071E3]")} style={{ width: `${rate}%` }} />
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-[#ADADB8]">{formatFileSize(course.fileSize)}</span>
           <div className="flex items-center gap-1.5">
@@ -276,14 +297,15 @@ function CourseCard({
 
 const PAGE_SIZES = [0, 5, 10, 20, 50] as const;
 
-export function CourseList({ courses, isAdmin = false, isManagerOrCreator = false, progressMap = {}, metaMap = {}, assignedCourseIds, assignableCourseIds }: CourseListProps) {
+export function CourseList({ courses, isAdmin = false, isManagerOrCreator = false, progressMap = {}, metaMap = {}, assignedCourseIds, assignableCourseIds, statsMap }: CourseListProps) {
   const t = useTranslations("courses");
   const assignedSet = new Set(assignedCourseIds ?? []);
   const [search, setSearch] = useState("");
-  const [filterQuiz, setFilterQuiz] = useState<"all" | "yes" | "no">("all");
-  const [filterCategory, setFilterCategory] = useState<string>("all");
-  const [filterCreator, setFilterCreator] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<"all" | "not_started" | "in_progress" | "completed">("all");
+  const [filterQuiz,        setFilterQuiz]        = useState<"all" | "yes" | "no">("all");
+  const [filterCategory,    setFilterCategory]    = useState<string>("all");
+  const [filterCreator,     setFilterCreator]     = useState<string>("all");
+  const [filterCreatorTeam, setFilterCreatorTeam] = useState<string>("all");
+  const [filterStatus,      setFilterStatus]      = useState<"all" | "not_started" | "in_progress" | "completed">("all");
   const [durationSort, setDurationSort] = useState<"none" | "asc" | "desc">("none");
   const [assignTarget, setAssignTarget] = useState<{ id: string; title: string } | null>(null);
   const [managerAssignTarget, setManagerAssignTarget] = useState<{ id: string; title: string } | null>(null);
@@ -293,16 +315,18 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
 
   function resetPage() { setPage(1); }
 
-  const allCategories = [...new Set(courses.map((c) => c.category).filter(Boolean) as string[])].sort();
-  const allCreators   = [...new Set(courses.map((c) => metaMap[c.id]?.createdByName).filter(Boolean) as string[])].sort();
+  const allCategories    = [...new Set(courses.map((c) => c.category).filter(Boolean) as string[])].sort();
+  const allCreators      = [...new Set(courses.map((c) => metaMap[c.id]?.createdByName).filter(Boolean) as string[])].sort();
+  const allCreatorTeams  = [...new Set(courses.flatMap((c) => metaMap[c.id]?.createdByTeams ?? []))].sort();
 
   const filtered = courses
     .filter((c) => {
-      const matchSearch   = c.title.toLowerCase().includes(search.toLowerCase());
-      const matchQuiz     = filterQuiz === "all" || (filterQuiz === "yes" ? c.hasQuiz : !c.hasQuiz);
-      const matchCategory = filterCategory === "all" || c.category === filterCategory;
-      const matchCreator  = filterCreator === "all" || metaMap[c.id]?.createdByName === filterCreator;
-      return matchSearch && matchQuiz && matchCategory && matchCreator;
+      const matchSearch       = c.title.toLowerCase().includes(search.toLowerCase());
+      const matchQuiz         = filterQuiz === "all" || (filterQuiz === "yes" ? c.hasQuiz : !c.hasQuiz);
+      const matchCategory     = filterCategory === "all" || c.category === filterCategory;
+      const matchCreator      = filterCreator === "all" || metaMap[c.id]?.createdByName === filterCreator;
+      const matchCreatorTeam  = filterCreatorTeam === "all" || (metaMap[c.id]?.createdByTeams ?? []).includes(filterCreatorTeam);
+      return matchSearch && matchQuiz && matchCategory && matchCreator && matchCreatorTeam;
     })
     .sort((a, b) => {
       if (durationSort === "asc") return a.duration - b.duration;
@@ -325,10 +349,14 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
   const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(totalItems / pageSize));
   const paginated = pageSize === 0 ? activeList : activeList.slice((page - 1) * pageSize, page * pageSize);
 
+  const hasSecondRow = allCategories.length > 0 || allCreators.length > 0 || allCreatorTeams.length > 0;
+
   return (
     <div className="space-y-5">
+    <div className="space-y-3">
+      {/* Ligne 1 : recherche + quiz + durée + page size */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ADADB8]" />
           <input
             type="text"
@@ -339,13 +367,13 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
           />
         </div>
 
-        <div className="flex gap-1.5 bg-white dark:bg-[#2C2C2E] border border-[#D2D2D7] dark:border-[#3A3A3C] rounded-xl p-1">
+        <div className="flex gap-1.5 bg-white dark:bg-[#2C2C2E] border border-[#D2D2D7] dark:border-[#3A3A3C] rounded-xl p-1 shrink-0">
           {(["all", "yes", "no"] as const).map((v) => (
             <button
               key={v}
               onClick={() => { setFilterQuiz(v); resetPage(); }}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all",
+                "px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all whitespace-nowrap",
                 filterQuiz === v ? "bg-[#0071E3] text-white shadow-sm" : "text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
               )}
             >
@@ -357,7 +385,7 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
         <button
           onClick={() => { setDurationSort((s) => (s === "none" ? "asc" : s === "asc" ? "desc" : "none")); resetPage(); }}
           className={cn(
-            "inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border text-[13px] font-medium transition-all whitespace-nowrap",
+            "inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border text-[13px] font-medium transition-all whitespace-nowrap shrink-0",
             durationSort !== "none"
               ? "bg-[#0071E3] border-[#0071E3] text-white shadow-sm"
               : "bg-white dark:bg-[#2C2C2E] border-[#D2D2D7] dark:border-[#3A3A3C] text-[#6E6E73] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
@@ -369,32 +397,10 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
           {durationSort === "desc" && <span className="text-[11px]">↓</span>}
         </button>
 
-        {allCategories.length > 0 && (
-          <select
-            value={filterCategory}
-            onChange={(e) => { setFilterCategory(e.target.value); resetPage(); }}
-            className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all cursor-pointer"
-          >
-            <option value="all">Tous les départements</option>
-            {allCategories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-          </select>
-        )}
-
-        {allCreators.length > 0 && (
-          <select
-            value={filterCreator}
-            onChange={(e) => { setFilterCreator(e.target.value); resetPage(); }}
-            className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all cursor-pointer"
-          >
-            <option value="all">Tous les créateurs</option>
-            {allCreators.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        )}
-
         <select
           value={pageSize}
           onChange={(e) => { setPageSize(Number(e.target.value)); resetPage(); }}
-          className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all cursor-pointer"
+          className="h-10 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all cursor-pointer shrink-0"
         >
           {PAGE_SIZES.map((s) => (
             <option key={s} value={s}>
@@ -403,6 +409,45 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
           ))}
         </select>
       </div>
+
+      {/* Ligne 2 : filtres par catégorie / créateur / équipe (masquée si aucun filtre dispo) */}
+      {hasSecondRow && (
+        <div className="flex flex-wrap gap-3">
+          {allCategories.length > 0 && (
+            <select
+              value={filterCategory}
+              onChange={(e) => { setFilterCategory(e.target.value); resetPage(); }}
+              className="h-9 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all cursor-pointer"
+            >
+              <option value="all">Tous les départements</option>
+              {allCategories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+            </select>
+          )}
+
+          {allCreators.length > 0 && (
+            <select
+              value={filterCreator}
+              onChange={(e) => { setFilterCreator(e.target.value); resetPage(); }}
+              className="h-9 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all cursor-pointer"
+            >
+              <option value="all">Tous les créateurs</option>
+              {allCreators.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+
+          {allCreatorTeams.length > 0 && (
+            <select
+              value={filterCreatorTeam}
+              onChange={(e) => { setFilterCreatorTeam(e.target.value); resetPage(); }}
+              className="h-9 px-3 rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-[#2C2C2E] text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] outline-none focus:border-[#0071E3] transition-all cursor-pointer"
+            >
+              <option value="all">Toutes les équipes</option>
+              {allCreatorTeams.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          )}
+        </div>
+      )}
+    </div>
 
       {!isAdmin && (!isManagerOrCreator || (assignedSet.size > 0 && activeTab === "mes-formations")) && (
         <div className="flex gap-1.5 bg-white dark:bg-[#2C2C2E] border border-[#D2D2D7] dark:border-[#3A3A3C] rounded-xl p-1 w-fit">
@@ -438,12 +483,27 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
       )}
 
       {isAdmin ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {paginated.map((course) => (
-            <CourseCard key={course.id} course={course} isAdmin={true} isManagerOrCreator={false}
-              progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={false} showTypeBadge
-              onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
-          ))}
+        <div className="space-y-6">
+          <div className="flex border-b border-[#E5E5EA] dark:border-[#3A3A3C]">
+            <div className="flex items-center gap-2 px-5 py-2.5 text-[14px] font-medium border-b-2 border-[#0071E3] text-[#0071E3] -mb-px">
+              {t("library")}
+              <span className="text-[12px] font-medium px-1.5 py-0.5 rounded-md bg-[#0071E3]/10 text-[#0071E3]">
+                {filtered.length}
+              </span>
+            </div>
+          </div>
+          {paginated.length === 0 ? (
+            <p className="text-[14px] text-[#6E6E73] py-8">{t("noCourseFound")}</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {paginated.map((course) => (
+                <CourseCard key={course.id} course={course} isAdmin={true} isManagerOrCreator={false}
+                  progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={false} showTypeBadge
+                  stats={statsMap?.[course.id]}
+                  onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
+              ))}
+            </div>
+          )}
         </div>
       ) : isManagerOrCreator ? (
         <div className="space-y-6">
@@ -519,6 +579,7 @@ export function CourseList({ courses, isAdmin = false, isManagerOrCreator = fals
                     <CourseCard key={course.id} course={course} isAdmin={false} isManagerOrCreator={true}
                       progressMap={progressMap} meta={metaMap[course.id]} isAssignedToMe={assignedSet.has(course.id)}
                       hideDeadline isDeletable={assignableCourseIds?.has(course.id) ?? false} showTypeBadge
+                      stats={statsMap?.[course.id]}
                       onAssign={setAssignTarget} onManagerAssign={setManagerAssignTarget} />
                   ))}
                 </div>
