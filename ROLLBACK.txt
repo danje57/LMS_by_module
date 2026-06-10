@@ -1,0 +1,103 @@
+GUIDE DE ROLLBACK — LMS by Module
+===================================
+Dernière mise à jour : 2026-06-10
+
+Ce fichier liste les points de retour disponibles et les commandes exactes
+pour revenir à un état stable en cas de problème.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CHECKPOINTS DISPONIBLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TAG / COMMIT    DESCRIPTION
+─────────────   ──────────────────────────────────────────────
+2edbbf3         Avant DRM — certificats GRC, pwd admin, filtres bibliothèques
+                (dernier état stable SANS chiffrement)
+
+cd6bbdf         DRM phase 1 — chiffrement AES-256 + RSA par instance
+                (chiffrement contenu, sans licensing)
+                ← CHECKPOINT ACTUEL
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RETOUR AU CHECKPOINT ACTUEL (cd6bbdf — DRM phase 1)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Utiliser si la phase 2 (licensing) part en vrille.
+
+1. Arrêter le serveur
+   kill $(lsof -t -i:3000)
+
+2. Revenir au code du checkpoint
+   git reset --hard cd6bbdf
+
+3. Remettre le schéma DB en cohérence
+   npx prisma db push
+
+4. Relancer
+   npm run dev
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RETOUR AVANT DRM (2edbbf3 — état pré-chiffrement)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Utiliser uniquement si le chiffrement lui-même cause des problèmes.
+ATTENTION : les fichiers déjà chiffrés sur disque seront illisibles
+si on revient ici sans les déchiffrer d'abord.
+
+1. Arrêter le serveur
+   kill $(lsof -t -i:3000)
+
+2. Revenir au code
+   git reset --hard 2edbbf3
+
+3. Remettre le schéma DB (supprime les colonnes DRM)
+   npx prisma db push
+
+4. Relancer
+   npm run dev
+
+⚠️  Si des fichiers ont déjà été chiffrés : contacter le support
+    ou restaurer un backup DB + uploads antérieur au commit cd6bbdf.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ANNULER LE DERNIER COMMIT (proprement, sans perdre le travail)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   git revert HEAD
+   npx prisma db push
+   npm run dev
+
+Utiliser si un seul commit récent pose problème.
+Le revert crée un nouveau commit d'annulation — l'historique reste propre.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VOIR L'HISTORIQUE DES COMMITS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   git log --oneline
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ROLLBACK BASE DE DONNÉES SEULE (sans toucher au code)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Si le schéma DB est incohérent mais le code est OK :
+   npx prisma db push --force-reset   ⚠️ EFFACE TOUTES LES DONNÉES
+   npx prisma db push                  (recommandé, sans reset)
+
+Pour restaurer depuis un backup applicatif (recommandé) :
+   → Utiliser la page Paramètres > Backup & Restore dans l'app
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NOTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Mettre à jour ce fichier à chaque nouveau checkpoint important
+- Les commits marqués comme checkpoint sont stables et testés
+- En cas de doute : git stash (sauvegarde le travail en cours) puis rollback
