@@ -3,11 +3,12 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { createWriteStream, mkdirSync } from "fs";
-import { rename, rm } from "fs/promises";
+import { readFile, rename, rm, writeFile } from "fs/promises";
 import path from "path";
 import { createHash } from "crypto";
 import { Readable } from "stream";
 import Busboy from "busboy";
+import { encryptBuffer, signManifest } from "@/lib/instance-crypto";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
 const MAX_PDF_SIZE = 100 * 1024 * 1024;
@@ -110,6 +111,15 @@ export async function POST(req: NextRequest) {
 
     const relPath = path.join("documents", uniqueName);
 
+    // Chiffrement du contenu (licencing)
+    let encryptedKey: string | null = null;
+    try {
+      const plainBuffer = await readFile(finalPath);
+      const { encrypted, encryptedKey: ek } = await encryptBuffer(plainBuffer);
+      await writeFile(finalPath, encrypted);
+      encryptedKey = ek;
+    } catch { /* non critique */ }
+
     const course = await prisma.course.create({
       data: {
         title,
@@ -122,8 +132,24 @@ export async function POST(req: NextRequest) {
         fileHash,
         hasQuiz: false,
         createdById: session.user.id,
+        isEncrypted: !!encryptedKey,
+        encryptedKey,
       },
     });
+
+    // Manifest signé
+    if (encryptedKey) {
+      try {
+        const manifest = await signManifest({
+          courseId: course.id,
+          contentHash: fileHash,
+          createdBy: session.user.id,
+          createdAt: course.createdAt.toISOString(),
+          instanceId: "",
+        });
+        await prisma.course.update({ where: { id: course.id }, data: { contentManifest: manifest } });
+      } catch { /* non critique */ }
+    }
 
     await auditLog({
       actor: { id: session.user.id, name: session.user.name, email: session.user.email },

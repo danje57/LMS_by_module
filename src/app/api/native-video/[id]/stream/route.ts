@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createReadStream, statSync } from "fs";
 import { Readable } from "stream";
 import path from "path";
+import { decryptVideoRange, getEncryptedVideoPlainSize } from "@/lib/instance-crypto";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
 
@@ -18,8 +19,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   if (!nativeVideo) return NextResponse.json({ error: "Vidéo introuvable" }, { status: 404 });
 
   const filePath = path.join(UPLOAD_DIR, nativeVideo.videoPath);
-  let stat: ReturnType<typeof statSync>;
-  try { stat = statSync(filePath); } catch {
+  try { statSync(filePath); } catch {
     return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 });
   }
 
@@ -27,7 +27,54 @@ export async function GET(req: NextRequest, { params }: Params) {
   const mimeMap: Record<string, string> = { ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime" };
   const contentType = mimeMap[ext] ?? "video/mp4";
 
-  const fileSize = stat.size;
+  // --- Vidéo chiffrée (AES-256-CTR) ---
+  if (nativeVideo.isEncrypted && nativeVideo.encryptedKey) {
+    const plainSize = await getEncryptedVideoPlainSize(filePath);
+    const range = req.headers.get("range");
+
+    const plainStart = range
+      ? parseInt(range.replace(/bytes=/, "").split("-")[0], 10)
+      : 0;
+    const plainEndRaw = range
+      ? range.replace(/bytes=/, "").split("-")[1]
+      : undefined;
+    const plainEnd = plainEndRaw
+      ? Math.min(parseInt(plainEndRaw, 10), plainSize - 1)
+      : plainSize - 1;
+
+    const { stream, chunkSize } = await decryptVideoRange(
+      filePath,
+      nativeVideo.encryptedKey,
+      plainStart,
+      plainEnd
+    );
+
+    const webStream = Readable.toWeb(stream) as ReadableStream;
+
+    if (range) {
+      return new NextResponse(webStream, {
+        status: 206,
+        headers: {
+          "Content-Range": `bytes ${plainStart}-${plainEnd}/${plainSize}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": String(chunkSize),
+          "Content-Type": contentType,
+        },
+      });
+    }
+
+    return new NextResponse(webStream, {
+      status: 200,
+      headers: {
+        "Content-Length": String(plainSize),
+        "Content-Type": contentType,
+        "Accept-Ranges": "bytes",
+      },
+    });
+  }
+
+  // --- Vidéo non chiffrée ---
+  const fileSize = statSync(filePath).size;
   const range = req.headers.get("range");
 
   if (range) {

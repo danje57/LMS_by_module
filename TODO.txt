@@ -5,11 +5,13 @@ TODO - Fonctionnalités à implémenter
     - Vérifier/déboguer la config SMTP existante
     - Tester l'envoi (assignation, rappels deadlines, certificats)
 
-[ ] Mécanisme de protection du contenu (licencing)
-    - Chaque instance de l'app sera liée à une licence unique
-    - Empêcher le transfert de contenu entre instances
-    - Utiliser chiffrement + intégrité + non-répudiation
-    - (ex: signature des fichiers cours avec clé propre à l'instance, vérification à la lecture)
+[x] Mécanisme de protection du contenu (licencing)
+    - Paire de clés RSA-2048 par instance (générée auto, clé privée chiffrée avec NEXTAUTH_SECRET)
+    - Cours H5P + documents GRC : chiffrement AES-256-GCM à l'upload, déchiffrement à la volée au serving
+    - Vidéos natives : chiffrement AES-256-CTR (supporte Range requests / seeking)
+    - Manifest signé RSA-PSS (non-répudiation : courseId, hash, auteur, date, instanceId)
+    - Migration des contenus existants : panel dans Paramètres → "Protection du contenu"
+    - Clé unique par instance → contenu illisible sur un autre système
 
 [ ] App Store / Marketplace de contenu
     - Catalogue de contenus disponibles à l'achat/déblocage
@@ -153,7 +155,7 @@ TODO - Fonctionnalités à implémenter
         → Fallback icône FileText si génération impossible
         → Cache navigateur 24h (Cache-Control: private, max-age=86400)
 
-    [ ] Tester le workflow complet documents end-to-end
+    [x] Tester le workflow complet documents end-to-end
         → Uploader un vrai document PDF (ex: politique AUP, charte IT)
         → Tester département admin à l'upload + modification via édition
         → Assigner à des utilisateurs / équipes avec deadline

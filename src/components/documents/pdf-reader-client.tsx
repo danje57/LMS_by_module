@@ -32,7 +32,8 @@ function PdfCanvas({ page, scale }: { page: PDFPageProxy; scale: number }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     let cancelled = false;
-    const task = page.render({ canvasContext: ctx, viewport, canvas });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const task = page.render({ canvasContext: ctx, viewport, canvas } as any);
     task.promise.catch((e) => { if (!cancelled) console.error(e); });
     return () => { cancelled = true; task.cancel(); };
   }, [page, scale]);

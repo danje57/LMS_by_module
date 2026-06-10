@@ -3,7 +3,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { createWriteStream, mkdirSync } from "fs";
-import { rm, readdir, readFile } from "fs/promises";
+import { rm, readdir, readFile, writeFile } from "fs/promises";
+import { encryptBuffer, signManifest } from "@/lib/instance-crypto";
 import path from "path";
 import { createHash } from "crypto";
 import { Readable } from "stream";
@@ -132,15 +133,36 @@ export async function POST(req: NextRequest, { params }: Params) {
     await addLibrariesToZip(zip);
     zip.writeZip(h5pDest);
 
-    const fileSize = (await readFile(h5pDest)).length;
-    const relPath = `courses/${hash}/${h5pFilename}`;
-
     let thumbnailPath: string | null = null;
     try {
       const { copyFile } = await import("fs/promises");
       await copyFile(path.join(contentDir, "thumbnail.jpg"), path.join(courseDir, "thumbnail.jpg"));
       thumbnailPath = `courses/${hash}/thumbnail.jpg`;
     } catch { /* pas de thumbnail */ }
+
+    // Chiffrement du .h5p généré
+    let encryptedKey: string | null = null;
+    let contentManifest: string | null = null;
+    let fileSize: number;
+    try {
+      const plainBuffer = await readFile(h5pDest);
+      fileSize = plainBuffer.length;
+      const { encrypted, encryptedKey: ek } = await encryptBuffer(plainBuffer);
+      await writeFile(h5pDest, encrypted);
+      encryptedKey = ek;
+      const manifest = await signManifest({
+        courseId: id,
+        contentHash: fileHash,
+        createdBy: session.user.id,
+        createdAt: new Date().toISOString(),
+        instanceId: "",
+      });
+      contentManifest = manifest;
+    } catch {
+      fileSize = (await readFile(h5pDest)).length;
+    }
+
+    const relPath = `courses/${hash}/${h5pFilename}`;
 
     await prisma.course.update({
       where: { id },
@@ -149,6 +171,9 @@ export async function POST(req: NextRequest, { params }: Params) {
         originalFileName: file.originalName,
         fileSize: BigInt(fileSize),
         fileHash,
+        isEncrypted: !!encryptedKey,
+        encryptedKey,
+        contentManifest,
         ...(thumbnailPath ? { thumbnailPath } : {}),
       },
     });

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { writeFile, mkdir } from "fs/promises";
+import { encryptBuffer, signManifest } from "@/lib/instance-crypto";
 import path from "path";
 import { createHash } from "crypto";
 import { execFile } from "child_process";
@@ -52,19 +53,40 @@ export async function POST(req: NextRequest, { params }: Params) {
     await mkdir(courseDir, { recursive: true });
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const finalPath = path.join(courseDir, safeName);
-    await writeFile(finalPath, buffer);
-
-    const relPath = path.join("courses", courseHash, safeName);
-
+    // Thumbnail avant chiffrement
     let thumbnailPath: string | null = null;
     try {
       const thumbDir = path.join(UPLOAD_DIR, "thumbnails");
       mkdirSync(thumbDir, { recursive: true });
       const thumbDest = path.join(thumbDir, `${id}.jpg`);
       const scriptPath = path.resolve(SCRIPTS_DIR, "generate_h5p_thumbnail.py");
+      // Écrire temporairement en clair pour le script Python
+      await writeFile(finalPath, buffer);
       await execFileAsync("python3", [scriptPath, finalPath, thumbDest], { timeout: 30_000 });
       thumbnailPath = `thumbnails/${id}.jpg`;
     } catch { /* thumbnail non critique */ }
+
+    // Chiffrement
+    let encryptedKey: string | null = null;
+    let contentManifest: string | null = null;
+    try {
+      const { encrypted, encryptedKey: ek } = await encryptBuffer(buffer);
+      await writeFile(finalPath, encrypted);
+      encryptedKey = ek;
+      const manifest = await signManifest({
+        courseId: id,
+        contentHash: fileHash,
+        createdBy: session.user.id,
+        createdAt: new Date().toISOString(),
+        instanceId: "",
+      });
+      contentManifest = manifest;
+    } catch {
+      // Si chiffrement échoue, écrire en clair
+      await writeFile(finalPath, buffer);
+    }
+
+    const relPath = path.join("courses", courseHash, safeName);
 
     await prisma.course.update({
       where: { id },
@@ -73,6 +95,9 @@ export async function POST(req: NextRequest, { params }: Params) {
         originalFileName: file.name,
         fileSize: BigInt(buffer.byteLength),
         fileHash,
+        isEncrypted: !!encryptedKey,
+        encryptedKey,
+        contentManifest,
         ...(thumbnailPath ? { thumbnailPath } : {}),
       },
     });

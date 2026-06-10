@@ -93,6 +93,16 @@ model UserTeam {
   @@map("user_teams")
 }
 
+model InstanceConfig {
+  id          String   @id @default(cuid())
+  instanceId  String   @unique
+  publicKey   String
+  privateKey  String
+  createdAt   DateTime @default(now())
+
+  @@map("instance_config")
+}
+
 model Course {
   id               String               @id @default(cuid())
   title            String
@@ -109,6 +119,9 @@ model Course {
   category         String?
   isActive         Boolean              @default(true)
   courseType       CourseType           @default(h5p)
+  isEncrypted      Boolean              @default(false)
+  encryptedKey     String?
+  contentManifest  String?
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
   createdById      String?
@@ -126,15 +139,17 @@ model Course {
 }
 
 model NativeVideo {
-  id        String                @id @default(cuid())
-  courseId  String                @unique
-  course    Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  videoPath String
-  fileHash  String?
-  duration  Float?
-  questions NativeVideoQuestion[]
-  createdAt DateTime              @default(now())
-  updatedAt DateTime              @updatedAt
+  id           String                @id @default(cuid())
+  courseId     String                @unique
+  course       Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  videoPath    String
+  fileHash     String?
+  duration     Float?
+  isEncrypted  Boolean               @default(false)
+  encryptedKey String?
+  questions    NativeVideoQuestion[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
 
   @@map("native_videos")
 }

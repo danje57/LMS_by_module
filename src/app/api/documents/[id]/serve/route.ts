@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { readFile } from "fs/promises";
 import path from "path";
+import { decryptBuffer } from "@/lib/instance-crypto";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
 
@@ -23,7 +24,7 @@ export async function GET(
 
   const doc = await prisma.course.findUnique({
     where: { id, courseType: "pdf", isActive: true },
-    select: { id: true, title: true, filePath: true },
+    select: { id: true, title: true, filePath: true, isEncrypted: true, encryptedKey: true },
   });
   if (!doc) return new NextResponse("Document introuvable", { status: 404 });
 
@@ -51,8 +52,11 @@ export async function GET(
 
   try {
     const filePath = path.join(UPLOAD_DIR, doc.filePath);
-    const buffer = await readFile(filePath);
-    return new NextResponse(buffer, {
+    const rawBuffer = await readFile(filePath);
+    const pdfBuffer: Buffer = (doc.isEncrypted && doc.encryptedKey)
+      ? await decryptBuffer(rawBuffer, doc.encryptedKey)
+      : rawBuffer;
+    return new NextResponse(pdfBuffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": "inline",

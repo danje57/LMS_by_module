@@ -3,13 +3,14 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { createWriteStream, mkdirSync } from "fs";
-import { readFile, rename, rm } from "fs/promises";
+import { readFile, rename, rm, writeFile } from "fs/promises";
 import path from "path";
 import { createHash } from "crypto";
 import { Readable } from "stream";
 import Busboy from "busboy";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { encryptBuffer, signManifest } from "@/lib/instance-crypto";
 
 const execFileAsync = promisify(execFile);
 const SCRIPTS_DIR = process.env.SCRIPTS_DIR ?? "./scripts";
@@ -138,14 +139,41 @@ export async function POST(req: NextRequest) {
       thumbnailPath = `thumbnails/tmp_${courseHash}.jpg`;
     } catch { /* thumbnail non critique */ }
 
+    // Chiffrement du contenu (licencing)
+    let encryptedKey: string | null = null;
+    let contentManifest: string | null = null;
+    try {
+      const plainBuffer = await readFile(finalPath);
+      const { encrypted, encryptedKey: ek } = await encryptBuffer(plainBuffer);
+      await writeFile(finalPath, encrypted);
+      encryptedKey = ek;
+    } catch { /* non critique — le cours reste en clair si le chiffrement échoue */ }
+
     const course = await prisma.course.create({
       data: {
         title, category, duration, hasQuiz, passingScore,
         filePath: relPath, originalFileName: file.originalName,
         fileSize: BigInt(file.size), fileHash, createdById,
+        isEncrypted: !!encryptedKey,
+        encryptedKey,
         ...(thumbnailPath ? { thumbnailPath } : {}),
       },
     });
+
+    // Manifest signé (non-répudiation)
+    if (encryptedKey) {
+      try {
+        const manifest = await signManifest({
+          courseId: course.id,
+          contentHash: fileHash!,
+          createdBy: createdById,
+          createdAt: course.createdAt.toISOString(),
+          instanceId: "",
+        });
+        await prisma.course.update({ where: { id: course.id }, data: { contentManifest: manifest } });
+        contentManifest = manifest;
+      } catch { /* non critique */ }
+    }
 
     // Renommer le thumbnail avec le vrai courseId
     if (thumbnailPath) {

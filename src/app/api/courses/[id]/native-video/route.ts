@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createWriteStream, mkdirSync } from "fs";
-import { unlink, rm } from "fs/promises";
+import { unlink, rm, writeFile } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
 import { Readable } from "stream";
 import Busboy from "busboy";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { encryptVideoBuffer } from "@/lib/instance-crypto";
 
 const execFileAsync = promisify(execFile);
 const SCRIPTS_DIR = process.env.SCRIPTS_DIR ?? "./scripts";
@@ -118,6 +119,17 @@ export async function POST(req: NextRequest, { params }: Params) {
       }
     }
 
+    // Générer le thumbnail depuis tmpPath (avant chiffrement)
+    let thumbnailPath: string | null = null;
+    try {
+      const thumbDir = path.join(UPLOAD_DIR, "thumbnails");
+      mkdirSync(thumbDir, { recursive: true });
+      const thumbDest = path.join(thumbDir, `${id}.jpg`);
+      const scriptPath = path.resolve(SCRIPTS_DIR, "generate_video_thumbnail.py");
+      await execFileAsync("python3", [scriptPath, tmpPath, thumbDest], { timeout: 60_000 });
+      thumbnailPath = `thumbnails/${id}.jpg`;
+    } catch { /* thumbnail non critique */ }
+
     // Déplacer vers le dossier final
     const slug = crypto.randomBytes(8).toString("hex");
     const filename = `${slug}${ext}`;
@@ -128,6 +140,14 @@ export async function POST(req: NextRequest, { params }: Params) {
     await rename(tmpPath, finalPath);
     tmpPath = null;
 
+    // Chiffrement vidéo (licencing) — AES-256-CTR pour conserver le support Range
+    let videoEncryptedKey: string | null = null;
+    try {
+      const { encrypted, encryptedKey: ek } = await encryptVideoBuffer(buffer);
+      await writeFile(finalPath, encrypted);
+      videoEncryptedKey = ek;
+    } catch { /* non critique */ }
+
     // Supprimer l'ancienne vidéo si elle existe
     const existing = await prisma.nativeVideo.findUnique({ where: { courseId: id } });
     if (existing) {
@@ -136,20 +156,14 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
 
     const nativeVideo = await prisma.nativeVideo.create({
-      data: { courseId: id, videoPath: `videos/${filename}`, fileHash },
+      data: {
+        courseId: id,
+        videoPath: `videos/${filename}`,
+        fileHash,
+        isEncrypted: !!videoEncryptedKey,
+        encryptedKey: videoEncryptedKey,
+      },
     });
-
-    // Générer le thumbnail vidéo
-    let thumbnailPath: string | null = null;
-    try {
-      const thumbDir = path.join(UPLOAD_DIR, "thumbnails");
-      mkdirSync(thumbDir, { recursive: true });
-      const thumbDest = path.join(thumbDir, `${id}.jpg`);
-      const scriptPath = path.resolve(SCRIPTS_DIR, "generate_video_thumbnail.py");
-      const videoAbsPath = path.join(UPLOAD_DIR, `videos/${filename}`);
-      await execFileAsync("python3", [scriptPath, videoAbsPath, thumbDest], { timeout: 60_000 });
-      thumbnailPath = `thumbnails/${id}.jpg`;
-    } catch { /* thumbnail non critique */ }
 
     await prisma.course.update({
       where: { id },

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { extractH5P } from "@/lib/h5p";
 import { readFile } from "fs/promises";
 import path from "path";
+import { decryptBuffer } from "@/lib/instance-crypto";
+import { existsSync } from "fs";
 
 export async function GET(
   req: NextRequest,
@@ -20,9 +22,22 @@ export async function GET(
     return new NextResponse("Cours introuvable", { status: 404 });
   }
 
+  // Déchiffrer le .h5p en mémoire si nécessaire, puis extraire
+  let decryptedH5P: Buffer | undefined;
+  if (course.isEncrypted && course.encryptedKey) {
+    const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
+    const h5pPath = path.join(UPLOAD_DIR, course.filePath);
+    if (existsSync(h5pPath)) {
+      try {
+        const enc = await readFile(h5pPath);
+        decryptedH5P = await decryptBuffer(enc, course.encryptedKey);
+      } catch { /* si le déchiffrement échoue, extractH5P tentera en clair */ }
+    }
+  }
+
   let extractDir: string;
   try {
-    extractDir = await extractH5P(course.filePath);
+    extractDir = await extractH5P(course.filePath, decryptedH5P);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Impossible d'extraire le cours H5P";
     return new NextResponse(

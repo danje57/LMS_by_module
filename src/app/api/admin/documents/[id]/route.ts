@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
-import { rm, rename, mkdir } from "fs/promises";
+import { rm, rename, mkdir, readFile, writeFile } from "fs/promises";
+import { encryptBuffer, signManifest } from "@/lib/instance-crypto";
 import { createWriteStream } from "fs";
 import { createHash } from "crypto";
 import { Readable } from "stream";
@@ -108,6 +109,23 @@ export async function PATCH(
 
       // Supprimer l'ancien fichier
       try { await rm(path.join(UPLOAD_DIR, doc.filePath), { force: true }); } catch { /* non critique */ }
+
+      // Chiffrement du nouveau fichier
+      try {
+        const plain = await readFile(finalPath);
+        const { encrypted, encryptedKey } = await encryptBuffer(plain);
+        await writeFile(finalPath, encrypted);
+        const manifest = await signManifest({
+          courseId: id,
+          contentHash: fileHash,
+          createdBy: session.user.id,
+          createdAt: new Date().toISOString(),
+          instanceId: "",
+        });
+        updateData.isEncrypted    = true;
+        updateData.encryptedKey   = encryptedKey;
+        updateData.contentManifest = manifest;
+      } catch { /* non critique */ }
 
       updateData.filePath         = path.join("documents", uniqueName);
       updateData.originalFileName = file.originalName;

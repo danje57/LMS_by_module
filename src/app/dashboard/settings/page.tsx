@@ -7,6 +7,7 @@ import { BackupManager } from "@/components/settings/backup-manager";
 import { RetentionSettingsForm } from "@/components/settings/retention-settings-form";
 import { SeasonalThemeToggle } from "@/components/settings/seasonal-theme-toggle";
 import { MaintenanceBannerForm } from "@/components/settings/maintenance-banner-form";
+import { EncryptMigratePanel } from "@/components/settings/encrypt-migrate-panel";
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
 
@@ -61,6 +62,7 @@ export default async function SettingsPage() {
         color: branding?.maintenanceBannerColor ?? "orange",
         endsAt: branding?.maintenanceBannerEndsAt?.toISOString() ?? null,
       }} />
+      <EncryptMigratePanel />
       <BackupManager initialBackups={backups} cronUrl={cronUrl} />
     </div>
   );
