@@ -10,6 +10,7 @@ import Busboy from "busboy";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { encryptVideoBuffer } from "@/lib/instance-crypto";
+import { buildLicenseEnvelope } from "@/lib/license-verify";
 
 const execFileAsync = promisify(execFile);
 const SCRIPTS_DIR = process.env.SCRIPTS_DIR ?? "./scripts";
@@ -142,10 +143,14 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     // Chiffrement vidéo (licencing) — AES-256-CTR pour conserver le support Range
     let videoEncryptedKey: string | null = null;
+    let videoLicenseEncryptedKey: string | null = null;
+    let videoContentLicenseId: string | null = null;
     try {
-      const { encrypted, encryptedKey: ek } = await encryptVideoBuffer(buffer);
+      const { encrypted, encryptedKey: ek, fileKeyHex } = await encryptVideoBuffer(buffer);
       await writeFile(finalPath, encrypted);
       videoEncryptedKey = ek;
+      const envelope = await buildLicenseEnvelope(fileKeyHex);
+      if (envelope) { videoLicenseEncryptedKey = envelope.licenseEncryptedKey; videoContentLicenseId = envelope.contentLicenseId; }
     } catch { /* non critique */ }
 
     // Supprimer l'ancienne vidéo si elle existe
@@ -162,6 +167,8 @@ export async function POST(req: NextRequest, { params }: Params) {
         fileHash,
         isEncrypted: !!videoEncryptedKey,
         encryptedKey: videoEncryptedKey,
+        licenseEncryptedKey: videoLicenseEncryptedKey,
+        contentLicenseId:    videoContentLicenseId,
       },
     });
 

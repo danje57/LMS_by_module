@@ -1,0 +1,83 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getInstanceKeys } from "@/lib/instance-crypto";
+import { resolveContentKey, decryptWithContentKey } from "@/lib/license-verify";
+import { constants, publicEncrypt } from "crypto";
+import { auditLog } from "@/lib/audit";
+
+// POST — re-enveloppe toutes les clés de contenu avec la nouvelle clé RSA (après réinstallation)
+export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  if (session.user.sessionMode !== "admin") return NextResponse.json({ error: "Mode admin requis" }, { status: 403 });
+
+  const { publicKey } = await getInstanceKeys();
+  const results = { courses: 0, videos: 0, errors: 0 };
+
+  // Re-enveloppe les cours (H5P + PDF)
+  const courses = await prisma.course.findMany({
+    where: { isEncrypted: true, licenseEncryptedKey: { not: null }, contentLicenseId: { not: null } },
+    select: { id: true, licenseEncryptedKey: true, contentLicenseId: true },
+  });
+
+  for (const course of courses) {
+    try {
+      const contentKey = await resolveContentKey(course.contentLicenseId!);
+      if (!contentKey) { results.errors++; continue; }
+      const fileKeyHex = decryptWithContentKey(course.licenseEncryptedKey!, contentKey);
+      const newEncryptedKey = publicEncrypt(
+        { key: publicKey, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: "sha256" },
+        Buffer.from(fileKeyHex, "hex")
+      ).toString("base64");
+      await prisma.course.update({ where: { id: course.id }, data: { encryptedKey: newEncryptedKey } });
+      results.courses++;
+    } catch { results.errors++; }
+  }
+
+  // Re-enveloppe les vidéos natives
+  const videos = await prisma.nativeVideo.findMany({
+    where: { isEncrypted: true, licenseEncryptedKey: { not: null }, contentLicenseId: { not: null } },
+    select: { id: true, licenseEncryptedKey: true, contentLicenseId: true },
+  });
+
+  for (const video of videos) {
+    try {
+      const contentKey = await resolveContentKey(video.contentLicenseId!);
+      if (!contentKey) { results.errors++; continue; }
+      const fileKeyHex = decryptWithContentKey(video.licenseEncryptedKey!, contentKey);
+      const newEncryptedKey = publicEncrypt(
+        { key: publicKey, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: "sha256" },
+        Buffer.from(fileKeyHex, "hex")
+      ).toString("base64");
+      await prisma.nativeVideo.update({ where: { id: video.id }, data: { encryptedKey: newEncryptedKey } });
+      results.videos++;
+    } catch { results.errors++; }
+  }
+
+  await auditLog({
+    actor: { id: session.user.id, name: session.user.name, email: session.user.email },
+    action: "license.recover-keys",
+    targetLabel: `Récupération clés: ${results.courses} cours, ${results.videos} vidéos, ${results.errors} erreurs`,
+  });
+
+  return NextResponse.json({ ok: true, ...results });
+}
+
+// GET — vérifie si une récupération est nécessaire (contenu sans accès valide)
+export async function GET(_req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  if (session.user.sessionMode !== "admin") return NextResponse.json({ error: "Mode admin requis" }, { status: 403 });
+
+  const [courses, videos] = await Promise.all([
+    prisma.course.count({
+      where: { isEncrypted: true, licenseEncryptedKey: { not: null } },
+    }),
+    prisma.nativeVideo.count({
+      where: { isEncrypted: true, licenseEncryptedKey: { not: null } },
+    }),
+  ]);
+
+  return NextResponse.json({ recoverableContent: courses + videos });
+}

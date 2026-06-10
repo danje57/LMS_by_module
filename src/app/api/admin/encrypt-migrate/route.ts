@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { readFile, writeFile } from "fs/promises";
 import path from "path";
 import { encryptBuffer, encryptVideoBuffer, signManifest } from "@/lib/instance-crypto";
+import { buildLicenseEnvelope } from "@/lib/license-verify";
 import { existsSync } from "fs";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     if (!existsSync(absPath)) { results.errors++; continue; }
     try {
       const plain = await readFile(absPath);
-      const { encrypted, encryptedKey } = await encryptBuffer(plain);
+      const { encrypted, encryptedKey, fileKeyHex } = await encryptBuffer(plain);
       await writeFile(absPath, encrypted);
       const manifest = await signManifest({
         courseId: course.id,
@@ -35,9 +36,13 @@ export async function POST(req: NextRequest) {
         createdAt: course.createdAt.toISOString(),
         instanceId: "",
       });
+      const envelope = await buildLicenseEnvelope(fileKeyHex);
       await prisma.course.update({
         where: { id: course.id },
-        data: { isEncrypted: true, encryptedKey, contentManifest: manifest },
+        data: {
+          isEncrypted: true, encryptedKey, contentManifest: manifest,
+          ...(envelope ? { licenseEncryptedKey: envelope.licenseEncryptedKey, contentLicenseId: envelope.contentLicenseId } : {}),
+        },
       });
       results.courses++;
     } catch { results.errors++; }
@@ -54,7 +59,7 @@ export async function POST(req: NextRequest) {
     if (!existsSync(absPath)) { results.errors++; continue; }
     try {
       const plain = await readFile(absPath);
-      const { encrypted, encryptedKey } = await encryptBuffer(plain);
+      const { encrypted, encryptedKey, fileKeyHex } = await encryptBuffer(plain);
       await writeFile(absPath, encrypted);
       const manifest = await signManifest({
         courseId: doc.id,
@@ -63,9 +68,13 @@ export async function POST(req: NextRequest) {
         createdAt: doc.createdAt.toISOString(),
         instanceId: "",
       });
+      const envelope = await buildLicenseEnvelope(fileKeyHex);
       await prisma.course.update({
         where: { id: doc.id },
-        data: { isEncrypted: true, encryptedKey, contentManifest: manifest },
+        data: {
+          isEncrypted: true, encryptedKey, contentManifest: manifest,
+          ...(envelope ? { licenseEncryptedKey: envelope.licenseEncryptedKey, contentLicenseId: envelope.contentLicenseId } : {}),
+        },
       });
       results.documents++;
     } catch { results.errors++; }
@@ -82,11 +91,15 @@ export async function POST(req: NextRequest) {
     if (!existsSync(absPath)) { results.errors++; continue; }
     try {
       const plain = await readFile(absPath);
-      const { encrypted, encryptedKey } = await encryptVideoBuffer(plain);
+      const { encrypted, encryptedKey, fileKeyHex } = await encryptVideoBuffer(plain);
       await writeFile(absPath, encrypted);
+      const envelope = await buildLicenseEnvelope(fileKeyHex);
       await prisma.nativeVideo.update({
         where: { id: video.id },
-        data: { isEncrypted: true, encryptedKey },
+        data: {
+          isEncrypted: true, encryptedKey,
+          ...(envelope ? { licenseEncryptedKey: envelope.licenseEncryptedKey, contentLicenseId: envelope.contentLicenseId } : {}),
+        },
       });
       results.videos++;
     } catch { results.errors++; }

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { rm, rename, mkdir, readFile, writeFile } from "fs/promises";
 import { encryptBuffer, signManifest } from "@/lib/instance-crypto";
+import { buildLicenseEnvelope } from "@/lib/license-verify";
 import { createWriteStream } from "fs";
 import { createHash } from "crypto";
 import { Readable } from "stream";
@@ -113,7 +114,7 @@ export async function PATCH(
       // Chiffrement du nouveau fichier
       try {
         const plain = await readFile(finalPath);
-        const { encrypted, encryptedKey } = await encryptBuffer(plain);
+        const { encrypted, encryptedKey, fileKeyHex } = await encryptBuffer(plain);
         await writeFile(finalPath, encrypted);
         const manifest = await signManifest({
           courseId: id,
@@ -125,6 +126,11 @@ export async function PATCH(
         updateData.isEncrypted    = true;
         updateData.encryptedKey   = encryptedKey;
         updateData.contentManifest = manifest;
+        const envelope = await buildLicenseEnvelope(fileKeyHex);
+        if (envelope) {
+          updateData.licenseEncryptedKey = envelope.licenseEncryptedKey;
+          updateData.contentLicenseId   = envelope.contentLicenseId;
+        }
       } catch { /* non critique */ }
 
       updateData.filePath         = path.join("documents", uniqueName);

@@ -11,6 +11,7 @@ import Busboy from "busboy";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { encryptBuffer, signManifest } from "@/lib/instance-crypto";
+import { buildLicenseEnvelope } from "@/lib/license-verify";
 
 const execFileAsync = promisify(execFile);
 const SCRIPTS_DIR = process.env.SCRIPTS_DIR ?? "./scripts";
@@ -141,12 +142,16 @@ export async function POST(req: NextRequest) {
 
     // Chiffrement du contenu (licencing)
     let encryptedKey: string | null = null;
+    let licenseEncryptedKey: string | null = null;
+    let contentLicenseId: string | null = null;
     let contentManifest: string | null = null;
     try {
       const plainBuffer = await readFile(finalPath);
-      const { encrypted, encryptedKey: ek } = await encryptBuffer(plainBuffer);
+      const { encrypted, encryptedKey: ek, fileKeyHex } = await encryptBuffer(plainBuffer);
       await writeFile(finalPath, encrypted);
       encryptedKey = ek;
+      const envelope = await buildLicenseEnvelope(fileKeyHex);
+      if (envelope) { licenseEncryptedKey = envelope.licenseEncryptedKey; contentLicenseId = envelope.contentLicenseId; }
     } catch { /* non critique — le cours reste en clair si le chiffrement échoue */ }
 
     const course = await prisma.course.create({
@@ -156,6 +161,8 @@ export async function POST(req: NextRequest) {
         fileSize: BigInt(file.size), fileHash, createdById,
         isEncrypted: !!encryptedKey,
         encryptedKey,
+        licenseEncryptedKey,
+        contentLicenseId,
         ...(thumbnailPath ? { thumbnailPath } : {}),
       },
     });

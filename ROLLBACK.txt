@@ -17,14 +17,38 @@ TAG / COMMIT    DESCRIPTION
 
 cd6bbdf         DRM phase 1 — chiffrement AES-256 + RSA par instance
                 (chiffrement contenu, sans licensing)
-                ← CHECKPOINT ACTUEL
+
+[prochain commit]  DRM phase 2 — système de licensing complet
+                   (InstanceConfig + LicenseHistory, double envelope,
+                    page admin licence, CLI vendeur, recovery réinstall)
+                   ← CHECKPOINT ACTUEL (après commit)
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RETOUR AU CHECKPOINT ACTUEL (cd6bbdf — DRM phase 1)
+RETOUR AU CHECKPOINT DRM PHASE 2 (après commit)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Utiliser si la phase 2 (licensing) part en vrille.
+Utiliser si un problème survient après ce checkpoint.
+Remplacer <HASH_PHASE2> par le hash du commit de phase 2.
+
+1. Arrêter le serveur
+   kill $(lsof -t -i:3000)
+
+2. Revenir au code du checkpoint
+   git reset --hard <HASH_PHASE2>
+
+3. Remettre le schéma DB en cohérence
+   npx prisma db push
+
+4. Relancer
+   npm run dev
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RETOUR AU CHECKPOINT DRM PHASE 1 (cd6bbdf — sans licensing)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Utiliser si le licensing (phase 2) cause des problèmes bloquants.
 
 1. Arrêter le serveur
    kill $(lsof -t -i:3000)

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { writeFile, mkdir } from "fs/promises";
 import { encryptBuffer, signManifest } from "@/lib/instance-crypto";
+import { buildLicenseEnvelope } from "@/lib/license-verify";
 import path from "path";
 import { createHash } from "crypto";
 import { execFile } from "child_process";
@@ -68,11 +69,15 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     // Chiffrement
     let encryptedKey: string | null = null;
+    let licenseEncryptedKey: string | null = null;
+    let contentLicenseId: string | null = null;
     let contentManifest: string | null = null;
     try {
-      const { encrypted, encryptedKey: ek } = await encryptBuffer(buffer);
+      const { encrypted, encryptedKey: ek, fileKeyHex } = await encryptBuffer(buffer);
       await writeFile(finalPath, encrypted);
       encryptedKey = ek;
+      const envelope = await buildLicenseEnvelope(fileKeyHex);
+      if (envelope) { licenseEncryptedKey = envelope.licenseEncryptedKey; contentLicenseId = envelope.contentLicenseId; }
       const manifest = await signManifest({
         courseId: id,
         contentHash: fileHash,
@@ -97,6 +102,8 @@ export async function POST(req: NextRequest, { params }: Params) {
         fileHash,
         isEncrypted: !!encryptedKey,
         encryptedKey,
+        licenseEncryptedKey,
+        contentLicenseId,
         contentManifest,
         ...(thumbnailPath ? { thumbnailPath } : {}),
       },

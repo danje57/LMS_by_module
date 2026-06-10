@@ -9,6 +9,7 @@ import { createHash } from "crypto";
 import { Readable } from "stream";
 import Busboy from "busboy";
 import { encryptBuffer, signManifest } from "@/lib/instance-crypto";
+import { buildLicenseEnvelope } from "@/lib/license-verify";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads";
 const MAX_PDF_SIZE = 100 * 1024 * 1024;
@@ -113,11 +114,15 @@ export async function POST(req: NextRequest) {
 
     // Chiffrement du contenu (licencing)
     let encryptedKey: string | null = null;
+    let licenseEncryptedKey: string | null = null;
+    let contentLicenseId: string | null = null;
     try {
       const plainBuffer = await readFile(finalPath);
-      const { encrypted, encryptedKey: ek } = await encryptBuffer(plainBuffer);
+      const { encrypted, encryptedKey: ek, fileKeyHex } = await encryptBuffer(plainBuffer);
       await writeFile(finalPath, encrypted);
       encryptedKey = ek;
+      const envelope = await buildLicenseEnvelope(fileKeyHex);
+      if (envelope) { licenseEncryptedKey = envelope.licenseEncryptedKey; contentLicenseId = envelope.contentLicenseId; }
     } catch { /* non critique */ }
 
     const course = await prisma.course.create({
@@ -134,6 +139,8 @@ export async function POST(req: NextRequest) {
         createdById: session.user.id,
         isEncrypted: !!encryptedKey,
         encryptedKey,
+        licenseEncryptedKey,
+        contentLicenseId,
       },
     });
 

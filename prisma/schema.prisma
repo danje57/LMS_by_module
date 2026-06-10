@@ -94,13 +94,33 @@ model UserTeam {
 }
 
 model InstanceConfig {
-  id          String   @id @default(cuid())
-  instanceId  String   @unique
-  publicKey   String
-  privateKey  String
-  createdAt   DateTime @default(now())
+  id                String    @id @default(cuid())
+  instanceId        String    @unique
+  publicKey         String
+  privateKey        String
+  // Licence applicative
+  licenseKey        String?   // token signé complet
+  licenseId         String?   // UUID stable du client
+  company           String?
+  email             String?
+  licenseExpiresAt  DateTime?
+  contentKey        String?   // contentKey chiffré avec NEXTAUTH_SECRET
+  renewalInProgress Boolean   @default(false)
+  createdAt         DateTime  @default(now())
 
   @@map("instance_config")
+}
+
+model LicenseHistory {
+  id                  String   @id @default(cuid())
+  licenseId           String
+  company             String
+  email               String
+  expiresAt           DateTime?
+  previousWrappedKey  String   // AES(oldContentKey, newContentKey)
+  replacedAt          DateTime @default(now())
+
+  @@map("license_history")
 }
 
 model Course {
@@ -119,9 +139,11 @@ model Course {
   category         String?
   isActive         Boolean              @default(true)
   courseType       CourseType           @default(h5p)
-  isEncrypted      Boolean              @default(false)
-  encryptedKey     String?
-  contentManifest  String?
+  isEncrypted          Boolean              @default(false)
+  encryptedKey         String?
+  contentManifest      String?
+  licenseEncryptedKey  String?
+  contentLicenseId     String?
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
   createdById      String?
@@ -145,9 +167,11 @@ model NativeVideo {
   videoPath    String
   fileHash     String?
   duration     Float?
-  isEncrypted  Boolean               @default(false)
-  encryptedKey String?
-  questions    NativeVideoQuestion[]
+  isEncrypted          Boolean               @default(false)
+  encryptedKey         String?
+  licenseEncryptedKey  String?
+  contentLicenseId     String?
+  questions            NativeVideoQuestion[]
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt
 

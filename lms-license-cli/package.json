@@ -1,0 +1,12 @@
+{
+  "name": "lms-license-cli",
+  "version": "1.0.0",
+  "description": "CLI de génération de licences LMS — usage interne uniquement",
+  "type": "module",
+  "bin": {
+    "lms-license": "./index.js"
+  },
+  "scripts": {
+    "setup": "node index.js setup"
+  }
+}

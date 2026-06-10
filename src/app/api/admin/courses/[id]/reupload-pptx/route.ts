@@ -5,6 +5,7 @@ import { auditLog } from "@/lib/audit";
 import { createWriteStream, mkdirSync } from "fs";
 import { rm, readdir, readFile, writeFile } from "fs/promises";
 import { encryptBuffer, signManifest } from "@/lib/instance-crypto";
+import { buildLicenseEnvelope } from "@/lib/license-verify";
 import path from "path";
 import { createHash } from "crypto";
 import { Readable } from "stream";
@@ -142,14 +143,18 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     // Chiffrement du .h5p généré
     let encryptedKey: string | null = null;
+    let licenseEncryptedKey: string | null = null;
+    let contentLicenseId: string | null = null;
     let contentManifest: string | null = null;
     let fileSize: number;
     try {
       const plainBuffer = await readFile(h5pDest);
       fileSize = plainBuffer.length;
-      const { encrypted, encryptedKey: ek } = await encryptBuffer(plainBuffer);
+      const { encrypted, encryptedKey: ek, fileKeyHex } = await encryptBuffer(plainBuffer);
       await writeFile(h5pDest, encrypted);
       encryptedKey = ek;
+      const envelope = await buildLicenseEnvelope(fileKeyHex);
+      if (envelope) { licenseEncryptedKey = envelope.licenseEncryptedKey; contentLicenseId = envelope.contentLicenseId; }
       const manifest = await signManifest({
         courseId: id,
         contentHash: fileHash,
@@ -173,6 +178,8 @@ export async function POST(req: NextRequest, { params }: Params) {
         fileHash,
         isEncrypted: !!encryptedKey,
         encryptedKey,
+        licenseEncryptedKey,
+        contentLicenseId,
         contentManifest,
         ...(thumbnailPath ? { thumbnailPath } : {}),
       },

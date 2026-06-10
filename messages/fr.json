@@ -13,6 +13,7 @@
     "export": "Exports CSV",
     "activity": "Activité apprenants",
     "audit": "Journal d'audit",
+    "license": "Licence",
     "grcLibrary": "Bibliothèque GRC"
   },
   "header": {

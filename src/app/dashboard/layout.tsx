@@ -7,6 +7,7 @@ import { MaintenanceBanner } from "@/components/maintenance-banner";
 import { prisma } from "@/lib/prisma";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
+import { getCurrentLicense } from "@/lib/license-verify";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,17 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
   if (!session) redirect("/login");
+
+  // Vérification licence — bloque l'app sauf si renouvellement en cours (grace period)
+  const license = await getCurrentLicense();
+  const renewalInProgress = license?.renewalInProgress ?? false;
+  if (!renewalInProgress) {
+    if (!license) {
+      redirect("/activate");
+    }
+    const expired = license.licenseExpiresAt ? new Date(license.licenseExpiresAt) < new Date() : false;
+    if (expired) redirect("/activate");
+  }
 
   const isAdmin = session.user.sessionMode === "admin";
 

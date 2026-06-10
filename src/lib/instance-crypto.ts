@@ -79,7 +79,7 @@ export async function initInstanceKeys(): Promise<void> {
   });
 }
 
-async function getInstanceKeys(): Promise<{ publicKey: string; privateKey: string }> {
+export async function getInstanceKeys(): Promise<{ publicKey: string; privateKey: string }> {
   if (cachedKeys) return cachedKeys;
   // Auto-initialise si aucune clé n'existe encore
   if (!initPromise) initPromise = initInstanceKeys();
@@ -95,7 +95,7 @@ async function getInstanceKeys(): Promise<{ publicKey: string; privateKey: strin
 
 // --- AES-256-GCM (H5P, PDF) ---
 
-export async function encryptBuffer(data: Buffer): Promise<{ encrypted: Buffer; encryptedKey: string }> {
+export async function encryptBuffer(data: Buffer): Promise<{ encrypted: Buffer; encryptedKey: string; fileKeyHex: string }> {
   const { publicKey } = await getInstanceKeys();
   const aesKey = randomBytes(32);
   const iv = randomBytes(GCM_IV_LEN);
@@ -109,7 +109,7 @@ export async function encryptBuffer(data: Buffer): Promise<{ encrypted: Buffer; 
     { key: publicKey, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: "sha256" },
     aesKey
   ).toString("base64");
-  return { encrypted: payload, encryptedKey };
+  return { encrypted: payload, encryptedKey, fileKeyHex: aesKey.toString("hex") };
 }
 
 export async function decryptBuffer(payload: Buffer, encryptedKey: string): Promise<Buffer> {
@@ -128,7 +128,7 @@ export async function decryptBuffer(payload: Buffer, encryptedKey: string): Prom
 
 // --- AES-256-CTR (vidéos — supporte Range requests) ---
 
-export async function encryptVideoBuffer(data: Buffer): Promise<{ encrypted: Buffer; encryptedKey: string }> {
+export async function encryptVideoBuffer(data: Buffer): Promise<{ encrypted: Buffer; encryptedKey: string; fileKeyHex: string }> {
   const { publicKey } = await getInstanceKeys();
   const aesKey = randomBytes(32);
   const iv = randomBytes(CTR_IV_LEN);
@@ -140,7 +140,7 @@ export async function encryptVideoBuffer(data: Buffer): Promise<{ encrypted: Buf
     { key: publicKey, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: "sha256" },
     aesKey
   ).toString("base64");
-  return { encrypted: payload, encryptedKey };
+  return { encrypted: payload, encryptedKey, fileKeyHex: aesKey.toString("hex") };
 }
 
 /**
