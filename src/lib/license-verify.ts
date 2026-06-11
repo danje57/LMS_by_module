@@ -4,7 +4,8 @@
  * du CLI lms-license-cli (jamais commitée, jamais dans le LMS).
  */
 
-import { createVerify, createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { createVerify, createCipheriv, createDecipheriv, randomBytes, constants } from "crypto";
+import { initInstanceKeys } from "@/lib/instance-crypto";
 import { prisma } from "@/lib/prisma";
 
 const MASTER_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
@@ -37,13 +38,13 @@ export interface LicenseVerifyResult {
 // Vérifie la signature du token et retourne le payload
 export function verifyLicenseToken(token: string): LicenseVerifyResult {
   try {
-    const [b64, sig] = token.trim().split(".");
+    const [b64, sig] = token.replace(/\s+/g, "").split(".");
     if (!b64 || !sig) return { valid: false, expired: false, payload: null, error: "Format invalide" };
 
-    const verify = createVerify("RSA-PSS");
+    const verify = createVerify("SHA256");
     verify.update(b64);
     const ok = verify.verify(
-      { key: MASTER_PUBLIC_KEY, dsaEncoding: "ieee-p1363" },
+      { key: MASTER_PUBLIC_KEY, padding: constants.RSA_PKCS1_PSS_PADDING, saltLength: constants.RSA_PSS_SALTLEN_DIGEST },
       Buffer.from(sig, "base64url")
     );
     if (!ok) return { valid: false, expired: false, payload: null, error: "Signature invalide" };
@@ -59,7 +60,7 @@ export function verifyLicenseToken(token: string): LicenseVerifyResult {
 
 // Chiffre le contentKey (hex) pour stockage en base avec NEXTAUTH_SECRET
 function encryptContentKey(contentKeyHex: string): string {
-  const secret = process.env.NEXTAUTH_SECRET ?? "";
+  const secret = (process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET) ?? "";
   const key    = Buffer.from(secret.padEnd(32, "0").slice(0, 32), "utf-8");
   const iv     = randomBytes(16);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
@@ -69,7 +70,7 @@ function encryptContentKey(contentKeyHex: string): string {
 }
 
 export function decryptContentKey(encoded: string): string {
-  const secret = process.env.NEXTAUTH_SECRET ?? "";
+  const secret = (process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET) ?? "";
   const key    = Buffer.from(secret.padEnd(32, "0").slice(0, 32), "utf-8");
   const buf    = Buffer.from(encoded, "base64");
   const iv     = buf.subarray(0, 16);
@@ -161,7 +162,7 @@ export async function getCurrentLicense() {
 }
 
 // Active une licence sur l'instance (première activation ou renouvellement)
-export async function activateLicense(token: string): Promise<{ ok: boolean; error?: string }> {
+export async function activateLicense(token: string): Promise<{ ok: boolean; error?: string; expiresAt?: string | null }> {
   const result = verifyLicenseToken(token);
   if (!result.valid) return { ok: false, error: result.error ?? "Token invalide" };
   // On accepte les tokens expirés pour la recovery (re-dériver les clés)
@@ -171,6 +172,8 @@ export async function activateLicense(token: string): Promise<{ ok: boolean; err
   const { payload } = result;
   if (!payload) return { ok: false, error: "Payload vide" };
 
+  // Auto-initialise les clés RSA si c'est la première activation
+  await initInstanceKeys();
   const config = await prisma.instanceConfig.findFirst();
   if (!config) return { ok: false, error: "Instance non initialisée" };
 
@@ -200,5 +203,5 @@ export async function activateLicense(token: string): Promise<{ ok: boolean; err
     },
   });
 
-  return { ok: true };
+  return { ok: true, expiresAt: payload.expiresAt ?? null };
 }

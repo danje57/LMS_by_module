@@ -2,19 +2,22 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getCurrentLicense } from "@/lib/license-verify";
 import { ActivateClient } from "./activate-client";
+import { NotActivatedPage } from "./not-activated";
 
 export default async function ActivatePage() {
   const session = await auth();
   if (!session) redirect("/login");
 
-  // Seul l'admin peut activer/renouveler la licence
-  if (session.user.sessionMode !== "admin") {
-    redirect("/dashboard");
+  const roles = session.user.roles as unknown as string[] | undefined;
+  const isAdminRole = roles?.includes("admin") || roles?.includes("superadmin") || false;
+
+  if (!isAdminRole) {
+    redirect("/not-activated");
   }
 
   const license = await getCurrentLicense();
   const isRenewal = !!license?.licenseId;
-  const expired   = license?.licenseExpiresAt
+  const expired = license?.licenseExpiresAt
     ? new Date(license.licenseExpiresAt) < new Date()
     : false;
 

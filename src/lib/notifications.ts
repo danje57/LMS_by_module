@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 
 interface CreateNotifParams {
   userId: string;
-  type: "course_assigned" | "deadline_warning" | "course_completed";
+  type: "course_assigned" | "deadline_warning" | "course_completed" | "license_expiry_warning";
   title: string;
   message: string;
   link?: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useTransition } from "react";
+import { useState, useRef, useTransition, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Download, Trash2, Plus, UploadCloud, ShieldAlert, Loader2, HardDrive, Clock, Terminal, Lock, Unlock, ShieldCheck, AlertCircle } from "lucide-react";
@@ -37,6 +37,12 @@ export function BackupManager({ initialBackups, cronUrl }: BackupManagerProps) {
   const t = useTranslations("backup");
   const [backups, setBackups] = useState<BackupRow[]>(initialBackups);
   const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/backup").then((r) => r.json()).then((list) => {
+      if (Array.isArray(list)) setBackups(list);
+    }).catch(() => {});
+  }, []);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [restoring, startRestore] = useTransition();
   const [error, setError] = useState<string | null>(null);

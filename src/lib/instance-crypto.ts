@@ -31,7 +31,7 @@ const CTR_IV_LEN = 16;
 
 // Chiffre la clé privée RSA avec NEXTAUTH_SECRET (AES-256-GCM)
 function encryptPrivateKey(pem: string): string {
-  const secret = process.env.NEXTAUTH_SECRET;
+  const secret = (process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET);
   if (!secret) throw new Error("NEXTAUTH_SECRET manquant");
   const key = Buffer.from(secret).subarray(0, 32).toString().padEnd(32, "0").slice(0, 32);
   const keyBuf = Buffer.from(key, "utf-8");
@@ -43,7 +43,7 @@ function encryptPrivateKey(pem: string): string {
 }
 
 function decryptPrivateKey(encoded: string): string {
-  const secret = process.env.NEXTAUTH_SECRET;
+  const secret = (process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET);
   if (!secret) throw new Error("NEXTAUTH_SECRET manquant");
   const key = Buffer.from(secret).subarray(0, 32).toString().padEnd(32, "0").slice(0, 32);
   const keyBuf = Buffer.from(key, "utf-8");

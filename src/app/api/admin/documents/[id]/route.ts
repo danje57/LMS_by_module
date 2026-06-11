@@ -111,6 +111,13 @@ export async function PATCH(
       // Supprimer l'ancien fichier
       try { await rm(path.join(UPLOAD_DIR, doc.filePath), { force: true }); } catch { /* non critique */ }
 
+      // Génération vignette AVANT chiffrement
+      let newThumbPath: string | null = null;
+      try {
+        const { generateAndSavePdfThumbnail } = await import("@/lib/pdf-thumbnail");
+        newThumbPath = await generateAndSavePdfThumbnail(id, path.join("documents", uniqueName));
+      } catch { /* non critique */ }
+
       // Chiffrement du nouveau fichier
       try {
         const plain = await readFile(finalPath);
@@ -137,20 +144,10 @@ export async function PATCH(
       updateData.originalFileName = file.originalName;
       updateData.fileSize         = BigInt(file.size);
       updateData.fileHash         = fileHash;
-      updateData.thumbnailPath    = null; // sera régénérée au prochain appel
+      updateData.thumbnailPath = newThumbPath ?? null;
     }
 
     await prisma.course.update({ where: { id }, data: updateData });
-
-    // Régénération vignette si le PDF a changé
-    if (file && updateData.filePath) {
-      const newRelPath = updateData.filePath as string;
-      import("@/lib/pdf-thumbnail").then(({ generateAndSavePdfThumbnail }) =>
-        generateAndSavePdfThumbnail(id, newRelPath).then((thumbPath) =>
-          prisma.course.update({ where: { id }, data: { thumbnailPath: thumbPath } })
-        )
-      ).catch(() => {});
-    }
 
     await auditLog({
       actor: { id: session.user.id, name: session.user.name, email: session.user.email },
@@ -194,7 +191,10 @@ export async function DELETE(
   if (!isAdmin && doc.createdById !== session.user.id)
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
 
-  await prisma.course.update({ where: { id }, data: { isActive: false } });
+  await prisma.$transaction([
+    prisma.courseAssignment.deleteMany({ where: { courseId: id } }),
+    prisma.course.update({ where: { id }, data: { isActive: false } }),
+  ]);
 
   try {
     await rm(path.join(UPLOAD_DIR, doc.filePath), { force: true });

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 interface Props {
   isRenewal:      boolean;
@@ -12,17 +11,16 @@ interface Props {
 }
 
 export function ActivateClient({ isRenewal, expired, currentCompany, currentEmail, currentExpiry }: Props) {
-  const [token,     setToken]     = useState("");
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState<string | null>(null);
-  const [activated, setActivated] = useState(false);
+  const [token,       setToken]       = useState("");
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState<string | null>(null);
+  const [activated,   setActivated]   = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   // Recovery state (shown after activation if recoverable content exists)
   const [recovering,        setRecovering]        = useState(false);
   const [recoverResult,     setRecoverResult]      = useState<{ courses?: number; videos?: number; errors?: number } | null>(null);
   const [recoverableCount,  setRecoverableCount]   = useState<number | null>(null);
-
-  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,7 +32,7 @@ export function ActivateClient({ isRenewal, expired, currentCompany, currentEmai
       const res  = await fetch(endpoint, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ token: token.trim() }),
+        body:    JSON.stringify({ token: token.replace(/\s+/g, "") }),
       });
       const data = await res.json();
       if (data.ok) {
@@ -45,12 +43,12 @@ export function ActivateClient({ isRenewal, expired, currentCompany, currentEmai
           const { recoverableContent } = await checkRes.json();
           setRecoverableCount(recoverableContent);
           if (recoverableContent === 0) {
-            router.push("/dashboard");
-            router.refresh();
+            setRedirecting(true);
+            setTimeout(() => { window.location.href = "/dashboard"; }, 6000);
           }
         } else {
-          router.push("/dashboard");
-          router.refresh();
+          setRedirecting(true);
+          setTimeout(() => { window.location.href = "/dashboard"; }, 6000);
         }
       } else {
         setError(data.error ?? "Erreur lors de l'activation");
@@ -79,6 +77,19 @@ export function ActivateClient({ isRenewal, expired, currentCompany, currentEmai
     ? new Date(currentExpiry).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
     : null;
 
+  if (redirecting) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F7] dark:bg-[#0A0A0F] flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <div className="text-5xl animate-bounce">🎉</div>
+          <h1 className="text-[22px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Licence activée !</h1>
+          <p className="text-[14px] text-[#6E6E73] dark:text-[#8E8E93]">Redirection vers le tableau de bord…</p>
+          <div className="w-8 h-8 border-2 border-[#1D1D1F] dark:border-[#F5F5F7] border-t-transparent rounded-full animate-spin mx-auto mt-2" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F5F7] dark:bg-[#0A0A0F] flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white dark:bg-[#1C1C1E] rounded-2xl shadow-lg p-8 space-y-6">
@@ -99,6 +110,13 @@ export function ActivateClient({ isRenewal, expired, currentCompany, currentEmai
             <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
               Saisissez la clé de licence fournie pour activer l&apos;application.
             </p>
+          )}
+          {!isRenewal && !expired && (
+            <div className="mt-2 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 px-4 py-3 text-left">
+              <p className="text-[12px] text-blue-700 dark:text-blue-400">
+                <span className="font-semibold">Première installation ?</span> Munissez-vous de la clé de licence fournie par votre prestataire avant de continuer. Sans cette clé, l&apos;application restera inaccessible aux utilisateurs.
+              </p>
+            </div>
           )}
           {isRenewal && !expired && (
             <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
@@ -139,7 +157,7 @@ export function ActivateClient({ isRenewal, expired, currentCompany, currentEmai
               }
             </div>
             <button
-              onClick={() => { router.push("/dashboard"); router.refresh(); }}
+              onClick={() => { window.location.href = "/dashboard"; }}
               className="w-full rounded-xl bg-[#1D1D1F] dark:bg-[#F5F5F7] text-white dark:text-[#1D1D1F] text-[14px] font-medium py-2.5 hover:opacity-80 transition-opacity"
             >
               Accéder au tableau de bord

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, BookOpen, Settings, GraduationCap, Users, UsersRound, Award, BadgeCheck, BarChart2, ClipboardList, UserCog, Activity, PieChart, Download, FileText, ShieldCheck, KeyRound } from "lucide-react";
+import { LayoutDashboard, BookOpen, Settings, GraduationCap, Users, UsersRound, Award, BadgeCheck, BarChart2, ClipboardList, UserCog, Activity, PieChart, Download, FileText, ShieldCheck } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard",                    key: "dashboard",          icon: LayoutDashboard, adminOnly: false, userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
@@ -22,7 +22,6 @@ const navItems = [
   { href: "/dashboard/admin/reporting",    key: "reporting",          icon: PieChart,        adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
   { href: "/dashboard/admin/activity",    key: "activity",           icon: Activity,        adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
   { href: "/dashboard/admin/audit",        key: "audit",              icon: ClipboardList,   adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
-  { href: "/dashboard/admin/license",      key: "license",            icon: KeyRound,        adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
   { href: "/dashboard/settings",           key: "settings",           icon: Settings,        adminOnly: true,  userOnly: false, managerOnly: false, strictManagerOnly: false, adminOrManager: false },
 ];
 

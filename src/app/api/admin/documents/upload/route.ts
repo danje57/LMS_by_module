@@ -112,6 +112,13 @@ export async function POST(req: NextRequest) {
 
     const relPath = path.join("documents", uniqueName);
 
+    // Génération vignette AVANT chiffrement (le PDF doit être lisible)
+    let thumbnailPathEarly: string | null = null;
+    try {
+      const { generateAndSavePdfThumbnail } = await import("@/lib/pdf-thumbnail");
+      thumbnailPathEarly = await generateAndSavePdfThumbnail(`tmp_${fileHash}`, relPath);
+    } catch { /* non critique */ }
+
     // Chiffrement du contenu (licencing)
     let encryptedKey: string | null = null;
     let licenseEncryptedKey: string | null = null;
@@ -141,6 +148,7 @@ export async function POST(req: NextRequest) {
         encryptedKey,
         licenseEncryptedKey,
         contentLicenseId,
+        ...(thumbnailPathEarly ? { thumbnailPath: thumbnailPathEarly } : {}),
       },
     });
 
@@ -165,12 +173,17 @@ export async function POST(req: NextRequest) {
       targetLabel: title,
     });
 
-    // Génération vignette en arrière-plan (non bloquant)
-    import("@/lib/pdf-thumbnail").then(({ generateAndSavePdfThumbnail }) =>
-      generateAndSavePdfThumbnail(course.id, relPath).then((thumbPath) =>
-        prisma.course.update({ where: { id: course.id }, data: { thumbnailPath: thumbPath } })
-      )
-    ).catch(() => {});
+    // Renommer le thumbnail temp avec le vrai courseId
+    if (thumbnailPathEarly) {
+      try {
+        const { rename: renameFile } = await import("fs/promises");
+        const thumbDir = path.join(UPLOAD_DIR, "thumbnails");
+        const oldPath = path.join(UPLOAD_DIR, thumbnailPathEarly);
+        const newThumbPath = `thumbnails/${course.id}.jpg`;
+        await renameFile(oldPath, path.join(thumbDir, `${course.id}.jpg`));
+        await prisma.course.update({ where: { id: course.id }, data: { thumbnailPath: newThumbPath } });
+      } catch { /* non critique */ }
+    }
 
     return NextResponse.json({ ok: true, documentId: course.id });
   } catch (err) {

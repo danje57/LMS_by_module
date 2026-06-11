@@ -1,0 +1,67 @@
+{"ts":"2026-05-24T09:06:54.051Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"Q video","details":{"title":"Q video","duration":30,"hasQuiz":true,"passingScore":70}}
+{"ts":"2026-05-24T10:41:39.805Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.start","target":"Q video","details":null}
+{"ts":"2026-05-24T10:55:18.678Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.complete","target":"Q video","details":null}
+{"ts":"2026-05-24T10:58:08.183Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"quiz.submit","target":"Q video","details":{"attempt":1,"score":100,"passingScore":70,"passed":true}}
+{"ts":"2026-05-24T11:22:06.406Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.reupload","target":"Cours E – Conformité","details":null}
+{"ts":"2026-05-24T11:22:29.608Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.start","target":"Cours E – Conformité","details":null}
+{"ts":"2026-05-24T11:23:09.328Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.complete","target":"Cours E – Conformité","details":null}
+{"ts":"2026-05-24T11:23:25.149Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"quiz.submit","target":"Cours E – Conformité","details":{"attempt":1,"score":100,"passingScore":50,"passed":true}}
+{"ts":"2026-05-24T11:31:23.917Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.reupload","target":"pptx","details":null}
+{"ts":"2026-05-24T11:34:40.216Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.reupload","target":"pptx","details":null}
+{"ts":"2026-05-24T11:35:16.241Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.assign","target":"pptx","details":{"added":1,"removed":0}}
+{"ts":"2026-05-24T11:35:33.696Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.start","target":"pptx","details":null}
+{"ts":"2026-05-24T11:36:00.639Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.complete","target":"pptx","details":null}
+{"ts":"2026-05-24T11:36:42.032Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"quiz.submit","target":"pptx","details":{"attempt":1,"score":100,"passingScore":70,"passed":true}}
+{"ts":"2026-05-24T11:48:03.539Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-24T11:48:24.531Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-24T11:48:43.783Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-24T11:49:03.098Z","actor":"danje57+mpuillandre@gmail.com","actorName":"Marie Puillandre","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-24T11:49:14.572Z","actor":"danje57+mpuillandre@gmail.com","actorName":"Marie Puillandre","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-24T11:49:39.102Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-24T11:55:12.463Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.reupload","target":"pptx","details":null}
+{"ts":"2026-05-24T11:56:18.275Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.reupload","target":"Cours E – Conformité","details":null}
+{"ts":"2026-05-24T11:58:17.046Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"h5","details":null}
+{"ts":"2026-05-24T11:59:09.488Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.assign","target":"h5","details":{"added":1,"removed":0}}
+{"ts":"2026-05-24T11:59:26.175Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.start","target":"h5","details":null}
+{"ts":"2026-05-24T11:59:45.961Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.reupload","target":"h5","details":null}
+{"ts":"2026-05-24T12:02:14.937Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.start","target":"coin coin","details":null}
+{"ts":"2026-05-24T12:03:24.961Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.delete","target":"Cours D – Sécurité","details":null}
+{"ts":"2026-05-24T12:22:44.357Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"pptx","details":{"title":"pptx","duration":40,"hasQuiz":false,"passingScore":null}}
+{"ts":"2026-05-24T12:23:20.668Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"pptx","details":{"title":"pptx","duration":40,"hasQuiz":true,"passingScore":100}}
+{"ts":"2026-05-24T12:23:27.623Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"pptx","details":{"title":"pptx","duration":40,"hasQuiz":true,"passingScore":100}}
+{"ts":"2026-05-24T12:23:46.048Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.assign","target":"pptx","details":{"added":1,"removed":0}}
+{"ts":"2026-05-24T12:24:40.218Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"h5p","details":null}
+{"ts":"2026-05-24T12:25:02.653Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"h5p","details":{"title":"h5p","duration":50,"hasQuiz":true,"passingScore":100}}
+{"ts":"2026-05-24T12:25:43.441Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.delete","target":"h5p","details":null}
+{"ts":"2026-05-24T12:26:03.819Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"video","details":null}
+{"ts":"2026-05-24T12:26:41.789Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"video","details":{"title":"video","duration":30,"hasQuiz":true,"passingScore":100}}
+{"ts":"2026-05-24T12:27:08.126Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.assign","target":"video","details":{"added":1,"removed":0}}
+{"ts":"2026-05-24T12:32:53.598Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"h5p","details":null}
+{"ts":"2026-05-24T12:33:18.483Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"h5p","details":{"title":"h5p","duration":40,"hasQuiz":true,"passingScore":100}}
+{"ts":"2026-05-24T12:37:24.505Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"h5p2","details":null}
+{"ts":"2026-05-24T12:37:32.169Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"h5p2","details":{"title":"h5p2","duration":46,"hasQuiz":false,"passingScore":null}}
+{"ts":"2026-05-24T12:42:20.923Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"H5P3","details":null}
+{"ts":"2026-05-24T12:42:45.482Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"H5P3","details":{"title":"H5P3","duration":40,"hasQuiz":true,"passingScore":100}}
+{"ts":"2026-05-24T12:43:02.603Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.assign","target":"H5P3","details":{"added":1,"removed":0}}
+{"ts":"2026-05-24T12:43:22.393Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.start","target":"H5P3","details":null}
+{"ts":"2026-05-24T12:43:32.385Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.complete","target":"H5P3","details":null}
+{"ts":"2026-05-24T12:43:41.723Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"quiz.submit","target":"H5P3","details":{"attempt":1,"score":0,"passingScore":100,"passed":false}}
+{"ts":"2026-05-24T12:43:59.554Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"quiz.submit","target":"H5P3","details":{"attempt":2,"score":100,"passingScore":100,"passed":true}}
+{"ts":"2026-05-24T13:13:52.984Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"settings.branding","target":null,"details":{"appName":"Free LMS LEGO"}}
+{"ts":"2026-05-24T16:10:37.985Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-24T16:11:02.963Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-24T16:11:53.109Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"document.upload","target":"Chart Informatique","details":null}
+{"ts":"2026-05-24T16:17:37.450Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-24T16:17:55.854Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-24T16:22:17.596Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"document.upload","target":"AUP","details":null}
+{"ts":"2026-05-24T16:25:55.868Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-24T16:26:10.755Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-24T16:28:03.930Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-24T16:28:17.159Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-24T16:43:32.177Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"document.signed","target":"AUP","details":{"signatureId":"cmpk0b5c90027ssyiflb54tku","ipAddress":"::ffff:192.168.1.38"}}
+{"ts":"2026-05-24T16:46:57.812Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"document.signed","target":"Chart Informatique","details":{"signatureId":"cmpk0fk0e002cssyi0x2vn4j9","ipAddress":"::ffff:192.168.1.38"}}
+{"ts":"2026-05-24T16:47:22.848Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-24T16:47:45.479Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-24T17:21:38.915Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"certificate.download","target":"Chart Informatique","details":null}
+{"ts":"2026-05-24T17:21:38.921Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"certificate.download","target":"Chart Informatique","details":null}
+{"ts":"2026-05-24T17:21:39.298Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"certificate.download","target":"Chart Informatique","details":null}

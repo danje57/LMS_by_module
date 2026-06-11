@@ -764,6 +764,12 @@ export function DocumentsPageClient({
                   <div className="flex items-center justify-between pt-2 border-t border-[#F5F5F7] dark:border-[#2C2C2E]">
                     <span className="text-[11px] text-[#ADADB8]">{formatSize(doc.fileSize)}</span>
                     <div className="flex items-center gap-1">
+                      {(isAdmin || doc.createdById === currentUserId) && (
+                        <Link href={`/dashboard/documents/${doc.id}`} target="_blank"
+                          className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-[#0071E3] transition-colors" title="Prévisualiser">
+                          <Play className="w-3.5 h-3.5" />
+                        </Link>
+                      )}
                       <button onClick={() => setSignaturesDoc(doc)}
                         className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-[#0071E3] transition-colors" title="Suivi des signatures">
                         <Eye className="w-3.5 h-3.5" />

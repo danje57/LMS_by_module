@@ -1,0 +1,53 @@
+{"ts":"2026-05-23T09:47:04.769Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-23T09:47:23.015Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-23T09:49:30.347Z","actor":"danje57+amangin@gmail.com","actorName":"Aurelien MANGIN","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-23T09:49:50.714Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-23T09:50:09.936Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"manager.role.promote_creator","target":"danje57+jmartin@gmail.com","details":{"targetName":"Jean Martin"}}
+{"ts":"2026-05-23T09:50:20.211Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-23T09:50:33.194Z","actor":"danje57+mpuilandre@gmail.com","actorName":null,"action":"auth.login_failed","target":null,"details":{"reason":"user_not_found"}}
+{"ts":"2026-05-23T09:51:46.510Z","actor":"danje57+mpuillandre@gmail.com","actorName":"Marie Puillandre","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-23T09:51:53.655Z","actor":"danje57+mpuillandre@gmail.com","actorName":"Marie Puillandre","action":"manager.role.promote_creator","target":"danje57+acosta@gmail.com","details":{"targetName":"Astrid Costa"}}
+{"ts":"2026-05-23T09:52:02.046Z","actor":"danje57+mpuillandre@gmail.com","actorName":"Marie Puillandre","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-23T09:52:15.878Z","actor":"danje57+acosta@gmail.com","actorName":"Astrid Costa","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-23T09:52:31.795Z","actor":"danje57+acosta@gmail.com","actorName":"Astrid Costa","action":"auth.logout","target":null,"details":null}
+{"ts":"2026-05-23T09:52:59.048Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"auth.login","target":null,"details":null}
+{"ts":"2026-05-23T10:15:55.472Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.start","target":"Cours G – Présentation Lexis 360","details":null}
+{"ts":"2026-05-23T10:16:06.450Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.complete","target":"Cours G – Présentation Lexis 360","details":null}
+{"ts":"2026-05-23T10:39:11.943Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"backup.create","target":"lms-backup-2026-05-23T10-38-54Z.zip","details":{"sizeBytes":78438517}}
+{"ts":"2026-05-23T13:02:27.084Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"coin coin","details":null}
+{"ts":"2026-05-23T13:03:45.048Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.complete","target":"coin coin","details":null}
+{"ts":"2026-05-23T13:13:16.292Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.complete","target":"coin coin","details":null}
+{"ts":"2026-05-23T13:17:21.460Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.complete","target":"coin coin","details":null}
+{"ts":"2026-05-23T13:17:38.015Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"certificate.download","target":"coin coin","details":null}
+{"ts":"2026-05-23T13:24:21.152Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.complete","target":"coin coin","details":null}
+{"ts":"2026-05-23T13:24:41.860Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"certificate.download","target":"coin coin","details":null}
+{"ts":"2026-05-23T13:26:49.512Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"certificate.download","target":"coin coin","details":null}
+{"ts":"2026-05-23T13:26:51.683Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"certificate.download","target":"coin coin","details":null}
+{"ts":"2026-05-23T13:29:23.878Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"certificate.download","target":"coin coin","details":null}
+{"ts":"2026-05-23T13:29:25.370Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"certificate.download","target":"coin coin","details":null}
+{"ts":"2026-05-23T13:40:51.808Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.start","target":"coin coin","details":null}
+{"ts":"2026-05-23T13:42:19.283Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.complete","target":"coin coin","details":null}
+{"ts":"2026-05-23T15:08:52.644Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"Premier Cours avec mon editeur","details":null}
+{"ts":"2026-05-23T15:09:28.504Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"Premier Cours avec mon editeur","details":{"title":"Premier Cours avec mon editeur","duration":30,"hasQuiz":true,"passingScore":60}}
+{"ts":"2026-05-23T15:11:15.204Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.delete","target":"Premier Cours avec mon editeur","details":null}
+{"ts":"2026-05-23T15:19:00.926Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"Mon premier cours video","details":null}
+{"ts":"2026-05-23T15:21:35.097Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"mon premier cours video","details":null}
+{"ts":"2026-05-23T15:23:12.056Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"Mon premier cours video","details":null}
+{"ts":"2026-05-23T15:23:44.431Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"Mon premier cours video","details":{"title":"Mon premier cours video","duration":30,"hasQuiz":true,"passingScore":80}}
+{"ts":"2026-05-23T15:24:00.536Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.delete","target":"mon premier cours video","details":null}
+{"ts":"2026-05-23T15:24:03.685Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.delete","target":"Mon premier cours video","details":null}
+{"ts":"2026-05-23T15:49:53.753Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.delete","target":"Mon premier cours video","details":null}
+{"ts":"2026-05-23T15:54:17.845Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"etetete","details":null}
+{"ts":"2026-05-23T15:54:59.531Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.delete","target":"etetete","details":null}
+{"ts":"2026-05-23T15:55:28.967Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.upload","target":"sfsfsfsd","details":null}
+{"ts":"2026-05-23T16:05:24.457Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"sfsfsfsd","details":{"title":"sfsfsfsd","duration":30,"hasQuiz":false,"passingScore":null}}
+{"ts":"2026-05-23T16:30:09.780Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"sfsfsfsd","details":{"title":"sfsfsfsd","duration":30,"hasQuiz":true,"passingScore":80}}
+{"ts":"2026-05-23T16:38:31.808Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"sfsfsfsd","details":{"title":"sfsfsfsd","duration":30,"hasQuiz":true,"passingScore":60}}
+{"ts":"2026-05-23T16:39:12.082Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.assign","target":"sfsfsfsd","details":{"added":1,"removed":0}}
+{"ts":"2026-05-23T16:52:24.064Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.start","target":"sfsfsfsd","details":null}
+{"ts":"2026-05-23T16:59:44.489Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"sfsfsfsd","details":{"title":"sfsfsfsd","duration":30,"hasQuiz":true,"passingScore":100}}
+{"ts":"2026-05-23T17:22:39.993Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"Q video","details":{"title":"Q video","duration":30,"hasQuiz":true,"passingScore":50}}
+{"ts":"2026-05-23T17:25:51.540Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.edit","target":"Q video","details":{"title":"Q video","duration":30,"hasQuiz":true,"passingScore":50}}
+{"ts":"2026-05-23T17:32:54.681Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"course.complete","target":"Q video","details":null}
+{"ts":"2026-05-23T17:33:04.098Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"quiz.submit","target":"Q video","details":{"attempt":1,"score":100,"passingScore":50,"passed":true}}
+{"ts":"2026-05-23T20:31:27.871Z","actor":"danje57+jdannenmuller@gmail.com","actorName":"Jeremy DANNENMULLER","action":"auth.login","target":null,"details":null}

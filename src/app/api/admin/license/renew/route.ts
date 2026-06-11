@@ -8,7 +8,9 @@ import { auditLog } from "@/lib/audit";
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-  if (session.user.sessionMode !== "admin") return NextResponse.json({ error: "Mode admin requis" }, { status: 403 });
+  const roles = session.user.roles as unknown as string[] | undefined;
+  const isAdmin = session.user.sessionMode === "admin" || roles?.includes("admin") || roles?.includes("superadmin");
+  if (!isAdmin) return NextResponse.json({ error: "Droits admin requis" }, { status: 403 });
 
   const { token } = await req.json();
   if (!token) return NextResponse.json({ error: "Token manquant" }, { status: 400 });
@@ -73,7 +75,12 @@ export async function POST(req: NextRequest) {
       targetLabel: `Renouvellement licence → ${check.payload?.company}`,
     });
 
-    return NextResponse.json({ ok: true, backupOk });
+    const res = NextResponse.json({ ok: true, backupOk });
+    const expires = check.payload?.expiresAt
+      ? new Date(check.payload.expiresAt)
+      : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+    res.cookies.set("lms-lic", "1", { expires, path: "/", httpOnly: true, sameSite: "lax" });
+    return res;
 
   } catch (err) {
     // En cas d'erreur inattendue, reset le flag

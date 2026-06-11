@@ -21,7 +21,13 @@ export default async function DocumentReaderPage({
   });
   if (!doc) notFound();
 
-  const isAdmin = session.user.sessionMode === "admin";
+  const isAdminMode = session.user.sessionMode === "admin";
+
+  // Vérifie le rôle admin directement en DB (plus fiable que le JWT)
+  const adminRole = isAdminMode ? null : await prisma.userRole.findFirst({
+    where: { userId: session.user.id, role: { name: { in: ["admin", "superadmin"] } } },
+  });
+  const isAdmin = isAdminMode || !!adminRole;
 
   // Vérifier l'assignation pour les non-admins
   if (!isAdmin) {
@@ -31,7 +37,7 @@ export default async function DocumentReaderPage({
     if (!assignment) redirect("/dashboard/documents");
   }
 
-  // Seuls les learners peuvent signer
+  // Seuls les learners peuvent signer (pas les admins même en mode normal)
   const isLearner = !isAdmin && !!(await prisma.userRole.findFirst({
     where: { userId: session.user.id, role: { name: "learner" } },
   }));

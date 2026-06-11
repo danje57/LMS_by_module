@@ -4,10 +4,12 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { SessionGuard } from "@/components/layout/session-guard";
 import { MaintenanceBanner } from "@/components/maintenance-banner";
+import { LicenseExpiryBanner } from "@/components/layout/license-expiry-banner";
 import { prisma } from "@/lib/prisma";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { getCurrentLicense } from "@/lib/license-verify";
+import { auditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -27,11 +29,53 @@ export default async function DashboardLayout({
   const license = await getCurrentLicense();
   const renewalInProgress = license?.renewalInProgress ?? false;
   if (!renewalInProgress) {
+    const roles = session.user.roles as unknown as string[] | undefined;
+    const isAdminRole = session.user.sessionMode === "admin"
+      || roles?.includes("admin")
+      || roles?.includes("superadmin")
+      || false;
     if (!license) {
-      redirect("/activate");
+      redirect(isAdminRole ? "/activate" : "/not-activated");
     }
     const expired = license.licenseExpiresAt ? new Date(license.licenseExpiresAt) < new Date() : false;
-    if (expired) redirect("/activate");
+    if (expired) redirect(isAdminRole ? "/activate" : "/not-activated");
+  }
+
+  const licenseExpiryDaysLeft = (() => {
+    if (!license?.licenseExpiresAt) return null;
+    const diff = Math.ceil((new Date(license.licenseExpiresAt).getTime() - Date.now()) / 86400000);
+    return diff > 0 && diff < 30 ? diff : null;
+  })();
+
+  const roles = session.user.roles as unknown as string[] | undefined;
+  const isAdminRole = session.user.sessionMode === "admin"
+    || roles?.includes("admin")
+    || roles?.includes("superadmin")
+    || false;
+
+  if (isAdminRole && licenseExpiryDaysLeft !== null) {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    prisma.notification.findFirst({
+      where: { userId: session.user.id, type: "license_expiry_warning", createdAt: { gt: yesterday } },
+    }).then(existing => {
+      if (!existing) {
+        prisma.notification.create({
+          data: {
+            userId:  session.user.id,
+            type:    "license_expiry_warning",
+            title:   "Licence bientôt expirée",
+            message: `Votre licence expire dans ${licenseExpiryDaysLeft} jour${licenseExpiryDaysLeft > 1 ? "s" : ""}. Renouvelez-la pour maintenir l'accès.`,
+            link:    "/dashboard/admin/license",
+          },
+        }).catch(() => {});
+        auditLog({
+          actor:       { id: session.user.id, name: session.user.name, email: session.user.email },
+          action:      "license.expiry_warning",
+          targetLabel: `Licence expire dans ${licenseExpiryDaysLeft} jour${licenseExpiryDaysLeft > 1 ? "s" : ""}`,
+          details:     { daysLeft: licenseExpiryDaysLeft },
+        }).catch(() => {});
+      }
+    }).catch(() => {});
   }
 
   const isAdmin = session.user.sessionMode === "admin";
@@ -67,6 +111,9 @@ export default async function DashboardLayout({
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header session={session} />
         <SessionGuard userId={session.user.id} />
+        {isAdmin && licenseExpiryDaysLeft !== null && (
+          <LicenseExpiryBanner daysLeft={licenseExpiryDaysLeft} />
+        )}
         <MaintenanceBanner
           enabled={branding?.maintenanceBannerEnabled ?? false}
           message={branding?.maintenanceBannerMessage ?? null}

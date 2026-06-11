@@ -25,9 +25,10 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // /activate et son API sont toujours accessibles (licence expirée ou renouvellement en cours)
+  // /activate, /not-activated et leur API sont toujours accessibles
   if (
     pathname.startsWith("/activate") ||
+    pathname.startsWith("/not-activated") ||
     pathname.startsWith("/api/admin/license")
   ) {
     return NextResponse.next();

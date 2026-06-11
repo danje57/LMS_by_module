@@ -28,7 +28,12 @@ export async function GET(
   });
   if (!doc) return new NextResponse("Document introuvable", { status: 404 });
 
-  const isAdmin = session.user.sessionMode === "admin";
+  const isAdminMode = session.user.sessionMode === "admin";
+  const adminRole = isAdminMode ? null : await prisma.userRole.findFirst({
+    where: { userId: session.user.id, role: { name: { in: ["admin", "superadmin"] } } },
+  });
+  const isAdmin = isAdminMode || !!adminRole;
+
   if (!isAdmin) {
     const assignment = await prisma.courseAssignment.findUnique({
       where: { userId_courseId: { userId: session.user.id, courseId: id } },

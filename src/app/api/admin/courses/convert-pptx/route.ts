@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createWriteStream, mkdirSync } from "fs";
-import { rm, readdir, readFile } from "fs/promises";
+import { rm, readdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { createHash } from "crypto";
 import { Readable } from "stream";
 import Busboy from "busboy";
 import { execFile } from "child_process";
+import { encryptBuffer, signManifest } from "@/lib/instance-crypto";
+import { buildLicenseEnvelope } from "@/lib/license-verify";
 import { promisify } from "util";
 import AdmZip from "adm-zip";
 
@@ -169,6 +171,20 @@ export async function POST(req: NextRequest) {
       thumbnailPath = `courses/${courseHash}/thumbnail.jpg`;
     } catch { /* pas de thumbnail */ }
 
+    // Chiffrement du contenu (licencing)
+    let encryptedKey: string | null = null;
+    let licenseEncryptedKey: string | null = null;
+    let contentLicenseId: string | null = null;
+    let contentManifest: string | null = null;
+    try {
+      const plainBuffer = await readFile(h5pDest);
+      const { encrypted, encryptedKey: ek, fileKeyHex } = await encryptBuffer(plainBuffer);
+      await writeFile(h5pDest, encrypted);
+      encryptedKey = ek;
+      const envelope = await buildLicenseEnvelope(fileKeyHex);
+      if (envelope) { licenseEncryptedKey = envelope.licenseEncryptedKey; contentLicenseId = envelope.contentLicenseId; }
+    } catch { /* non critique — le cours reste en clair si le chiffrement échoue */ }
+
     // Créer l'enregistrement en base
     const course = await prisma.course.create({
       data: {
@@ -182,9 +198,28 @@ export async function POST(req: NextRequest) {
         passingScore,
         isActive: true,
         createdById,
+        isEncrypted: !!encryptedKey,
+        encryptedKey,
+        licenseEncryptedKey,
+        contentLicenseId,
         ...(thumbnailPath ? { thumbnailPath } : {}),
       },
     });
+
+    // Manifest signé (non-répudiation)
+    if (encryptedKey) {
+      try {
+        const manifest = await signManifest({
+          courseId: course.id,
+          contentHash: fileHash,
+          createdBy: createdById ?? "unknown",
+          createdAt: new Date().toISOString(),
+          instanceId: "",
+        });
+        contentManifest = manifest;
+        await prisma.course.update({ where: { id: course.id }, data: { contentManifest } });
+      } catch { /* non critique */ }
+    }
 
     return NextResponse.json({ success: true, courseId: course.id, slides: (meta as { slideCount: number }).slideCount });
 

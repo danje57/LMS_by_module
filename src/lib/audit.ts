@@ -18,7 +18,7 @@ export interface AuditParams {
 
 const AUDIT_LOG_DIR = process.env.AUDIT_LOG_DIR ?? "./logs/audit";
 
-function writeToFile(params: AuditParams): void {
+export function auditLogFile(params: AuditParams): void {
   try {
     mkdirSync(AUDIT_LOG_DIR, { recursive: true });
     const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -38,7 +38,7 @@ function writeToFile(params: AuditParams): void {
 }
 
 export async function auditLog(params: AuditParams): Promise<void> {
-  writeToFile(params);
+  auditLogFile(params);
   try {
     await prisma.auditLog.create({
       data: {

@@ -15,37 +15,58 @@ async function getCourseStats(
 ): Promise<CourseStats> {
   if (!courseIds.length) return {};
 
-  let learnerIds: string[] | null = null;
+  let teamMemberIds: string[] | null = null;
+  let ownCourseIds: Set<string> | null = null;
+
   if (isManager) {
-    const rows = await prisma.userTeam.findMany({
-      where: { team: { managerId: userId } },
-      select: { userId: true },
-    });
-    learnerIds = rows.map((r) => r.userId);
-    if (!learnerIds.length) return {};
+    const [teamRows, ownCourses] = await Promise.all([
+      prisma.userTeam.findMany({
+        where: { team: { managerId: userId } },
+        select: { userId: true },
+      }),
+      prisma.course.findMany({
+        where: { id: { in: courseIds }, createdById: userId },
+        select: { id: true },
+      }),
+    ]);
+    teamMemberIds = teamRows.map((r) => r.userId);
+    ownCourseIds = new Set(ownCourses.map((c) => c.id));
+    if (!teamMemberIds.length && !ownCourseIds.size) return {};
   }
 
-  const userFilter = learnerIds ? { userId: { in: learnerIds } } : {};
-
-  const [assignmentCounts, completionCounts] = await Promise.all([
-    prisma.courseAssignment.groupBy({
-      by: ["courseId"],
-      where: { courseId: { in: courseIds }, ...userFilter },
-      _count: true,
+  const [assignmentRows, certRows] = await Promise.all([
+    prisma.courseAssignment.findMany({
+      where: { courseId: { in: courseIds } },
+      select: { courseId: true, userId: true },
     }),
-    prisma.certificate.groupBy({
-      by: ["courseId"],
-      where: { courseId: { in: courseIds }, ...userFilter },
-      _count: true,
+    prisma.certificate.findMany({
+      where: { courseId: { in: courseIds } },
+      select: { courseId: true, userId: true },
     }),
   ]);
 
+  // For managers: own courses → all assignments; other courses → team members only
+  const teamSet = teamMemberIds ? new Set(teamMemberIds) : null;
+  const filteredAssignments = teamSet || ownCourseIds
+    ? assignmentRows.filter((a) => ownCourseIds?.has(a.courseId) || teamSet?.has(a.userId))
+    : assignmentRows;
+  const filteredCerts = teamSet || ownCourseIds
+    ? certRows.filter((c) => c.courseId && (ownCourseIds?.has(c.courseId) || teamSet?.has(c.userId)))
+    : certRows;
+
+  // Only count completions for users who are actually assigned to the course
+  const assignedPairs = new Set(filteredAssignments.map((a) => `${a.courseId}:${a.userId}`));
+
   const stats: CourseStats = {};
-  for (const r of assignmentCounts) if (r.courseId) stats[r.courseId] = { assigned: r._count, completed: 0 };
-  for (const r of completionCounts) {
-    if (!r.courseId) continue;
-    if (stats[r.courseId]) stats[r.courseId].completed = r._count;
-    else stats[r.courseId] = { assigned: 0, completed: r._count };
+  for (const row of filteredAssignments) {
+    if (!row.courseId) continue;
+    if (!stats[row.courseId]) stats[row.courseId] = { assigned: 0, completed: 0 };
+    stats[row.courseId].assigned++;
+  }
+  for (const cert of filteredCerts) {
+    if (!cert.courseId || !assignedPairs.has(`${cert.courseId}:${cert.userId}`)) continue;
+    if (stats[cert.courseId]) stats[cert.courseId].completed++;
+    else stats[cert.courseId] = { assigned: 0, completed: 1 };
   }
   return stats;
 }

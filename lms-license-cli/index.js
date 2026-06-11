@@ -11,7 +11,7 @@
  *   node index.js info   --license-id "uuid"
  */
 
-import { generateKeyPairSync, createSign, randomBytes, createCipheriv, createDecipheriv } from "crypto";
+import { generateKeyPairSync, createSign, randomBytes, createCipheriv, createDecipheriv, constants } from "crypto";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -81,9 +81,13 @@ function decryptContentKey(encoded, passphrase) {
 function generateToken(payload, privateKey) {
   const json = JSON.stringify(payload);
   const b64  = Buffer.from(json).toString("base64url");
-  const sign = createSign("RSA-PSS");
+  const sign = createSign("SHA256");
   sign.update(b64);
-  const sig = sign.sign({ key: privateKey, dsaEncoding: "ieee-p1363" }).toString("base64url");
+  const sig = sign.sign({
+    key: privateKey,
+    padding: constants.RSA_PKCS1_PSS_PADDING,
+    saltLength: constants.RSA_PSS_SALTLEN_DIGEST,
+  }).toString("base64url");
   return `${b64}.${sig}`;
 }
 

@@ -10,7 +10,9 @@ import { auditLog } from "@/lib/audit";
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-  if (session.user.sessionMode !== "admin") return NextResponse.json({ error: "Mode admin requis" }, { status: 403 });
+  const roles = session.user.roles as unknown as string[] | undefined;
+  const isAdmin = session.user.sessionMode === "admin" || roles?.includes("admin") || roles?.includes("superadmin");
+  if (!isAdmin) return NextResponse.json({ error: "Droits admin requis" }, { status: 403 });
 
   const { publicKey } = await getInstanceKeys();
   const results = { courses: 0, videos: 0, errors: 0 };
@@ -68,7 +70,9 @@ export async function POST(req: NextRequest) {
 export async function GET(_req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-  if (session.user.sessionMode !== "admin") return NextResponse.json({ error: "Mode admin requis" }, { status: 403 });
+  const rolesGet = session.user.roles as unknown as string[] | undefined;
+  const isAdminGet = session.user.sessionMode === "admin" || rolesGet?.includes("admin") || rolesGet?.includes("superadmin");
+  if (!isAdminGet) return NextResponse.json({ error: "Droits admin requis" }, { status: 403 });
 
   const [courses, videos] = await Promise.all([
     prisma.course.count({

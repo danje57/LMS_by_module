@@ -10,7 +10,7 @@ async function getData() {
       orderBy: { name: "asc" },
       include: {
         manager: { select: { id: true, name: true, email: true } },
-        members: { include: { user: { select: { id: true, name: true, email: true } } } },
+        members: { include: { user: { select: { id: true, name: true, email: true, roles: { include: { role: { select: { name: true } } } } } } } },
       },
     }),
     prisma.user.findMany({
@@ -25,7 +25,10 @@ async function getData() {
       id: t.id,
       name: t.name,
       manager: t.manager,
-      members: t.members.map((m) => m.user),
+      members: t.members.map((m) => ({
+        ...m.user,
+        roles: m.user.roles.map((r) => r.role.name),
+      })),
     })),
     users,
   };

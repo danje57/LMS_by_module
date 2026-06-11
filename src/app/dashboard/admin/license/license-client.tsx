@@ -17,6 +17,11 @@ interface LicenseStatus {
 
 export function LicenseClient() {
   const [status,           setStatus]          = useState<LicenseStatus | null>(null);
+  const [unlocked,         setUnlocked]         = useState(false);
+  const [password,         setPassword]         = useState("");
+  const [showPwd,          setShowPwd]          = useState(false);
+  const [pwdError,         setPwdError]         = useState<string | null>(null);
+  const [pwdLoading,       setPwdLoading]       = useState(false);
   const [token,            setToken]            = useState("");
   const [loading,          setLoading]          = useState(false);
   const [result,           setResult]           = useState<{ ok?: boolean; error?: string; backupOk?: boolean } | null>(null);
@@ -37,6 +42,27 @@ export function LicenseClient() {
 
   useEffect(() => { loadStatus(); checkRecoverable(); }, [loadStatus, checkRecoverable]);
 
+  async function handleUnlock(e: React.FormEvent) {
+    e.preventDefault();
+    if (!password) return;
+    setPwdLoading(true);
+    setPwdError(null);
+    try {
+      const res  = await fetch("/api/auth/confirm-password", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (data.ok) { setUnlocked(true); setPassword(""); }
+      else setPwdError(data.error ?? "Mot de passe incorrect.");
+    } catch {
+      setPwdError("Erreur réseau.");
+    } finally {
+      setPwdLoading(false);
+    }
+  }
+
   async function handleRenew(e: React.FormEvent) {
     e.preventDefault();
     if (!token.trim()) return;
@@ -46,7 +72,7 @@ export function LicenseClient() {
       const res  = await fetch("/api/admin/license/renew", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ token: token.trim() }),
+        body:    JSON.stringify({ token: token.replace(/\s+/g, "") }),
       });
       const data = await res.json();
       setResult(data);
@@ -67,7 +93,7 @@ export function LicenseClient() {
     ? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
     : status.expired
     ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-    : (status.daysLeft ?? 999) <= 30
+    : (status.daysLeft ?? 999) < 30
     ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
     : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
 
@@ -75,7 +101,7 @@ export function LicenseClient() {
     ? "Non activée"
     : status.expired
     ? "Expirée"
-    : (status.daysLeft ?? 999) <= 30
+    : (status.daysLeft ?? 999) < 30
     ? `Expire dans ${status.daysLeft} j`
     : "Active";
 
@@ -130,42 +156,90 @@ export function LicenseClient() {
         <h2 className="text-[17px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
           {status?.activated ? "Renouveler la licence" : "Activer la licence"}
         </h2>
-        <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
-          {status?.activated
-            ? "Un backup automatique sera effectué avant tout renouvellement."
-            : "Saisissez la clé de licence fournie par votre prestataire."}
-        </p>
 
-        <form onSubmit={handleRenew} className="space-y-3">
-          <textarea
-            value={token}
-            onChange={e => setToken(e.target.value)}
-            placeholder="Collez ici la clé de licence…"
-            rows={5}
-            disabled={loading}
-            className="w-full rounded-xl border border-[#E5E5EA] dark:border-[#3A3A3C] bg-[#F5F5F7] dark:bg-[#2C2C2E] px-3 py-2.5 text-[13px] font-mono text-[#1D1D1F] dark:text-[#F5F5F7] resize-none focus:outline-none focus:ring-2 focus:ring-[#1D1D1F] dark:focus:ring-[#F5F5F7]"
-          />
-
-          {result?.error && (
-            <p className="text-[13px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
-              {result.error}
+        {!unlocked ? (
+          <form onSubmit={handleUnlock} className="space-y-3">
+            <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
+              Confirmez votre mot de passe admin pour {status?.activated ? "modifier" : "activer"} la licence.
             </p>
-          )}
-          {result?.ok && (
-            <p className="text-[13px] text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
-              ✅ Licence renouvelée avec succès.
-              {result.backupOk === false && " ⚠️ Backup non effectué (licence était expirée)."}
+            <div className="relative">
+              <input
+                type={showPwd ? "text" : "password"}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Mot de passe"
+                autoComplete="current-password"
+                disabled={pwdLoading}
+                className="w-full rounded-xl border border-[#E5E5EA] dark:border-[#3A3A3C] bg-[#F5F5F7] dark:bg-[#2C2C2E] px-3 py-2.5 pr-16 text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:ring-2 focus:ring-[#1D1D1F] dark:focus:ring-[#F5F5F7]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-[#6E6E73] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
+              >
+                {showPwd ? "Masquer" : "Voir"}
+              </button>
+            </div>
+            {pwdError && (
+              <p className="text-[13px] text-red-600 dark:text-red-400">{pwdError}</p>
+            )}
+            <button
+              type="submit"
+              disabled={pwdLoading || !password}
+              className="w-full rounded-xl bg-[#1D1D1F] dark:bg-[#F5F5F7] text-white dark:text-[#1D1D1F] text-[14px] font-medium py-2.5 disabled:opacity-40 hover:opacity-80 transition-opacity"
+            >
+              {pwdLoading ? "Vérification…" : "Déverrouiller"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleRenew} className="space-y-3">
+            <p className="text-[13px] text-[#6E6E73] dark:text-[#8E8E93]">
+              {status?.activated
+                ? "Collez le token de renouvellement fourni par votre prestataire."
+                : "Collez la clé de licence fournie par votre prestataire."}
+              {status?.activated && (
+                <span className="block text-[12px] mt-0.5 text-amber-600 dark:text-amber-400">
+                  Un backup automatique sera effectué avant le renouvellement.
+                </span>
+              )}
             </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || !token.trim()}
-            className="w-full rounded-xl bg-[#1D1D1F] dark:bg-[#F5F5F7] text-white dark:text-[#1D1D1F] text-[14px] font-medium py-2.5 disabled:opacity-40 hover:opacity-80 transition-opacity"
-          >
-            {loading ? "Traitement en cours…" : status?.activated ? "Renouveler" : "Activer"}
-          </button>
-        </form>
+            <textarea
+              value={token}
+              onChange={e => setToken(e.target.value)}
+              placeholder="Collez ici la clé de licence…"
+              rows={5}
+              disabled={loading}
+              className="w-full rounded-xl border border-[#E5E5EA] dark:border-[#3A3A3C] bg-[#F5F5F7] dark:bg-[#2C2C2E] px-3 py-2.5 text-[13px] font-mono text-[#1D1D1F] dark:text-[#F5F5F7] resize-none focus:outline-none focus:ring-2 focus:ring-[#1D1D1F] dark:focus:ring-[#F5F5F7]"
+            />
+            {result?.error && (
+              <p className="text-[13px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
+                {result.error}
+              </p>
+            )}
+            {result?.ok && (
+              <p className="text-[13px] text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
+                ✅ Licence {status?.activated ? "renouvelée" : "activée"} avec succès.
+                {result.backupOk === false && " ⚠️ Backup non effectué (licence était expirée)."}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => { setUnlocked(false); setResult(null); setToken(""); }}
+                className="flex-1 rounded-xl border border-[#E5E5EA] dark:border-[#3A3A3C] text-[14px] font-medium py-2.5 text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !token.trim()}
+                className="flex-1 rounded-xl bg-[#1D1D1F] dark:bg-[#F5F5F7] text-white dark:text-[#1D1D1F] text-[14px] font-medium py-2.5 disabled:opacity-40 hover:opacity-80 transition-opacity"
+              >
+                {loading ? "Traitement en cours…" : status?.activated ? "Renouveler" : "Activer"}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
 
       {/* Récupération clés (réinstallation) */}

@@ -5,13 +5,30 @@ TODO - Fonctionnalités à implémenter
     - Vérifier/déboguer la config SMTP existante
     - Tester l'envoi (assignation, rappels deadlines, certificats)
 
-[x] Mécanisme de protection du contenu (licencing)
-    - Paire de clés RSA-2048 par instance (générée auto, clé privée chiffrée avec NEXTAUTH_SECRET)
-    - Cours H5P + documents GRC : chiffrement AES-256-GCM à l'upload, déchiffrement à la volée au serving
-    - Vidéos natives : chiffrement AES-256-CTR (supporte Range requests / seeking)
-    - Manifest signé RSA-PSS (non-répudiation : courseId, hash, auteur, date, instanceId)
-    - Migration des contenus existants : panel dans Paramètres → "Protection du contenu"
-    - Clé unique par instance → contenu illisible sur un autre système
+[~] Mécanisme de protection du contenu (licencing)
+    [x] Phase 1 — Chiffrement contenu (commit cd6bbdf)
+        - Paire de clés RSA-2048 par instance (générée auto, clé privée chiffrée avec AUTH_SECRET)
+        - Cours H5P + documents GRC : chiffrement AES-256-GCM à l'upload, déchiffrement à la volée au serving
+        - Vidéos natives : chiffrement AES-256-CTR (supporte Range requests / seeking)
+        - Manifest signé RSA-PSS (non-répudiation : courseId, hash, auteur, date, instanceId)
+        - Migration des contenus existants : panel dans Paramètres → "Protection du contenu"
+        - Clé unique par instance → contenu illisible sur un autre système
+    [x] Phase 2 — Licensing (commit 3ae8a33)
+        - Token JWT signé par master keypair vendeur (RSA-PSS SHA256)
+        - Modèles DB : InstanceConfig (clés RSA + licence + contentKey) + LicenseHistory
+        - Double envelope : encryptedKey (RSA) + licenseEncryptedKey (contentKey) sur tout le contenu
+        - Chaîne de clés pour renouvellements (previousWrappedKey dans LicenseHistory)
+        - Page /activate accessible aux rôles admin sans sessionMode (anti chicken-and-egg)
+        - Page /dashboard/admin/license : statut, renouvellement, historique, restauration clés
+        - Recovery après réinstallation : POST /api/admin/license/recover-keys
+        - CLI vendeur lms-license-cli/ : setup, issue, renew, list, info
+        - Non-admins bloqués avec page "Application non activée" + bouton déconnexion
+    [~] Tester le flow complet (voir TOTEST.txt) — Scénarios 1+2 validés, reste 3-7
+    [ ] Alerte expiration licence
+        - [x] Bannière in-app pour admin (< 30 jours) — lien vers /dashboard/admin/license
+        - [x] Notification cloche admin avec icône ShieldAlert
+        - [x] Entrée dans le journal d'audit (license.expiry_warning) — 1x/24h/admin
+        - [ ] Email d'alerte admin quand < 30 jours (nécessite SMTP activé)
 
 [ ] App Store / Marketplace de contenu
     - Catalogue de contenus disponibles à l'achat/déblocage

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Bell, BookOpen, Clock, CircleCheck, X } from "lucide-react";
+import { Bell, BookOpen, Clock, CircleCheck, X, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -24,15 +24,17 @@ function timeAgo(date: string): string {
 }
 
 const TYPE_ICON: Record<string, React.ReactNode> = {
-  course_assigned:   <BookOpen className="w-4 h-4 text-[#0071E3]" />,
-  deadline_warning:  <Clock className="w-4 h-4 text-amber-500" />,
-  course_completed:  <CircleCheck className="w-4 h-4 text-emerald-500" />,
+  course_assigned:        <BookOpen className="w-4 h-4 text-[#0071E3]" />,
+  deadline_warning:       <Clock className="w-4 h-4 text-amber-500" />,
+  course_completed:       <CircleCheck className="w-4 h-4 text-emerald-500" />,
+  license_expiry_warning: <ShieldAlert className="w-4 h-4 text-red-500" />,
 };
 
 const TYPE_BG: Record<string, string> = {
-  course_assigned:   "bg-blue-50 dark:bg-[#0071E3]/10",
-  deadline_warning:  "bg-amber-50 dark:bg-amber-500/10",
-  course_completed:  "bg-emerald-50 dark:bg-emerald-500/10",
+  course_assigned:        "bg-blue-50 dark:bg-[#0071E3]/10",
+  deadline_warning:       "bg-amber-50 dark:bg-amber-500/10",
+  course_completed:       "bg-emerald-50 dark:bg-emerald-500/10",
+  license_expiry_warning: "bg-red-50 dark:bg-red-500/10",
 };
 
 export function NotificationBell() {

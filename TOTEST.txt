@@ -1,0 +1,145 @@
+SCÉNARIOS DE TEST — DRM / LICENSING
+====================================
+Dernière mise à jour : 2026-06-10
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. ACTIVATION DE LA LICENCE (premier démarrage)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[x] Se connecter en tant que learner/manager
+    → Affiche "Service temporairement indisponible" sur /not-activated (pas /activate)
+    → Bouton "Se déconnecter" présent et fonctionnel
+
+[x] Se connecter en tant qu'admin (mode normal, pas sessionMode admin)
+    → Doit afficher le formulaire d'activation sur /activate
+    → L'admin voit le form sans avoir à entrer son mot de passe admin
+
+[x] Coller un token invalide (texte aléatoire)
+    → Doit afficher un message d'erreur clair
+
+[x] Coller le token valide (avec retours à la ligne / espaces)
+    → Doit être accepté malgré les espaces
+    → Doit afficher l'écran "Licence activée !" avec spinner
+    → Après ~6 secondes, doit rediriger vers /dashboard sans flash
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. ACCÈS À L'APPLICATION APRÈS ACTIVATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[x] Dashboard accessible normalement après activation
+[x] Tous les utilisateurs (learner, manager, admin) accèdent normalement
+[x] La page /dashboard/admin/license affiche :
+    - Société : danjecorp ✓
+    - Email : danje@danjecorp.com ✓
+    - Date d'expiration : 11 juillet 2026 ✓
+    - Badge "Active" (vert) ✓ — seuil corrigé à < 30 j
+    - Aucun historique (première activation) ✓
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. CHIFFREMENT DU CONTENU (DOUBLE ENVELOPE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[x] Uploader un cours H5P (via PPTX)
+    → En base : isEncrypted=true, encryptedKey non null, licenseEncryptedKey non null, contentLicenseId non null ✓
+    → Bug corrigé : route convert-pptx n'avait pas de chiffrement
+
+[x] Uploader un document PDF (GRC)
+    → Même vérification en base ✓
+
+[x] Uploader une vidéo native
+    → isEncrypted/encryptedKey/licenseEncryptedKey/contentLicenseId sur NativeVideo ✓ (pas sur Course)
+
+[x] Accéder au cours H5P en tant qu'apprenant
+    → Doit se charger normalement (déchiffrement à la volée transparent)
+
+[x] Accéder au PDF GRC en tant qu'apprenant
+    → Doit s'ouvrir normalement dans le viewer
+
+[x] Lire une vidéo native en tant qu'apprenant
+    → Doit se lire normalement avec seek (Range requests)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. RENOUVELLEMENT DE LICENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Générer une nouvelle licence avec le CLI :
+    cd lms-license-cli
+    node index.js renew --license-id <licenseId actuel> --expires <date future>
+
+[x] Depuis /dashboard/admin/license, coller le token de renouvellement
+    → Doit afficher "Un backup automatique sera effectué"
+    → Doit réussir et afficher "Licence renouvelée avec succès"
+    → L'historique doit afficher l'ancienne licence
+
+[x] Après renouvellement, les cours uploadés avant restent accessibles
+    (déchiffrement via chaîne de clés previousWrappedKey)
+    ✓ NEWNEWNEW PDF, NEWNEW PPTX, TESTTEST PPTX, TESTTESTTEST H5P, TESTTESTTEST VIDEO — tous lisibles
+
+[x] Uploader un nouveau cours après renouvellement
+    → COSTAPPTX : isEncrypted=true, licenseEncryptedKey=✓ avec le nouveau contentKey ✓
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. MIGRATION DU CONTENU EXISTANT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[x] Si des cours ont été uploadés AVANT l'activation de la licence
+    (isEncrypted=true mais licenseEncryptedKey=null)
+    → Tous les cours ont licenseEncryptedKey rempli ✓ (visible dans Paramètres > Chiffrement)
+
+[x] Ces cours restent accessibles après migration
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. SCÉNARIO RÉINSTALLATION (recovery)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Simuler une réinstallation :
+    - Supprimer la ligne InstanceConfig en base (ou vider publicKey/privateKey)
+    - Redémarrer le serveur
+
+[ ] Se connecter en admin → atterrir sur /activate
+[ ] Coller le token de licence original
+    → Après activation, doit détecter le contenu récupérable
+    → Doit afficher "Réinstallation détectée — X fichiers nécessitent restauration"
+    → Cliquer "Restaurer l'accès au contenu"
+    → Vérifier que les cours sont à nouveau accessibles
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. EXPIRATION DE LICENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Générer une licence expirée (date passée) avec le CLI
+[ ] L'activer via /activate
+    → Doit afficher "Cette licence est expirée"
+
+[ ] Forcer l'expiration en base :
+    UPDATE InstanceConfig SET licenseExpiresAt = '2020-01-01'
+    → Tous les utilisateurs doivent être redirigés vers /activate
+    → Les learners voient "Application non activée"
+    → L'admin voit le formulaire de renouvellement
+
+[ ] Badge "Expirée" (rouge) sur /dashboard/admin/license quand expirée
+[ ] Badge "Expire dans X j" (orange) quand < 30 jours
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMMANDES UTILES POUR LES TESTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Supprimer la licence (reset pour retester)
+node -e "const {PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.licenseHistory.deleteMany().then(()=>p.instanceConfig.updateMany({data:{licenseKey:null,licenseId:null,company:null,email:null,licenseExpiresAt:null,contentKey:null,renewalInProgress:false}})).then(()=>{console.log('ok');p.\$disconnect()})"
+
+# Générer une nouvelle licence (1 mois)
+cd lms-license-cli && node index.js issue --company "danjecorp" --email "danje@danjecorp.com" --expires $(date -d '+1 month' '+%Y-%m-%d')
+
+# Voir l'état de la licence en base
+node -e "const {PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.instanceConfig.findFirst({select:{licenseId:true,company:true,email:true,licenseExpiresAt:true,renewalInProgress:true}}).then(r=>{console.log(r);p.\$disconnect()})"
+
+# Lister les clients CLI
+cd lms-license-cli && node index.js list

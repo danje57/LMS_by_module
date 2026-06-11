@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 import { ImportTeamsModal } from "@/components/admin/import-teams-modal";
 
-type UserRef = { id: string; name: string | null; email: string };
+type UserRef = { id: string; name: string | null; email: string; roles?: string[] };
 type TeamRow = { id: string; name: string; manager: UserRef | null; members: UserRef[] };
 
 interface TeamListProps {
@@ -219,7 +219,10 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
           return (
             <div key={team.id} className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#3A3A3C] overflow-hidden">
               {/* Header équipe */}
-              <div className="flex items-center gap-3 px-5 py-4">
+              <div
+                className={cn("flex items-center gap-3 px-5 py-4", editingId !== team.id && "cursor-pointer")}
+                onClick={() => { if (editingId !== team.id) setExpanded(isOpen ? null : team.id); }}
+              >
                 <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
                   <Users className="w-4.5 h-4.5 text-purple-500" style={{ width: 18, height: 18 }} />
                 </div>
@@ -251,21 +254,21 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
                 {editingId !== team.id && (
                   <div className="flex items-center gap-1 shrink-0">
                     <button
-                      onClick={() => { setEditingId(team.id); setEditName(team.name); }}
+                      onClick={(e) => { e.stopPropagation(); setEditingId(team.id); setEditName(team.name); }}
                       className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] hover:text-[#0071E3] transition-colors"
                       title={t("rename")}
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setDeleteTarget(team)}
+                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(team); }}
                       className="p-2 rounded-lg text-[#6E6E73] hover:bg-red-50 hover:text-red-500 transition-colors"
                       title={t("delete")}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setExpanded(isOpen ? null : team.id)}
+                      onClick={(e) => { e.stopPropagation(); setExpanded(isOpen ? null : team.id); }}
                       className="p-2 rounded-lg text-[#6E6E73] dark:text-[#8E8E93] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors"
                     >
                       {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -333,8 +336,19 @@ export function TeamList({ initialTeams, allUsers }: TeamListProps) {
                             <div key={m.id} className="flex items-center justify-between bg-white dark:bg-[#1C1C1E] rounded-xl border border-[#E5E5EA] dark:border-[#3A3A3C] px-3 py-2">
                               <div className="flex items-center gap-2 min-w-0">
                                 {isManager && <Crown className="w-3.5 h-3.5 text-purple-400 shrink-0" />}
-                                <div>
-                                  <p className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{label(m)}</p>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <p className="text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{label(m)}</p>
+                                    {m.roles?.filter(r => r !== "learner").map((r) => (
+                                      <span key={r} className={cn(
+                                        "text-[10px] font-medium px-1.5 py-0.5 rounded-md",
+                                        r === "admin" || r === "superadmin" ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400" :
+                                        r === "manager" ? "bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400" :
+                                        r === "creator" ? "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400" :
+                                        "bg-[#F5F5F7] text-[#6E6E73]"
+                                      )}>{r}</span>
+                                    ))}
+                                  </div>
                                   {m.name && <p className="text-[11px] text-[#6E6E73] dark:text-[#8E8E93]">{m.email}</p>}
                                 </div>
                               </div>
