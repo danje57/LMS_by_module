@@ -31,10 +31,38 @@ TODO - Fonctionnalités à implémenter
         - [ ] Email d'alerte admin quand < 30 jours (nécessite SMTP activé)
 
 [ ] App Store / Marketplace de contenu
-    - Catalogue de contenus disponibles à l'achat/déblocage
-    - Contenu installable sur l'instance uniquement si licence valide
-    - Lié au mécanisme de licencing (voir ci-dessus)
-    - Gestion des contenus installés vs disponibles
+    ARCHITECTURE DÉCIDÉE (2026-06-11) :
+    Site web externe découplé du LMS. Flux :
+      1. Client choisit un pack de contenu sur le site App Store
+      2. Au checkout, il fournit sa clé publique RSA d'instance
+         (bouton "Copier ma clé publique" à ajouter dans Paramètres → Licence)
+      3. Paiement validé → le vendeur génère un "content token" :
+           encrypt(packKey, clientRSAPublicKey) + signé avec master key
+      4. Client reçoit le token par email + contenu chiffré (téléchargeable)
+      5. Client active le token dans son LMS → RSA privé déchiffre packKey
+         → contenu accessible
+    Le contenu chiffré peut être hébergé sur un CDN public (illisible sans token).
+
+    Côté LMS (à implémenter) :
+    [ ] Bouton "Copier ma clé publique d'instance" dans Paramètres → Licence
+    [ ] Section "Packs de contenu" dans le LMS : activer un token de pack
+        - Valider signature du token (master public key)
+        - Déchiffrer packKey avec RSA privé de l'instance
+        - Stocker packKey lié au packId
+        - Importer le contenu chiffré et le rendre accessible
+
+    Côté CLI vendeur (à implémenter) :
+    [ ] node index.js issue-pack --pack PACK_ID --client-pubkey <RSA_PUB>
+        → génère un content token signé (même format que licence)
+
+    Côté App Store externe (à construire) :
+    [ ] Site Next.js/autre découplé du LMS
+    [ ] Catalogue de packs avec descriptions, prix, aperçus
+    [ ] Stripe pour le paiement
+    [ ] Champ "Clé publique RSA de votre instance" au checkout
+    [ ] Génération automatique du content token après paiement
+    [ ] Email de livraison (token + lien téléchargement contenu chiffré)
+    [ ] Dashboard vendeur : liste des clients, packs vendus, tokens générés
 
 [ ] Questions inline dans les cours PPTX (sous le coude, pas prioritaire)
     - Ajouter des questions à des positions de slides spécifiques
