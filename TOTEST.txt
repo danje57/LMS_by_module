@@ -66,7 +66,7 @@ Dernière mise à jour : 2026-06-10
 4. RENOUVELLEMENT DE LICENCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[ ] Générer une nouvelle licence avec le CLI :
+[x] Générer une nouvelle licence avec le CLI :
     cd lms-license-cli
     node index.js renew --license-id <licenseId actuel> --expires <date future>
 
@@ -98,15 +98,20 @@ Dernière mise à jour : 2026-06-10
 6. SCÉNARIO RÉINSTALLATION (recovery)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[ ] Simuler une réinstallation :
-    - Supprimer la ligne InstanceConfig en base (ou vider publicKey/privateKey)
-    - Redémarrer le serveur
+[x] Simuler une réinstallation :
+    IMPORTANT : supprimer UNIQUEMENT InstanceConfig (PAS LicenseHistory !)
+    En réinstallation réelle la DB est conservée ; LicenseHistory porte la chaîne de clés.
 
-[ ] Se connecter en admin → atterrir sur /activate
-[ ] Coller le token de licence original
+    node -e "const {PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.instanceConfig.deleteMany().then(r=>{console.log('ok',r.count);p.\$disconnect()})"
+
+    - Redémarrer le serveur (nouvelles clés RSA générées à l'activation)
+
+[x] Se connecter en admin → atterrir sur /activate
+[x] Coller le token de renouvellement le plus récent (celui avec previousWrappedKey)
     → Après activation, doit détecter le contenu récupérable
     → Doit afficher "Réinstallation détectée — X fichiers nécessitent restauration"
     → Cliquer "Restaurer l'accès au contenu"
+    → "Restauration réussie : 7 cours et 1 vidéo accessibles" ✓
     → Vérifier que les cours sont à nouveau accessibles
 
 
@@ -114,18 +119,20 @@ Dernière mise à jour : 2026-06-10
 7. EXPIRATION DE LICENCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[ ] Générer une licence expirée (date passée) avec le CLI
-[ ] L'activer via /activate
-    → Doit afficher "Cette licence est expirée"
+[x] Générer une licence expirée (date passée) avec le CLI
+[x] L'activer via /activate
+    → Affiche "Cette licence est déjà expirée" ✓
 
-[ ] Forcer l'expiration en base :
-    UPDATE InstanceConfig SET licenseExpiresAt = '2020-01-01'
-    → Tous les utilisateurs doivent être redirigés vers /activate
-    → Les learners voient "Application non activée"
-    → L'admin voit le formulaire de renouvellement
+[x] Forcer l'expiration en base (UPDATE licenseExpiresAt = '2020-01-01')
+    → Tous les utilisateurs redirigés vers /activate ✓
+    → Les learners voient "Application non activée" (à vérifier)
+    → L'admin voit "Licence expirée" + formulaire de renouvellement ✓
 
-[ ] Badge "Expirée" (rouge) sur /dashboard/admin/license quand expirée
-[ ] Badge "Expire dans X j" (orange) quand < 30 jours
+[x] Badge "Expirée" (rouge) sur /dashboard/admin/license
+    → Visible en naviguant depuis un autre onglet sans F5 (sans déclencher le middleware) ✓
+
+[x] Badge "Expire dans X j" (orange) quand < 30 jours
+    → licenseExpiresAt = +15 j → badge "Expire dans 15 j" orange visible ✓
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

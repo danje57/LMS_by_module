@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getInstanceKeys } from "@/lib/instance-crypto";
-import { resolveContentKey, decryptWithContentKey } from "@/lib/license-verify";
+import { resolveAllContentKeys, decryptWithContentKey } from "@/lib/license-verify";
 import { constants, publicEncrypt } from "crypto";
 import { auditLog } from "@/lib/audit";
 
@@ -17,6 +17,23 @@ export async function POST(req: NextRequest) {
   const { publicKey } = await getInstanceKeys();
   const results = { courses: 0, videos: 0, errors: 0 };
 
+  // Récupère TOUTES les clés de contenu possibles (courante + chaîne historique)
+  const allContentKeys = await resolveAllContentKeys();
+  if (allContentKeys.length === 0) {
+    return NextResponse.json({ ok: false, error: "Aucune clé de contenu disponible" }, { status: 400 });
+  }
+
+  // Tente de déchiffrer licenseEncryptedKey avec chaque clé jusqu'à réussite
+  const tryDecryptFileKey = (licenseEncryptedKey: string): string | null => {
+    for (const ck of allContentKeys) {
+      try {
+        const hex = decryptWithContentKey(licenseEncryptedKey, ck);
+        if (/^[0-9a-f]{64}$/i.test(hex)) return hex;
+      } catch { /* essai suivant */ }
+    }
+    return null;
+  };
+
   // Re-enveloppe les cours (H5P + PDF)
   const courses = await prisma.course.findMany({
     where: { isEncrypted: true, licenseEncryptedKey: { not: null }, contentLicenseId: { not: null } },
@@ -25,9 +42,8 @@ export async function POST(req: NextRequest) {
 
   for (const course of courses) {
     try {
-      const contentKey = await resolveContentKey(course.contentLicenseId!);
-      if (!contentKey) { results.errors++; continue; }
-      const fileKeyHex = decryptWithContentKey(course.licenseEncryptedKey!, contentKey);
+      const fileKeyHex = tryDecryptFileKey(course.licenseEncryptedKey!);
+      if (!fileKeyHex) { results.errors++; continue; }
       const newEncryptedKey = publicEncrypt(
         { key: publicKey, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: "sha256" },
         Buffer.from(fileKeyHex, "hex")
@@ -45,9 +61,8 @@ export async function POST(req: NextRequest) {
 
   for (const video of videos) {
     try {
-      const contentKey = await resolveContentKey(video.contentLicenseId!);
-      if (!contentKey) { results.errors++; continue; }
-      const fileKeyHex = decryptWithContentKey(video.licenseEncryptedKey!, contentKey);
+      const fileKeyHex = tryDecryptFileKey(video.licenseEncryptedKey!);
+      if (!fileKeyHex) { results.errors++; continue; }
       const newEncryptedKey = publicEncrypt(
         { key: publicKey, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: "sha256" },
         Buffer.from(fileKeyHex, "hex")

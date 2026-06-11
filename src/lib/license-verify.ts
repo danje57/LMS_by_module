@@ -102,6 +102,41 @@ export function decryptWithContentKey(encoded: string, contentKeyHex: string): s
   return dec.update(enc).toString("utf-8") + dec.final("utf-8");
 }
 
+// Retourne toutes les clés de contenu possibles (courante + chaîne historique)
+// Utilisé par recover-keys pour tenter chaque clé jusqu'à déchiffrement réussi
+export async function resolveAllContentKeys(): Promise<string[]> {
+  const config = await prisma.instanceConfig.findFirst();
+  if (!config?.contentKey) return [];
+
+  const currentContentKey = decryptContentKey(config.contentKey);
+  const keys: string[] = [currentContentKey];
+
+  const history = await prisma.licenseHistory.findMany({
+    orderBy: { replacedAt: "desc" },
+  });
+
+  let walkKey = currentContentKey;
+  for (const entry of history) {
+    if (!entry.previousWrappedKey) continue;
+    try {
+      const buf = Buffer.from(entry.previousWrappedKey, "base64");
+      const iv  = buf.subarray(0, 16);
+      const tag = buf.subarray(16, 32);
+      const enc = buf.subarray(32);
+      const ck  = Buffer.from(walkKey, "hex");
+      const dec = createDecipheriv("aes-256-gcm", ck, iv);
+      dec.setAuthTag(tag);
+      const prevKey = dec.update(enc).toString("hex") + dec.final("hex");
+      keys.push(prevKey);
+      walkKey = prevKey;
+    } catch {
+      continue;  // entrée dupliquée ou hors-chaîne, on continue
+    }
+  }
+
+  return keys;
+}
+
 // Remonte la chaîne de clés jusqu'au licenseId cible
 export async function resolveContentKey(targetLicenseId: string): Promise<string | null> {
   const config = await prisma.instanceConfig.findFirst();
@@ -109,10 +144,6 @@ export async function resolveContentKey(targetLicenseId: string): Promise<string
 
   const currentContentKey = decryptContentKey(config.contentKey);
 
-  // Cas direct : le contenu est de la licence courante
-  if (config.licenseId === targetLicenseId) return currentContentKey;
-
-  // Remonter la chaîne via LicenseHistory
   const history = await prisma.licenseHistory.findMany({
     orderBy: { replacedAt: "desc" },
   });
@@ -120,7 +151,6 @@ export async function resolveContentKey(targetLicenseId: string): Promise<string
   let currentKey = currentContentKey;
   for (const entry of history) {
     if (!entry.previousWrappedKey) continue;
-    // Déchiffre la clé précédente
     const buf = Buffer.from(entry.previousWrappedKey, "base64");
     const iv  = buf.subarray(0, 16);
     const tag = buf.subarray(16, 32);
@@ -133,6 +163,8 @@ export async function resolveContentKey(targetLicenseId: string): Promise<string
     if (entry.licenseId === targetLicenseId) return currentKey;
   }
 
+  // Fallback : aucun historique ne matche, mais licenseId correspond → clé courante
+  if (config.licenseId === targetLicenseId) return currentContentKey;
   return null;
 }
 
@@ -177,13 +209,14 @@ export async function activateLicense(token: string): Promise<{ ok: boolean; err
   const config = await prisma.instanceConfig.findFirst();
   if (!config) return { ok: false, error: "Instance non initialisée" };
 
-  // Si renouvellement : archiver l'ancienne licence dans LicenseHistory
-  if (config.licenseId && config.contentKey && payload.previousWrappedKey) {
+  // Archiver la clé précédente dans LicenseHistory (renouvellement ET réinstallation)
+  // Sur réinstall : config.licenseId est null mais payload.previousWrappedKey porte la chaîne
+  if (payload.previousWrappedKey) {
     await prisma.licenseHistory.create({
       data: {
-        licenseId:          config.licenseId,
-        company:            config.company ?? "",
-        email:              config.email ?? "",
+        licenseId:          config.licenseId ?? payload.licenseId,
+        company:            config.company ?? payload.company ?? "",
+        email:              config.email ?? payload.email ?? "",
         expiresAt:          config.licenseExpiresAt,
         previousWrappedKey: payload.previousWrappedKey,
       },
