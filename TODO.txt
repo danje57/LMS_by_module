@@ -173,6 +173,35 @@ TODO - Fonctionnalités à implémenter
     - Variables d'environnement externalisées
     - Documentation de déploiement
 
+    POINTS CRITIQUES LIÉS AU DRM :
+    AUTH_SECRET est la clé de voûte de tout le chiffrement.
+    Si perdu → contenu inaccessible même avec backup DB.
+
+    Volumes obligatoires :
+      postgres_data → DB (contient clé RSA chiffrée + licence + données)
+      uploads/      → contenu chiffré (fichiers H5P, PDF, vidéos)
+      backups/      → backups LMS automatiques
+
+    AUTH_SECRET NE DOIT PAS être dans l'image Docker ni dans git.
+    Doit être injecté via :
+      - Kubernetes Secret (chiffré etcd) en prod K8s
+      - Docker secret en swarm
+      - .env local NON commité pour dev/staging
+      Conseil : sauvegarder AUTH_SECRET dans un gestionnaire de secrets
+      (HashiCorp Vault, AWS Secrets Manager, Bitwarden Secrets...)
+      séparément des backups DB/fichiers.
+
+    Scénarios de panne et récupération :
+      Container crash (DB OK)  → redémarre → recovery-keys auto (même flow réinstall)
+      DB perdue (backup existe) → restaurer backup → tout revient normalement
+      DB perdue (pas de backup) → contenu inaccessible définitivement
+      AUTH_SECRET perdu        → CATASTROPHIQUE même avec backup DB complet
+
+    [ ] Documenter la procédure de sauvegarde AUTH_SECRET
+    [ ] Vérifier que .env n'est pas dans .gitignore (déjà le cas ?)
+    [ ] Tester le scénario "container crash + DB OK" → recovery automatique
+    [ ] Script de vérification pré-déploiement (AUTH_SECRET présent, volumes montés)
+
 [ ] Tester backup / restauration from scratch
     - Vérifier que le backup complet fonctionne (DB + fichiers)
     - Tester la restauration sur une instance vierge
