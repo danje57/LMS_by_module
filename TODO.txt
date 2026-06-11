@@ -128,6 +128,28 @@ TODO - Fonctionnalités à implémenter
     - Commentaire optionnel
     - Vue admin/manager des retours (note moyenne, distribution, liste commentaires)
 
+[ ] Anti-tamper horloge serveur (protection licence)
+    PROBLÈME : un admin peut reculer l'horloge du serveur pour garder
+    une licence expirée valide indéfiniment.
+    MÉCANISME PROPOSÉ :
+    - Stocker lastHeartbeatAt dans InstanceConfig (mis à jour toutes les heures via cron/middleware)
+    - À chaque vérification de licence :
+        → Si now < lastHeartbeatAt - TOLÉRANCE (ex: 5 min)
+          = horloge reculée → BLOQUER ("Anomalie temporelle détectée")
+        → Si now > lastHeartbeatAt + 48h
+          = saut en avant suspect (ou serveur éteint longtemps)
+          = logguer dans audit + notifier l'admin, ne pas bloquer
+    - Le fichier de heartbeat peut être en DB ET dans un fichier local
+      (double vérification croisée → plus dur à tricher)
+    - Pour les clients très malins : inclure un timestamp signé dans
+      le token de licence (validé côté serveur à chaque renouvellement)
+      → le vendeur peut détecter les anomalies lors du renouvellement
+    [ ] Ajouter champ lastHeartbeatAt dans InstanceConfig
+    [ ] Middleware : mise à jour heartbeat toutes les heures
+    [ ] Vérification anti-retour dans le check de licence
+    [ ] Audit log : license.clock_tamper
+    [ ] (Optionnel) NTP check au démarrage du serveur
+
 [ ] Mettre en place HTTPS
     - Génération/configuration certificat TLS (Let's Encrypt ou self-signed)
     - Redirection HTTP → HTTPS
